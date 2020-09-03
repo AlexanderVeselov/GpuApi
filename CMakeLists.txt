@@ -35,8 +35,21 @@ set(INCLUDE_FILES
     inc/gpu_types.hpp
 )
 
+set(D3D12_FILES
+    src/d3d12/d3d12_api.hpp
+    src/d3d12/d3d12_buffer.hpp
+    src/d3d12/d3d12_command_buffer.hpp
+    src/d3d12/d3d12_device.hpp
+    src/d3d12/d3d12_image.hpp
+    src/d3d12/d3d12_pipeline.hpp
+    src/d3d12/d3d12_queue.hpp
+    src/d3d12/d3d12_swapchain.hpp
+    src/d3d12/d3d12_sync.hpp
+)
+
 source_group("vulkan" FILES ${VULKAN_SOURCES})
-add_library(GpuApi STATIC ${INCLUDE_FILES} ${VULKAN_SOURCES})
+source_group("d3d12" FILES ${D3D12_FILES})
+add_library(GpuApi STATIC ${INCLUDE_FILES} ${VULKAN_SOURCES} ${D3D12_FILES})
 target_include_directories(GpuApi PUBLIC inc)
 target_link_libraries(GpuApi Vulkan::Vulkan spirv-cross-core)
 #target_compile_features(VulkanLabs PUBLIC cxx_std_17)
