@@ -2,14 +2,23 @@
 #define D3D12_API_HPP_
 
 #include "gpu_api.hpp"
+#include "d3d12_common.hpp"
+
+#include <vector>
 
 namespace gpu
 {
+    using Microsoft::WRL::ComPtr;
+
     class D3D12Api : public Api
     {
     public:
-        virtual DevicePtr CreateDevice() override;
+        D3D12Api();
+        DevicePtr CreateDevice() override;
 
+    private:
+        ComPtr<IDXGIFactory4> dxgi_factory_;
+        std::vector<IDXGIAdapter1*> dxgi_adapters_;
     };
 
 } // namespace gpu

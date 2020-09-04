@@ -1,5 +1,5 @@
-#ifndef GPU_DEVICE_HPP_
-#define GPU_DEVICE_HPP_
+#ifndef GPU_QUEUE_HPP_
+#define GPU_QUEUE_HPP_
 
 #include "gpu_types.hpp"
 
@@ -16,4 +16,4 @@ namespace gpu
 
 } // namespace gpu
 
-#endif // GPU_DEVICE_HPP_
+#endif // GPU_QUEUE_HPP_
