@@ -1,13 +1,15 @@
-#ifndef GPU_IMAGE_HPP_
-#define GPU_IMAGE_HPP_
+#ifndef D3D12_IMAGE_HPP_
+#define D3D12_IMAGE_HPP_
+
+#include "gpu_image.hpp"
 
 namespace gpu
 {
-    class Image
+    class D3D12Image : public Image
     {
     public:
 
     };
 } // namespace gpu
 
-#endif // GPU_IMAGE_HPP_
+#endif // D3D12_IMAGE_HPP_

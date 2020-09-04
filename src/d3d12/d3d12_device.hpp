@@ -1,30 +1,27 @@
-#ifndef GPU_DEVICE_HPP_
-#define GPU_DEVICE_HPP_
+#ifndef D3D12_DEVICE_HPP_
+#define D3D12_DEVICE_HPP_
 
-#include "gpu_types.hpp"
+#include "gpu_device.hpp"
 
 namespace gpu
 {
-    class Device
+    class D3D12Device : public Device
     {
     public:
         // Resources
-        virtual BufferPtr CreateBuffer() = 0;
-        virtual ImagePtr CreateImage() = 0;
+        BufferPtr CreateBuffer() override;
+        ImagePtr CreateImage() override;
 
         // Synchronization primitives
-        virtual SemaphorePtr CreateSemaphore() = 0;
-        virtual FencePtr CreateFence() = 0;
-
-        // Queues
-        virtual Queue& GetQueue(QueueType queue_type) = 0;
+        SemaphorePtr CreateSemaphore() override;
+        FencePtr CreateFence() override;
 
         // Pipelines
-        virtual GraphicsPipelinePtr CreateGraphicsPipeline() = 0;
-        virtual ComputePipelinePtr CreateComputePipeline() = 0;
+        GraphicsPipelinePtr CreateGraphicsPipeline() override;
+        ComputePipelinePtr CreateComputePipeline() override;
 
     };
 
 } // namespace gpu
 
-#endif // GPU_DEVICE_HPP_
+#endif // D3D12_DEVICE_HPP_

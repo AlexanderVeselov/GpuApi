@@ -1,19 +1,19 @@
-#ifndef GPU_DEVICE_HPP_
-#define GPU_DEVICE_HPP_
+#ifndef D3D12_QUEUE_HPP_
+#define D3D12_QUEUE_HPP_
 
-#include "gpu_types.hpp"
+#include "gpu_queue.hpp"
 
 namespace gpu
 {
-    class Queue
+    class D3D12Queue : public Queue
     {
     public:
-        virtual CommandBufferPtr CreateCommandBuffer() = 0;
-        virtual void Submit(CommandBufferPtr const& cmd_buffer) = 0;
-        virtual void WaitIdle() = 0;
+        CommandBufferPtr CreateCommandBuffer() override;
+        void Submit(CommandBufferPtr const& cmd_buffer) override;
+        void WaitIdle() override;
 
     };
 
 } // namespace gpu
 
-#endif // GPU_DEVICE_HPP_
+#endif // D3D12_QUEUE_HPP_

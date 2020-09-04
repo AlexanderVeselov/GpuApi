@@ -1,15 +1,17 @@
-#ifndef GPU_SYNC_HPP_
-#define GPU_SYNC_HPP_
+#ifndef D3D12_SYNC_HPP_
+#define D3D12_SYNC_HPP_
+
+#include "gpu_sync.hpp"
 
 namespace gpu
 {
-    class Semaphore
+    class D3D12Semaphore : public Semaphore
     {
     public:
 
     };
 
-    class Fence
+    class D3D12Fence : public Fence
     {
     public:
 
@@ -17,4 +19,4 @@ namespace gpu
 
 } // namespace gpu
 
-#endif // GPU_SYNC_HPP_
+#endif // D3D12_SYNC_HPP_

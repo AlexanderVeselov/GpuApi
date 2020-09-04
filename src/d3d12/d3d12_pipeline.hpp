@@ -1,24 +1,17 @@
-#ifndef GPU_PIPELINE_HPP_
-#define GPU_PIPELINE_HPP_
+#ifndef D3D12_PIPELINE_HPP_
+#define D3D12_PIPELINE_HPP_
 
-#include "gpu_types.hpp"
+#include "gpu_pipeline.hpp"
 
 namespace gpu
 {
-    class Pipeline
-    {
-    public:
-        virtual void BindBuffer(BufferPtr const& buffer, std::uint32_t binding, std::uint32_t space) = 0;
-        virtual void BindImage(ImagePtr const& image, std::uint32_t binding, std::uint32_t space) = 0;
-    };
-
-    class GraphicsPipeline : public Pipeline
+    class D3D12GraphicsPipeline : public GraphicsPipeline
     {
     public:
 
     };
 
-    class ComputePipeline : public Pipeline
+    class D3D12ComputePipeline : public GraphicsPipeline
     {
     public:
 
@@ -26,4 +19,4 @@ namespace gpu
 
 } // namespace gpu
 
-#endif // GPU_PIPELINE_HPP_
+#endif // D3D12_PIPELINE_HPP_

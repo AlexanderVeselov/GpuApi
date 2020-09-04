@@ -1,17 +1,17 @@
-#ifndef GPU_API_HPP_
-#define GPU_API_HPP_
+#ifndef D3D12_API_HPP_
+#define D3D12_API_HPP_
 
-#include "gpu_types.hpp"
+#include "gpu_api.hpp"
 
 namespace gpu
 {
-    class Api
+    class D3D12Api : public Api
     {
     public:
-        virtual DevicePtr CreateDevice() = 0;
+        virtual DevicePtr CreateDevice() override;
 
     };
 
 } // namespace gpu
 
-#endif // GPU_API_HPP_
+#endif // D3D12_API_HPP_

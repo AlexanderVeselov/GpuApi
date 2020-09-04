@@ -1,21 +1,21 @@
-#ifndef GPU_COMMAND_BUFFER_HPP_
-#define GPU_COMMAND_BUFFER_HPP_
+#ifndef D3D12_COMMAND_BUFFER_HPP_
+#define D3D12_COMMAND_BUFFER_HPP_
 
-#include "gpu_types.hpp"
+#include "gpu_command_buffer.hpp"
 
 namespace gpu
 {
-    class CommandBuffer
+    class D3D12CommandBuffer : public CommandBuffer
     {
     public:
-        virtual void Dispatch(std::uint32_t num_groups_x, std::uint32_t num_groups_y, std::uint32_t num_groups_z) = 0;
-        virtual void Draw() = 0;
+        void Dispatch(std::uint32_t num_groups_x, std::uint32_t num_groups_y, std::uint32_t num_groups_z) override;
+        void Draw() override;
 
-        virtual void BindComputePipeline(ComputePipelinePtr const& pipeline) = 0;
-        virtual void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) = 0;
+        void BindComputePipeline(ComputePipelinePtr const& pipeline) override;
+        void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) override;
 
     };
 
 } // namespace gpu
 
-#endif // GPU_COMMAND_BUFFER_HPP_
+#endif // D3D12_COMMAND_BUFFER_HPP_

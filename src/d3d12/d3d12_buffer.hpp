@@ -1,9 +1,11 @@
-#ifndef GPU_BUFFER_HPP_
-#define GPU_BUFFER_HPP_
+#ifndef D3D12_BUFFER_HPP_
+#define D3D12_BUFFER_HPP_
+
+#include "gpu_buffer.hpp"
 
 namespace gpu
 {
-    class Buffer
+    class D3D12Buffer : public Buffer
     {
     public:
 
@@ -12,4 +14,4 @@ namespace gpu
 } // namespace gpu
 
 
-#endif // GPU_BUFFER_HPP_
+#endif // D3D12_BUFFER_HPP_
