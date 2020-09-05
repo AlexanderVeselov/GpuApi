@@ -39,6 +39,7 @@ set(D3D12_FILES
     src/d3d12/d3d12_api.cpp
     src/d3d12/d3d12_api.hpp
     src/d3d12/d3d12_buffer.hpp
+    src/d3d12/d3d12_command_buffer.cpp
     src/d3d12/d3d12_command_buffer.hpp
     src/d3d12/d3d12_common.hpp
     src/d3d12/d3d12_device.cpp
@@ -46,6 +47,7 @@ set(D3D12_FILES
     src/d3d12/d3d12_exception.hpp
     src/d3d12/d3d12_image.hpp
     src/d3d12/d3d12_pipeline.hpp
+    src/d3d12/d3d12_queue.cpp
     src/d3d12/d3d12_queue.hpp
     src/d3d12/d3d12_swapchain.hpp
     src/d3d12/d3d12_sync.hpp

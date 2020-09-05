@@ -33,8 +33,8 @@ namespace gpu
     private:
         Api& api_;
         ComPtr<ID3D12Device> d3d12_device_;
-        D3D12Queue graphics_queue_;
-        D3D12Queue compute_queue_;
+        std::unique_ptr<Queue> graphics_queue_;
+        std::unique_ptr<Queue> compute_queue_;
     };
 
 } // namespace gpu
