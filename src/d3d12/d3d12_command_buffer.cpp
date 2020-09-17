@@ -16,4 +16,20 @@ namespace gpu
             queue.GetCommandAllocator(), nullptr, IID_PPV_ARGS(&cmd_list_)));
     }
 
+    void D3D12CommandBuffer::Draw(std::uint32_t vertex_count, std::uint32_t start_vertex_location)
+    {
+        DrawInstanced(vertex_count, 1u, start_vertex_location, 0u);
+    }
+
+    void D3D12CommandBuffer::DrawInstanced(std::uint32_t vertex_count, std::uint32_t instance_count,
+        std::uint32_t start_vertex_location, std::uint32_t start_instance_location)
+    {
+        cmd_list_->DrawInstanced(vertex_count, instance_count, start_vertex_location, start_instance_location);
+    }
+
+    void D3D12CommandBuffer::BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline)
+    {
+
+    }
+
 } // namespace gpu
