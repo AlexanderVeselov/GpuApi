@@ -29,11 +29,11 @@ namespace gpu
         }
     }
 
-    //GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline()
-    //{
-    //    //return std::make_shared<D3D12GraphicsPipeline>();
-    //}
-    //
+    GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline()
+    {
+        return std::make_unique<D3D12GraphicsPipeline>(*this);
+    }
+
     //ComputePipelinePtr D3D12Device::CreateComputePipeline()
     //{
     //

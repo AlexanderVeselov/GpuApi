@@ -12,8 +12,9 @@ namespace gpu
     class D3D12Device : public Device
     {
     public:
-        D3D12Device(Api& gpi_api, IDXGIAdapter1* dxgi_adapter);
+        D3D12Device(Api& gpu_api, IDXGIAdapter1* dxgi_adapter);
 
+        /*
         // Resources
         BufferPtr CreateBuffer() override;
         ImagePtr CreateImage() override;
@@ -22,11 +23,12 @@ namespace gpu
         SemaphorePtr CreateSemaphore() override;
         FencePtr CreateFence() override;
 
+        */
         Queue& GetQueue(QueueType queue_type) override;
 
         // Pipelines
         GraphicsPipelinePtr CreateGraphicsPipeline() override;
-        ComputePipelinePtr CreateComputePipeline() override;
+        //ComputePipelinePtr CreateComputePipeline() override;
 
         ID3D12Device* GetD3D12Device() const { return d3d12_device_.Get(); }
 

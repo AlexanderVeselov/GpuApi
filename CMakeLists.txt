@@ -46,6 +46,7 @@ set(D3D12_FILES
     src/d3d12/d3d12_device.hpp
     src/d3d12/d3d12_exception.hpp
     src/d3d12/d3d12_image.hpp
+    src/d3d12/d3d12_pipeline.cpp
     src/d3d12/d3d12_pipeline.hpp
     src/d3d12/d3d12_queue.cpp
     src/d3d12/d3d12_queue.hpp
@@ -57,5 +58,5 @@ source_group("vulkan" FILES ${VULKAN_SOURCES})
 source_group("d3d12" FILES ${D3D12_FILES})
 add_library(GpuApi STATIC ${INCLUDE_FILES} ${D3D12_FILES})
 target_include_directories(GpuApi PUBLIC inc)
-target_link_libraries(GpuApi Vulkan::Vulkan spirv-cross-core)
+target_link_libraries(GpuApi Vulkan::Vulkan spirv-cross-core d3d12.lib dxgi.lib d3dcompiler.lib)
 #target_compile_features(VulkanLabs PUBLIC cxx_std_17)

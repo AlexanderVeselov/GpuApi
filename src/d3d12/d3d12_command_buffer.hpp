@@ -11,11 +11,11 @@ namespace gpu
     public:
         D3D12CommandBuffer(D3D12Device& device, D3D12Queue& queue, D3D12_COMMAND_LIST_TYPE command_list_type);
 
-        void Dispatch(std::uint32_t num_groups_x, std::uint32_t num_groups_y, std::uint32_t num_groups_z) override;
-        void Draw() override;
+        //void Dispatch(std::uint32_t num_groups_x, std::uint32_t num_groups_y, std::uint32_t num_groups_z) override;
+        //void Draw() override;
 
-        void BindComputePipeline(ComputePipelinePtr const& pipeline) override;
-        void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) override;
+        //void BindComputePipeline(ComputePipelinePtr const& pipeline) override;
+        //void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) override;
 
     private:
         //D3D12Device& device_;

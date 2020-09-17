@@ -8,6 +8,7 @@ namespace gpu
     class Api
     {
     public:
+        static Api* CreateD3D12Api();
         virtual DevicePtr CreateDevice() = 0;
 
     };
