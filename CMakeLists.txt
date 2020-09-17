@@ -51,6 +51,7 @@ set(D3D12_FILES
     src/d3d12/d3d12_pipeline.hpp
     src/d3d12/d3d12_queue.cpp
     src/d3d12/d3d12_queue.hpp
+    src/d3d12/d3d12_swapchain.cpp
     src/d3d12/d3d12_swapchain.hpp
     src/d3d12/d3d12_sync.hpp
 )

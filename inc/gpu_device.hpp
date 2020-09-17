@@ -2,6 +2,10 @@
 #define GPU_DEVICE_HPP_
 
 #include "gpu_types.hpp"
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
 
 namespace gpu
 {
@@ -23,6 +27,11 @@ namespace gpu
         // Pipelines
         virtual GraphicsPipelinePtr CreateGraphicsPipeline(char const* vs_filename, char const* ps_filename) = 0;
         //virtual ComputePipelinePtr CreateComputePipeline() = 0;
+
+        // Swapchain
+#ifdef WIN32
+        virtual SwapchainPtr CreateSwapchain(HWND hwnd);
+#endif
 
     };
 
