@@ -27,7 +27,7 @@ namespace gpu
         Queue& GetQueue(QueueType queue_type) override;
 
         // Pipelines
-        GraphicsPipelinePtr CreateGraphicsPipeline() override;
+        GraphicsPipelinePtr CreateGraphicsPipeline(char const* vs_filename, char const* ps_filename) override;
         //ComputePipelinePtr CreateComputePipeline() override;
 
         ID3D12Device* GetD3D12Device() const { return d3d12_device_.Get(); }

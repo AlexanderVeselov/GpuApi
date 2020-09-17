@@ -38,6 +38,7 @@ set(INCLUDE_FILES
 set(D3D12_FILES
     src/d3d12/d3d12_api.cpp
     src/d3d12/d3d12_api.hpp
+    src/d3d12/d3d12_buffer.cpp
     src/d3d12/d3d12_buffer.hpp
     src/d3d12/d3d12_command_buffer.cpp
     src/d3d12/d3d12_command_buffer.hpp

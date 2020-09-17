@@ -4,9 +4,21 @@
 #include <d3dcompiler.h>
 #include <iostream>
 
+#include <codecvt>
+
 namespace gpu
 {
-    D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device)
+    namespace
+    {
+        std::wstring StringToWstring(const std::string& str)
+        {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+            return myconv.from_bytes(str);
+        }
+    }
+
+    D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device,
+        char const* vs_filename, char const* ps_filename)
         : device_(device)
     {
         auto d3d12_device = device_.GetD3D12Device();
@@ -34,20 +46,22 @@ namespace gpu
         ComPtr<ID3DBlob> vs_blob;
         ComPtr<ID3DBlob> ps_blob;
         ComPtr<ID3DBlob> error_blob;
-        HRESULT hr = (D3DCompileFromFile(L"shader.vs", nullptr, nullptr, "main",
+        HRESULT hr = (D3DCompileFromFile(StringToWstring(vs_filename).c_str(), nullptr, nullptr, "main",
             "vs_5_0", compile_flags, 0, &vs_blob, &error_blob));
 
         if (FAILED(hr))
         {
             std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
+            throw D3D12Exception(hr, __FILE__, __LINE__);
         }
 
-        hr = (D3DCompileFromFile(L"shader.ps", nullptr, nullptr, "main",
+        hr = (D3DCompileFromFile(StringToWstring(ps_filename).c_str(), nullptr, nullptr, "main",
             "ps_5_0", compile_flags, 0, &ps_blob, &error_blob));
 
         if (FAILED(hr))
         {
             std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
+            throw D3D12Exception(hr, __FILE__, __LINE__);
         }
 
         D3D12_SHADER_BYTECODE vs_bytecode = {};
@@ -81,8 +95,8 @@ namespace gpu
         input_element_desc.InstanceDataStepRate = 0;
 
         D3D12_INPUT_LAYOUT_DESC input_layout = {};
-        input_layout.pInputElementDescs = &input_element_desc;
-        input_layout.NumElements = 1u;
+        input_layout.pInputElementDescs = nullptr;// &input_element_desc;
+        input_layout.NumElements = 0u;//1u;
 
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline_state_desc = {};
         pipeline_state_desc.pRootSignature = root_signature_.Get();

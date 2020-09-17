@@ -29,9 +29,9 @@ namespace gpu
         }
     }
 
-    GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline()
+    GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline(char const* vs_filename, char const* ps_filename)
     {
-        return std::make_unique<D3D12GraphicsPipeline>(*this);
+        return std::make_unique<D3D12GraphicsPipeline>(*this, vs_filename, ps_filename);
     }
 
     //ComputePipelinePtr D3D12Device::CreateComputePipeline()

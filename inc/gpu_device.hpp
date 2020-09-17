@@ -21,7 +21,7 @@ namespace gpu
         virtual Queue& GetQueue(QueueType queue_type) = 0;
 
         // Pipelines
-        virtual GraphicsPipelinePtr CreateGraphicsPipeline() = 0;
+        virtual GraphicsPipelinePtr CreateGraphicsPipeline(char const* vs_filename, char const* ps_filename) = 0;
         //virtual ComputePipelinePtr CreateComputePipeline() = 0;
 
     };
