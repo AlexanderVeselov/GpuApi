@@ -11,6 +11,7 @@ namespace gpu
     template <class T>
     using SharedPtr = std::shared_ptr<T>;
 
+    class Api;
     class Device;
     class Buffer;
     class CommandBuffer;

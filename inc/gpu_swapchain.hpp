@@ -9,6 +9,7 @@ namespace gpu
     {
     public:
         virtual void Present() = 0;
+        virtual std::uint32_t GetImagesCount() const = 0;
     };
 
 } // namespace gpu
