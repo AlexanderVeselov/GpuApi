@@ -16,8 +16,12 @@ namespace gpu
         D3D12Image(D3D12Device& device, ID3D12Resource* resource,
             std::uint32_t width, std::uint32_t height);
 
+        D3D12_CPU_DESCRIPTOR_HANDLE GetRTVHandle() const { return rtv_handle_; }
+
     private:
         ComPtr<ID3D12Resource> resource_;
+        D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle_ = {};
+
     };
 } // namespace gpu
 

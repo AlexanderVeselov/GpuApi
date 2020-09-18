@@ -2,6 +2,7 @@
 #include "d3d12_device.hpp"
 #include "d3d12_common.hpp"
 #include "d3d12_exception.hpp"
+#include "d3d12_image.hpp"
 
 namespace gpu
 {
@@ -29,7 +30,16 @@ namespace gpu
 
     void D3D12CommandBuffer::BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline)
     {
+    }
 
+    void D3D12CommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, float a)
+    {
+        D3D12Image* d3d12_image = static_cast<D3D12Image*>(image.get());
+
+        D3D12_RECT rect = { 0, 0, image->GetWidth(), image->GetHeight() };
+        float color[4] = { r, g, b, a };
+
+        cmd_list_->ClearRenderTargetView(d3d12_image->GetRTVHandle(), color, 1u, &rect);
     }
 
 } // namespace gpu

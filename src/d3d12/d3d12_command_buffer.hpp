@@ -17,9 +17,10 @@ namespace gpu
         void DrawInstanced(std::uint32_t vertex_count, std::uint32_t instance_count,
             std::uint32_t start_vertex_location, std::uint32_t start_instance_location) override;
 
-
         void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) override;
         //void BindComputePipeline(ComputePipelinePtr const& pipeline) override;
+
+        void ClearImage(ImagePtr image, float r, float g, float b, float a) override;
 
     private:
         //D3D12Device& device_;

@@ -2,6 +2,7 @@
 #define GPU_SWAPCHAIN_HPP_
 
 #include "gpu_types.hpp"
+#include <vector>
 
 namespace gpu
 {
@@ -9,7 +10,11 @@ namespace gpu
     {
     public:
         virtual void Present() = 0;
-        virtual std::uint32_t GetImagesCount() const = 0;
+        std::vector<ImagePtr> const& GetImages() const { return swapchain_images_; }
+
+    protected:
+        std::vector<ImagePtr> swapchain_images_;
+
     };
 
 } // namespace gpu

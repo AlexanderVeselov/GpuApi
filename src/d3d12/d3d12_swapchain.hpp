@@ -3,6 +3,7 @@
 
 #include "gpu_swapchain.hpp"
 #include "d3d12_common.hpp"
+#include "gpu_types.hpp"
 
 namespace gpu
 {
@@ -13,12 +14,11 @@ namespace gpu
     public:
         D3D12Swapchain(D3D12Device& device, HWND hwnd, std::uint32_t width, std::uint32_t height);
         void Present() override;
-        std::uint32_t GetImagesCount() const override { return images_count_; }
 
     private:
         D3D12Device& device_;
         ComPtr<IDXGISwapChain1> swapchain_;
-        std::uint32_t images_count_;
+
 
     };
 

@@ -33,6 +33,9 @@ namespace gpu
         ThrowIfFailed(d3d12_device->CreateCommittedResource(&heap_properties, D3D12_HEAP_FLAG_NONE,
             &resource_desc, D3D12_RESOURCE_STATE_COMMON, &clear_value, IID_PPV_ARGS(&resource_)));
 
+        // Default RTV
+        device.GetD3D12Device()->CreateRenderTargetView(resource_.Get(), nullptr, rtv_handle_);
+
     }
 
     D3D12Image::D3D12Image(D3D12Device& device, ID3D12Resource* resource,
@@ -40,7 +43,8 @@ namespace gpu
         : Image(width, height)
         , resource_(resource)
     {
-
+        // Default RTV
+        device.GetD3D12Device()->CreateRenderTargetView(resource_.Get(), nullptr, rtv_handle_);
     }
 
 } // namespace gpu
