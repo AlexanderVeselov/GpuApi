@@ -32,11 +32,13 @@ namespace gpu
         ThrowIfFailed(dxgi_factory->CreateSwapChainForHwnd(d3d12_queue.GetQueue(), hwnd,
             &swapchain_desc, nullptr, nullptr, &swapchain_));
 
+        //swapchain_->GetBuffer()
+
     }
 
     void D3D12Swapchain::Present()
     {
-        swapchain_->Present(1, 0);
+        ThrowIfFailed(swapchain_->Present(1, 0));
     }
 
 }

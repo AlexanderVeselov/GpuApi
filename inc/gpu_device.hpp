@@ -12,15 +12,14 @@ namespace gpu
     class Device
     {
     public:
-        /*
         // Resources
-        virtual BufferPtr CreateBuffer() = 0;
-        virtual ImagePtr CreateImage() = 0;
+        //virtual BufferPtr CreateBuffer() = 0;
+        virtual ImagePtr CreateImage(std::uint32_t width, std::uint32_t height) = 0;
 
         // Synchronization primitives
-        virtual SemaphorePtr CreateSemaphore() = 0;
-        virtual FencePtr CreateFence() = 0;
-        */
+        //virtual SemaphorePtr CreateSemaphore() = 0;
+        //virtual FencePtr CreateFence() = 0;
+
         // Queues
         virtual Queue& GetQueue(QueueType queue_type) = 0;
 

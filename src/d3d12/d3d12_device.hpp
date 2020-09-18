@@ -15,16 +15,14 @@ namespace gpu
     public:
         D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter);
 
-        /*
         // Resources
-        BufferPtr CreateBuffer() override;
-        ImagePtr CreateImage() override;
+        //BufferPtr CreateBuffer() override;
+        ImagePtr CreateImage(std::uint32_t width, std::uint32_t height) override;
 
         // Synchronization primitives
-        SemaphorePtr CreateSemaphore() override;
-        FencePtr CreateFence() override;
+        //SemaphorePtr CreateSemaphore() override;
+        //FencePtr CreateFence() override;
 
-        */
         Queue& GetQueue(QueueType queue_type) override;
 
         // Pipelines

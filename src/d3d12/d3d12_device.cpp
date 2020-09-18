@@ -1,5 +1,6 @@
 #include "d3d12_device.hpp"
 #include "d3d12_exception.hpp"
+#include "d3d12_image.hpp"
 #include "d3d12_pipeline.hpp"
 #include "d3d12_swapchain.hpp"
 
@@ -30,6 +31,11 @@ namespace gpu
         }
     }
 
+    ImagePtr D3D12Device::CreateImage(std::uint32_t width, std::uint32_t height)
+    {
+        return std::make_shared<D3D12Image>(*this, width, height);
+    }
+
     GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline(char const* vs_filename, char const* ps_filename)
     {
         return std::make_unique<D3D12GraphicsPipeline>(*this, vs_filename, ps_filename);
@@ -44,6 +50,5 @@ namespace gpu
     {
         return std::make_unique<D3D12Swapchain>(*this, hwnd, width, height);
     }
-
 
 }

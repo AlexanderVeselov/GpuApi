@@ -46,6 +46,7 @@ set(D3D12_FILES
     src/d3d12/d3d12_device.cpp
     src/d3d12/d3d12_device.hpp
     src/d3d12/d3d12_exception.hpp
+    src/d3d12/d3d12_image.cpp
     src/d3d12/d3d12_image.hpp
     src/d3d12/d3d12_pipeline.cpp
     src/d3d12/d3d12_pipeline.hpp
