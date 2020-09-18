@@ -16,6 +16,8 @@ namespace gpu
         D3D12Api();
         DevicePtr CreateDevice() override;
 
+        IDXGIFactory4* GetDXGIFactory() { return dxgi_factory_.Get(); }
+
     private:
         ComPtr<IDXGIFactory4> dxgi_factory_;
         std::vector<IDXGIAdapter1*> dxgi_adapters_;

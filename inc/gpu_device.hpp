@@ -30,7 +30,7 @@ namespace gpu
 
         // Swapchain
 #ifdef WIN32
-        virtual SwapchainPtr CreateSwapchain(HWND hwnd);
+        virtual SwapchainPtr CreateSwapchain(HWND hwnd, std::uint32_t width, std::uint32_t height) = 0;
 #endif
 
     };
