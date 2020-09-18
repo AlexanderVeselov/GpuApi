@@ -5,6 +5,7 @@
 namespace gpu
 {
     D3D12Image::D3D12Image(D3D12Device& device, std::uint32_t width, std::uint32_t height)
+        : Image(width, height)
     {
         auto d3d12_device = device.GetD3D12Device();
 
@@ -31,6 +32,14 @@ namespace gpu
 
         ThrowIfFailed(d3d12_device->CreateCommittedResource(&heap_properties, D3D12_HEAP_FLAG_NONE,
             &resource_desc, D3D12_RESOURCE_STATE_COMMON, &clear_value, IID_PPV_ARGS(&resource_)));
+
+    }
+
+    D3D12Image::D3D12Image(D3D12Device& device, ID3D12Resource* resource,
+        std::uint32_t width, std::uint32_t height)
+        : Image(width, height)
+        , resource_(resource)
+    {
 
     }
 
