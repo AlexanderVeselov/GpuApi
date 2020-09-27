@@ -22,6 +22,8 @@ namespace gpu
 
         void ClearImage(ImagePtr image, float r, float g, float b, float a) override;
 
+        void End() override;
+
     private:
         //D3D12Device& device_;
         //D3D12Queue& queue_;

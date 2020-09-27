@@ -43,6 +43,8 @@ set(D3D12_FILES
     src/d3d12/d3d12_command_buffer.cpp
     src/d3d12/d3d12_command_buffer.hpp
     src/d3d12/d3d12_common.hpp
+    src/d3d12/d3d12_descriptor_manager.cpp
+    src/d3d12/d3d12_descriptor_manager.hpp
     src/d3d12/d3d12_device.cpp
     src/d3d12/d3d12_device.hpp
     src/d3d12/d3d12_exception.hpp

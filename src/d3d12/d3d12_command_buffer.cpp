@@ -42,4 +42,9 @@ namespace gpu
         cmd_list_->ClearRenderTargetView(d3d12_image->GetRTVHandle(), color, 1u, &rect);
     }
 
+    void D3D12CommandBuffer::End()
+    {
+        ThrowIfFailed(cmd_list_->Close());
+    }
+
 } // namespace gpu

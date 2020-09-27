@@ -18,6 +18,8 @@ namespace gpu
         //virtual void BindComputePipeline(ComputePipelinePtr const& pipeline) = 0;
 
         virtual void ClearImage(ImagePtr image, float r, float g, float b, float a) = 0;
+
+        virtual void End() = 0;
     };
 
 } // namespace gpu

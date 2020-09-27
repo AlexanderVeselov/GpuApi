@@ -33,7 +33,8 @@ namespace gpu
         ThrowIfFailed(d3d12_device->CreateCommittedResource(&heap_properties, D3D12_HEAP_FLAG_NONE,
             &resource_desc, D3D12_RESOURCE_STATE_COMMON, &clear_value, IID_PPV_ARGS(&resource_)));
 
-        // Default RTV
+        // Create default RTV
+        rtv_handle_ = device.GetRTVDescManager().AllocateDescriptor();
         device.GetD3D12Device()->CreateRenderTargetView(resource_.Get(), nullptr, rtv_handle_);
 
     }
@@ -43,7 +44,8 @@ namespace gpu
         : Image(width, height)
         , resource_(resource)
     {
-        // Default RTV
+        // Create default RTV
+        rtv_handle_ = device.GetRTVDescManager().AllocateDescriptor();
         device.GetD3D12Device()->CreateRenderTargetView(resource_.Get(), nullptr, rtv_handle_);
     }
 

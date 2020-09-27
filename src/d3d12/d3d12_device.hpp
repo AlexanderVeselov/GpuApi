@@ -5,6 +5,7 @@
 
 #include "d3d12_common.hpp"
 #include "d3d12_queue.hpp"
+#include "d3d12_descriptor_manager.hpp"
 
 namespace gpu
 {
@@ -35,11 +36,17 @@ namespace gpu
 
         D3D12Api& GetD3D12Api() { return api_; }
 
+        D3D12DescriptorManager& GetRTVDescManager() const { return *rtv_desc_manager_; }
+        D3D12DescriptorManager& GetCBVSRVUAVDescManager() const { return *cbv_srv_uav_desc_manager_; }
+
     private:
         D3D12Api& api_;
         ComPtr<ID3D12Device> d3d12_device_;
         std::unique_ptr<Queue> graphics_queue_;
         std::unique_ptr<Queue> compute_queue_;
+        std::unique_ptr<D3D12DescriptorManager> rtv_desc_manager_;
+        std::unique_ptr<D3D12DescriptorManager> cbv_srv_uav_desc_manager_;
+
     };
 
 } // namespace gpu
