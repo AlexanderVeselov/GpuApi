@@ -39,7 +39,21 @@ namespace gpu
         D3D12_RECT rect = { 0, 0, image->GetWidth(), image->GetHeight() };
         float color[4] = { r, g, b, a };
 
+        //D3D12_RESOURCE_BARRIER barrier = {};
+        //barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        //barrier.Transition.pResource = d3d12_image->GetResource();
+        //barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+        //barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        //
+        //cmd_list_->ResourceBarrier(1u, &barrier);
         cmd_list_->ClearRenderTargetView(d3d12_image->GetRTVHandle(), color, 1u, &rect);
+
+        //barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        //barrier.Transition.pResource = d3d12_image->GetResource();
+        //barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        //barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+        //
+        //cmd_list_->ResourceBarrier(1u, &barrier);
     }
 
     void D3D12CommandBuffer::End()

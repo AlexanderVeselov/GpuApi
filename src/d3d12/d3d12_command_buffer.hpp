@@ -24,6 +24,8 @@ namespace gpu
 
         void End() override;
 
+        ID3D12GraphicsCommandList* GetCommandList() const { return cmd_list_.Get(); }
+
     private:
         //D3D12Device& device_;
         //D3D12Queue& queue_;

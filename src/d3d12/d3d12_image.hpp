@@ -17,6 +17,7 @@ namespace gpu
             std::uint32_t width, std::uint32_t height);
 
         D3D12_CPU_DESCRIPTOR_HANDLE GetRTVHandle() const { return rtv_handle_; }
+        ID3D12Resource* GetResource() const { return resource_.Get(); }
 
     private:
         ComPtr<ID3D12Resource> resource_;

@@ -29,7 +29,8 @@ namespace gpu
     {
         D3D12CommandBuffer* d3d12_cmd_buffer = static_cast<D3D12CommandBuffer*>(cmd_buffer.get());
 
-        //queue_->ExecuteCommandLists(1u, );
+        ID3D12CommandList* cmd_lists[] = { d3d12_cmd_buffer->GetCommandList() };
+        queue_->ExecuteCommandLists(1u, cmd_lists);
     }
 
     void D3D12Queue::WaitIdle()
