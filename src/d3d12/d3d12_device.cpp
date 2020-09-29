@@ -37,9 +37,9 @@ namespace gpu
         }
     }
 
-    ImagePtr D3D12Device::CreateImage(std::uint32_t width, std::uint32_t height)
+    ImagePtr D3D12Device::CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format)
     {
-        return std::make_shared<D3D12Image>(*this, width, height);
+        return std::make_shared<D3D12Image>(*this, width, height, format);
     }
 
     GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline(char const* vs_filename, char const* ps_filename)

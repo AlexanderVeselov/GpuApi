@@ -1,6 +1,7 @@
 #include "d3d12_image.hpp"
 #include "d3d12_device.hpp"
 #include "d3d12_exception.hpp"
+#include <cassert>
 
 namespace gpu
 {
@@ -8,7 +9,34 @@ namespace gpu
     {
         DXGI_FORMAT ImageToDXGIFormat(ImageFormat format)
         {
-
+            switch (format)
+            {
+            case ImageFormat::kUnknown:
+                return DXGI_FORMAT_UNKNOWN;
+            case ImageFormat::kRGBA32_Float:
+                return DXGI_FORMAT_R32G32B32A32_FLOAT;
+            case ImageFormat::kRGBA16_Float:
+                return DXGI_FORMAT_R16G16B16A16_FLOAT;
+            case ImageFormat::kRGBA8_SInt:
+                return DXGI_FORMAT_R8G8B8A8_SINT;
+            case ImageFormat::kRGBA8_UInt:
+                return DXGI_FORMAT_R8G8B8A8_UINT;
+            case ImageFormat::kRGBA8_UNorm:
+                return DXGI_FORMAT_R8G8B8A8_UNORM;
+            case ImageFormat::kRGBA8_SRGB:
+                return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+            case ImageFormat::kRG32_Float:
+                return DXGI_FORMAT_R32G32_FLOAT;
+            case ImageFormat::kRG16_Float:
+                return DXGI_FORMAT_R16G16_FLOAT;
+            case ImageFormat::kR32_Float:
+                return DXGI_FORMAT_R32_FLOAT;
+            case ImageFormat::kR16_Float:
+                return DXGI_FORMAT_R16_FLOAT;
+            default:
+                assert(!"ImageToDXGIFormat: Unknown image format");
+                return DXGI_FORMAT_UNKNOWN;
+            }
         }
     }
 
@@ -30,14 +58,14 @@ namespace gpu
         resource_desc.Height = height;
         resource_desc.DepthOrArraySize = 1;
         resource_desc.MipLevels = 1;
-        resource_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        resource_desc.Format = ImageToDXGIFormat(format);
         resource_desc.SampleDesc = { 1, 0 };
         resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
         ///@TODO: make it configurable!!!
         resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
         D3D12_CLEAR_VALUE clear_value = {};
-        clear_value.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        clear_value.Format = resource_desc.Format;
 
         ThrowIfFailed(d3d12_device->CreateCommittedResource(&heap_properties, D3D12_HEAP_FLAG_NONE,
             &resource_desc, D3D12_RESOURCE_STATE_COMMON, &clear_value, IID_PPV_ARGS(&resource_)));

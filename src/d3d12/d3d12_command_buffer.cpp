@@ -80,8 +80,8 @@ namespace gpu
         D3D12_RESOURCE_BARRIER barrier = {};
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
         barrier.Transition.pResource = d3d12_image->GetResource();
-        barrier.Transition.StateBefore = LayoutToD3D12ResourceState(layout_before);
-        barrier.Transition.StateAfter = LayoutToD3D12ResourceState(layout_after);
+        barrier.Transition.StateBefore = LayoutToD3D12ResourceState(layout_before, false);
+        barrier.Transition.StateAfter = LayoutToD3D12ResourceState(layout_after, false);
 
         cmd_list_->ResourceBarrier(1u, &barrier);
     }

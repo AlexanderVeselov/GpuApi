@@ -18,7 +18,7 @@ namespace gpu
 
         // Resources
         //BufferPtr CreateBuffer() override;
-        ImagePtr CreateImage(std::uint32_t width, std::uint32_t height) override;
+        ImagePtr CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format) override;
 
         // Synchronization primitives
         //SemaphorePtr CreateSemaphore() override;

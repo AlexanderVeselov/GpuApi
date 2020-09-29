@@ -39,7 +39,8 @@ namespace gpu
         {
             ID3D12Resource* image_resource;
             swapchain_->GetBuffer(i, IID_PPV_ARGS(&image_resource));
-            swapchain_images_[i] = std::make_shared<D3D12Image>(device, image_resource, width, height);
+            swapchain_images_[i] = std::make_shared<D3D12Image>(device, image_resource,
+                width, height, ImageFormat::kRGBA8_UNorm);
         }
 
     }
