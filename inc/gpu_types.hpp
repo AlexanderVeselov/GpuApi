@@ -44,6 +44,32 @@ namespace gpu
         kTransfer = 2
     };
 
+    enum class ImageLayout
+    {
+        kUndefined,
+        kPresent,
+        kCopySrc,
+        kCopyDst,
+        kRenderTarget,
+        kShaderRead,
+        kShaderReadWrite
+    };
+
+    enum class ImageFormat
+    {
+        kUnknown,
+        kRGBA32_Float,
+        kRGBA16_Float,
+        kRGBA8_SInt,
+        kRGBA8_UInt,
+        kRGBA8_UNorm,
+        kRGBA8_SRGB,
+        kRG32_Float,
+        kRG16_Float,
+        kR32_Float,
+        kR16_Float
+    };
+
 } // namespace gpu
 
 #endif // GPU_TYPES_HPP_

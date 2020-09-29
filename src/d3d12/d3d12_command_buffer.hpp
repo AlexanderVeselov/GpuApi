@@ -22,6 +22,10 @@ namespace gpu
 
         void ClearImage(ImagePtr image, float r, float g, float b, float a) override;
 
+        void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) override;
+
+        void StorageBarrier(ImagePtr image) override;
+
         void End() override;
 
         ID3D12GraphicsCommandList* GetCommandList() const { return cmd_list_.Get(); }

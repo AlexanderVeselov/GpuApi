@@ -3,9 +3,40 @@
 #include "d3d12_common.hpp"
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
+#include <cassert>
 
 namespace gpu
 {
+    namespace
+    {
+        D3D12_RESOURCE_STATES LayoutToD3D12ResourceState(ImageLayout layout, bool is_depth)
+        {
+            // Depth is not implemented
+            assert(!is_depth);
+
+            switch (layout)
+            {
+            case ImageLayout::kUndefined:
+                return D3D12_RESOURCE_STATE_COMMON;
+            case ImageLayout::kPresent:
+                return D3D12_RESOURCE_STATE_PRESENT;
+            case ImageLayout::kCopySrc:
+                return D3D12_RESOURCE_STATE_COPY_SOURCE;
+            case ImageLayout::kCopyDst:
+                return D3D12_RESOURCE_STATE_COPY_DEST;
+            case ImageLayout::kRenderTarget:
+                return D3D12_RESOURCE_STATE_RENDER_TARGET;
+            case ImageLayout::kShaderRead:
+                return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+            case ImageLayout::kShaderReadWrite:
+                return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            default:
+                assert(!"Unknown resource state");
+                return D3D12_RESOURCE_STATE_COMMON;
+            }
+        }
+    }
+
     D3D12CommandBuffer::D3D12CommandBuffer(D3D12Device& device,
         D3D12Queue& queue, D3D12_COMMAND_LIST_TYPE command_list_type)
         //: device_(device)
@@ -39,21 +70,31 @@ namespace gpu
         D3D12_RECT rect = { 0, 0, image->GetWidth(), image->GetHeight() };
         float color[4] = { r, g, b, a };
 
-        //D3D12_RESOURCE_BARRIER barrier = {};
-        //barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        //barrier.Transition.pResource = d3d12_image->GetResource();
-        //barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-        //barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-        //
-        //cmd_list_->ResourceBarrier(1u, &barrier);
         cmd_list_->ClearRenderTargetView(d3d12_image->GetRTVHandle(), color, 1u, &rect);
+    }
 
-        //barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        //barrier.Transition.pResource = d3d12_image->GetResource();
-        //barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-        //barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-        //
-        //cmd_list_->ResourceBarrier(1u, &barrier);
+    void D3D12CommandBuffer::TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after)
+    {
+        D3D12Image* d3d12_image = static_cast<D3D12Image*>(image.get());
+
+        D3D12_RESOURCE_BARRIER barrier = {};
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Transition.pResource = d3d12_image->GetResource();
+        barrier.Transition.StateBefore = LayoutToD3D12ResourceState(layout_before);
+        barrier.Transition.StateAfter = LayoutToD3D12ResourceState(layout_after);
+
+        cmd_list_->ResourceBarrier(1u, &barrier);
+    }
+
+    void D3D12CommandBuffer::StorageBarrier(ImagePtr image)
+    {
+        D3D12Image* d3d12_image = static_cast<D3D12Image*>(image.get());
+
+        D3D12_RESOURCE_BARRIER barrier = {};
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+        barrier.UAV.pResource = d3d12_image->GetResource();
+
+        cmd_list_->ResourceBarrier(1u, &barrier);
     }
 
     void D3D12CommandBuffer::End()

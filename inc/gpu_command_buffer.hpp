@@ -19,6 +19,10 @@ namespace gpu
 
         virtual void ClearImage(ImagePtr image, float r, float g, float b, float a) = 0;
 
+        virtual void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) = 0;
+
+        virtual void StorageBarrier(ImagePtr image) = 0;
+
         virtual void End() = 0;
     };
 

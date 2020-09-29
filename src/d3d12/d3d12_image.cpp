@@ -4,8 +4,17 @@
 
 namespace gpu
 {
-    D3D12Image::D3D12Image(D3D12Device& device, std::uint32_t width, std::uint32_t height)
-        : Image(width, height)
+    namespace
+    {
+        DXGI_FORMAT ImageToDXGIFormat(ImageFormat format)
+        {
+
+        }
+    }
+
+    D3D12Image::D3D12Image(D3D12Device& device, std::uint32_t width, std::uint32_t height,
+        ImageFormat format)
+        : Image(width, height, format)
     {
         auto d3d12_device = device.GetD3D12Device();
 
@@ -40,8 +49,8 @@ namespace gpu
     }
 
     D3D12Image::D3D12Image(D3D12Device& device, ID3D12Resource* resource,
-        std::uint32_t width, std::uint32_t height)
-        : Image(width, height)
+        std::uint32_t width, std::uint32_t height, ImageFormat format)
+        : Image(width, height, format)
         , resource_(resource)
     {
         // Create default RTV
