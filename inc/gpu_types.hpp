@@ -2,6 +2,8 @@
 #define GPU_TYPES_HPP_
 
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace gpu
 {
@@ -68,6 +70,14 @@ namespace gpu
         kRG16_Float,
         kR32_Float,
         kR16_Float
+    };
+
+    struct GraphicsPipelineDesc
+    {
+        std::string vs_filename;
+        std::string ps_filename;
+        std::vector<ImagePtr> color_attachments;
+        ImagePtr depth_attachment;
     };
 
 } // namespace gpu

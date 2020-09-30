@@ -1,9 +1,10 @@
 #include "d3d12_pipeline.hpp"
 #include "d3d12_device.hpp"
 #include "d3d12_exception.hpp"
+#include "d3d12_image.hpp"
+
 #include <d3dcompiler.h>
 #include <iostream>
-
 #include <codecvt>
 
 namespace gpu
@@ -17,9 +18,9 @@ namespace gpu
         }
     }
 
-    D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device,
-        char const* vs_filename, char const* ps_filename)
-        : device_(device)
+    D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc)
+        : GraphicsPipeline(pipeline_desc)
+        , device_(device)
     {
         auto d3d12_device = device_.GetD3D12Device();
 
@@ -46,7 +47,8 @@ namespace gpu
         ComPtr<ID3DBlob> vs_blob;
         ComPtr<ID3DBlob> ps_blob;
         ComPtr<ID3DBlob> error_blob;
-        HRESULT hr = (D3DCompileFromFile(StringToWstring(vs_filename).c_str(), nullptr, nullptr, "main",
+        HRESULT hr = (D3DCompileFromFile(StringToWstring(pipeline_desc_.vs_filename).c_str(),
+            nullptr, nullptr, "main",
             "vs_5_0", compile_flags, 0, &vs_blob, &error_blob));
 
         if (FAILED(hr))
@@ -55,7 +57,8 @@ namespace gpu
             throw D3D12Exception(hr, __FILE__, __LINE__);
         }
 
-        hr = (D3DCompileFromFile(StringToWstring(ps_filename).c_str(), nullptr, nullptr, "main",
+        hr = (D3DCompileFromFile(StringToWstring(pipeline_desc_.ps_filename).c_str(),
+            nullptr, nullptr, "main",
             "ps_5_0", compile_flags, 0, &ps_blob, &error_blob));
 
         if (FAILED(hr))
@@ -80,7 +83,7 @@ namespace gpu
         rasterizer_state.CullMode = D3D12_CULL_MODE_NONE;
 
         D3D12_DEPTH_STENCIL_DESC depth_stencil_state = {};
-        depth_stencil_state.DepthEnable = true;
+        depth_stencil_state.DepthEnable = (pipeline_desc_.depth_attachment != nullptr);
         depth_stencil_state.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
         depth_stencil_state.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 
@@ -107,9 +110,24 @@ namespace gpu
         pipeline_state_desc.DepthStencilState = depth_stencil_state;
         pipeline_state_desc.InputLayout = input_layout;
         pipeline_state_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-        pipeline_state_desc.NumRenderTargets = 1u; ///@TODO: MRT
-        pipeline_state_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; ///@TODO
-        pipeline_state_desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+
+        // Color attachments
+        pipeline_state_desc.NumRenderTargets = pipeline_desc_.color_attachments.size();
+
+        for (std::uint32_t rt_index = 0; rt_index < pipeline_desc_.color_attachments.size(); ++rt_index)
+        {
+            auto& rt = pipeline_desc_.color_attachments[rt_index];
+            D3D12Image* d3d12_rt = static_cast<D3D12Image*>(rt.get());
+            pipeline_state_desc.RTVFormats[rt_index] = d3d12_rt->GetDXGIFormat();
+        }
+
+        // Depth attachment
+        if (pipeline_desc_.depth_attachment != nullptr)
+        {
+            D3D12Image* d3d12_depth_image = static_cast<D3D12Image*>(pipeline_desc_.depth_attachment.get());
+            pipeline_state_desc.DSVFormat = d3d12_depth_image->GetDXGIFormat();
+        }
+
         pipeline_state_desc.SampleDesc.Count = 1u;
         pipeline_state_desc.SampleDesc.Quality = 0u;
 

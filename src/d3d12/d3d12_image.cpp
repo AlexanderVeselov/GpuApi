@@ -86,4 +86,9 @@ namespace gpu
         device.GetD3D12Device()->CreateRenderTargetView(resource_.Get(), nullptr, rtv_handle_);
     }
 
+    DXGI_FORMAT D3D12Image::GetDXGIFormat() const
+    {
+        return ImageToDXGIFormat(format_);
+    }
+
 } // namespace gpu

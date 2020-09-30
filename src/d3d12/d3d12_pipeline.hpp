@@ -11,7 +11,8 @@ namespace gpu
     class D3D12GraphicsPipeline : public GraphicsPipeline
     {
     public:
-        D3D12GraphicsPipeline(D3D12Device& device, char const* vs_filename, char const* ps_filename);
+        D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc);
+        ID3D12PipelineState* GetPipelineState() const { return pipeline_state_.Get(); }
 
     private:
         D3D12Device& device_;

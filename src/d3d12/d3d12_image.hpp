@@ -18,6 +18,7 @@ namespace gpu
 
         D3D12_CPU_DESCRIPTOR_HANDLE GetRTVHandle() const { return rtv_handle_; }
         ID3D12Resource* GetResource() const { return resource_.Get(); }
+        DXGI_FORMAT GetDXGIFormat() const;
 
     private:
         ComPtr<ID3D12Resource> resource_;

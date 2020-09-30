@@ -27,7 +27,7 @@ namespace gpu
         Queue& GetQueue(QueueType queue_type) override;
 
         // Pipelines
-        GraphicsPipelinePtr CreateGraphicsPipeline(char const* vs_filename, char const* ps_filename) override;
+        GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) override;
         //ComputePipelinePtr CreateComputePipeline() override;
 
         SwapchainPtr CreateSwapchain(HWND hwnd, std::uint32_t width, std::uint32_t height) override;

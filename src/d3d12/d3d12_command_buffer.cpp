@@ -3,6 +3,8 @@
 #include "d3d12_common.hpp"
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
+#include "d3d12_pipeline.hpp"
+
 #include <cassert>
 
 namespace gpu
@@ -61,6 +63,30 @@ namespace gpu
 
     void D3D12CommandBuffer::BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline)
     {
+        D3D12GraphicsPipeline* d3d12_pipeline = static_cast<D3D12GraphicsPipeline*>(pipeline.get());
+
+        cmd_list_->SetPipelineState(d3d12_pipeline->GetPipelineState());
+
+        auto& pipeline_desc = d3d12_pipeline->GetDesc();
+
+        std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtvs;
+        rtvs.resize(pipeline_desc.color_attachments.size());
+        for (auto i = 0; i < rtvs.size(); ++i)
+        {
+            D3D12Image* d3d12_image = static_cast<D3D12Image*>(pipeline_desc.color_attachments[i].get());
+            rtvs[i] = d3d12_image->GetRTVHandle();
+        }
+
+        ///@TODO: add DSV!!!
+        cmd_list_->OMSetRenderTargets(rtvs.size(), rtvs.data(), false, nullptr);
+        cmd_list_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        //D3D12_VIEWPORT viewport = {};
+        //viewport.
+        //cmd_list_->RSSetViewports(1u, &viewport);
+        //
+        //D3D12_RECT scissor = {};
+        //cmd_list_->RSSetScissorRects(1u, &scissor);
     }
 
     void D3D12CommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, float a)

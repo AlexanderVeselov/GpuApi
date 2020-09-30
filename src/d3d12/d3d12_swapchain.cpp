@@ -34,7 +34,6 @@ namespace gpu
         ThrowIfFailed(dxgi_factory->CreateSwapChainForHwnd(d3d12_queue.GetQueue(), hwnd,
             &swapchain_desc, nullptr, nullptr, &swapchain_));
 
-        //swapchain_->GetBuffer()
         for (auto i = 0; i < swapchain_images_.size(); ++i)
         {
             ID3D12Resource* image_resource;

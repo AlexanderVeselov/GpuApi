@@ -15,6 +15,11 @@ namespace gpu
     class GraphicsPipeline : public Pipeline
     {
     public:
+        GraphicsPipeline(GraphicsPipelineDesc const& desc) : pipeline_desc_(desc) {}
+        GraphicsPipelineDesc const& GetDesc() const { return pipeline_desc_; }
+
+    protected:
+        GraphicsPipelineDesc pipeline_desc_;
 
     };
 
