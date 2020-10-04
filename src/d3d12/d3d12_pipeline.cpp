@@ -27,7 +27,7 @@ namespace gpu
         D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
         root_signature_desc.NumParameters = 0;
         root_signature_desc.pParameters = nullptr;
-        root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+        root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;//D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
         ComPtr<ID3D10Blob> root_signature_blob;
         ComPtr<ID3D10Blob> root_signature_error_blob;
@@ -49,7 +49,7 @@ namespace gpu
         ComPtr<ID3DBlob> error_blob;
         HRESULT hr = (D3DCompileFromFile(StringToWstring(pipeline_desc_.vs_filename).c_str(),
             nullptr, nullptr, "main",
-            "vs_5_0", compile_flags, 0, &vs_blob, &error_blob));
+            "vs_5_1", compile_flags, 0, &vs_blob, &error_blob));
 
         if (FAILED(hr))
         {
@@ -59,7 +59,7 @@ namespace gpu
 
         hr = (D3DCompileFromFile(StringToWstring(pipeline_desc_.ps_filename).c_str(),
             nullptr, nullptr, "main",
-            "ps_5_0", compile_flags, 0, &ps_blob, &error_blob));
+            "ps_5_1", compile_flags, 0, &ps_blob, &error_blob));
 
         if (FAILED(hr))
         {
@@ -86,6 +86,7 @@ namespace gpu
         depth_stencil_state.DepthEnable = (pipeline_desc_.depth_attachment != nullptr);
         depth_stencil_state.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
         depth_stencil_state.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+        depth_stencil_state.StencilEnable = false;
 
         ///@TODO: make configurable input layout
         D3D12_INPUT_ELEMENT_DESC input_element_desc = {};
@@ -106,6 +107,7 @@ namespace gpu
         pipeline_state_desc.VS = vs_bytecode;
         pipeline_state_desc.PS = ps_bytecode;
         pipeline_state_desc.BlendState = blend_state;
+        pipeline_state_desc.SampleMask = UINT_MAX;
         pipeline_state_desc.RasterizerState = rasterizer_state;
         pipeline_state_desc.DepthStencilState = depth_stencil_state;
         pipeline_state_desc.InputLayout = input_layout;

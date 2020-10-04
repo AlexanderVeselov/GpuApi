@@ -1,5 +1,7 @@
 #include "d3d12_descriptor_manager.hpp"
 #include "d3d12_device.hpp"
+#include "d3d12_exception.hpp"
+
 #include <cassert>
 
 namespace gpu
@@ -17,7 +19,7 @@ namespace gpu
         heap_desc.Type = desc_type;
         heap_desc.NumDescriptors = kMaxDescriptors;
         heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-        d3d12_device->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&descriptor_heap_));
+        ThrowIfFailed(d3d12_device->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&descriptor_heap_)));
 
         // Get descriptor handle size
         desc_size_ = d3d12_device->GetDescriptorHandleIncrementSize(desc_type);

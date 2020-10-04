@@ -15,6 +15,7 @@ namespace gpu
 
         D3D12_CPU_DESCRIPTOR_HANDLE AllocateDescriptor();
         void FreeDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE handle);
+        ID3D12DescriptorHeap* GetDescriptorHeap() const { return descriptor_heap_.Get(); }
 
     private:
         ComPtr<ID3D12DescriptorHeap> descriptor_heap_;
