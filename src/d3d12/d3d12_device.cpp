@@ -3,6 +3,7 @@
 #include "d3d12_image.hpp"
 #include "d3d12_pipeline.hpp"
 #include "d3d12_swapchain.hpp"
+#include "d3d12_sync.hpp"
 
 #include <cassert>
 
@@ -56,5 +57,11 @@ namespace gpu
     {
         return std::make_unique<D3D12Swapchain>(*this, hwnd, width, height);
     }
+
+    FencePtr D3D12Device::CreateFence()
+    {
+        return std::make_shared<D3D12Fence>(*this);
+    }
+
 
 }

@@ -18,7 +18,7 @@ namespace gpu
 
         // Synchronization primitives
         //virtual SemaphorePtr CreateSemaphore() = 0;
-        //virtual FencePtr CreateFence() = 0;
+        virtual FencePtr CreateFence() = 0;
 
         // Queues
         virtual Queue& GetQueue(QueueType queue_type) = 0;

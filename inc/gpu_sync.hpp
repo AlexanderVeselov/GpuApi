@@ -12,6 +12,7 @@ namespace gpu
     class Fence
     {
     public:
+        virtual void Wait() = 0;
 
     };
 

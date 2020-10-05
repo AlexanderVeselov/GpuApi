@@ -14,7 +14,7 @@ namespace gpu
         D3D12Queue(D3D12Device& device, D3D12_COMMAND_LIST_TYPE command_list_type);
 
         CommandBufferPtr CreateCommandBuffer() override;
-        void Submit(CommandBufferPtr const& cmd_buffer) override;
+        void Submit(CommandBufferPtr const& cmd_buffer, FencePtr fence) override;
         void WaitIdle() override;
 
         ID3D12CommandQueue* GetQueue() const { return queue_.Get(); }

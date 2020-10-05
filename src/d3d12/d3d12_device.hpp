@@ -22,7 +22,7 @@ namespace gpu
 
         // Synchronization primitives
         //SemaphorePtr CreateSemaphore() override;
-        //FencePtr CreateFence() override;
+        FencePtr CreateFence() override;
 
         Queue& GetQueue(QueueType queue_type) override;
 
