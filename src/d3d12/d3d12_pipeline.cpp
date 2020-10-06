@@ -77,6 +77,16 @@ namespace gpu
 
         ///@TODO: add blend support
         D3D12_BLEND_DESC blend_state = {};
+        blend_state.RenderTarget[0].BlendEnable = FALSE;
+        blend_state.RenderTarget[0].LogicOpEnable = FALSE;
+        blend_state.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+        blend_state.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+        blend_state.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+        blend_state.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+        blend_state.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+        blend_state.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+        blend_state.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
+        blend_state.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
         D3D12_RASTERIZER_DESC rasterizer_state = {};
         rasterizer_state.FillMode = D3D12_FILL_MODE_SOLID;
