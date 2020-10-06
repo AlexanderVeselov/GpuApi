@@ -1,5 +1,6 @@
 #include "d3d12_device.hpp"
 #include "d3d12_exception.hpp"
+#include "d3d12_buffer.hpp"
 #include "d3d12_image.hpp"
 #include "d3d12_pipeline.hpp"
 #include "d3d12_swapchain.hpp"
@@ -36,6 +37,11 @@ namespace gpu
             assert(!"D3D12Device::GetQueue: unimplemented");
             return *graphics_queue_;
         }
+    }
+
+    BufferPtr D3D12Device::CreateBuffer(std::size_t size)
+    {
+        return std::make_shared<D3D12Buffer>(*this, size);
     }
 
     ImagePtr D3D12Device::CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format)

@@ -2,6 +2,7 @@
 #include "d3d12_device.hpp"
 #include "d3d12_common.hpp"
 #include "d3d12_exception.hpp"
+#include "d3d12_buffer.hpp"
 #include "d3d12_image.hpp"
 #include "d3d12_pipeline.hpp"
 
@@ -106,6 +107,18 @@ namespace gpu
         cmd_list_->SetPipelineState(d3d12_pipeline->GetPipelineState());
         cmd_list_->SetGraphicsRootSignature(d3d12_pipeline->GetRootSignature());
 
+    }
+
+    void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer)
+    {
+        D3D12Buffer* d3d12_buffer = static_cast<D3D12Buffer*>(buffer.get());
+
+        D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view = {};
+        vertex_buffer_view.BufferLocation = d3d12_buffer->GetResource()->GetGPUVirtualAddress();
+        vertex_buffer_view.SizeInBytes = buffer->GetSize();
+        vertex_buffer_view.StrideInBytes = 4 * 3 * 2; // sizeof(Vertex), TODO
+
+        cmd_list_->IASetVertexBuffers(0, 1, &vertex_buffer_view);
     }
 
     void D3D12CommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, float a)

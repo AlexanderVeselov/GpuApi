@@ -16,20 +16,16 @@ namespace gpu
         {
             throw D3D12Exception(HRESULT_FROM_WIN32(GetLastError()), __FILE__, __LINE__);
         }
-
-        ThrowIfFailed(fence_->SetEventOnCompletion(0ull, event_));
-    }
-
-    void D3D12Fence::SetNewEventValue()
-    {
-        // Specify an event that should be fired when the fence reaches a certain value
-        ThrowIfFailed(fence_->SetEventOnCompletion(++current_value_, event_));
     }
 
     void D3D12Fence::Wait()
     {
+        // Specify an event that should be fired when the fence reaches a certain value
+        ThrowIfFailed(fence_->SetEventOnCompletion(current_value_, event_));
         // Wait for the event
         WaitForSingleObject(event_, INFINITE);
+        // Update current value
+        ++current_value_;
     }
 
 } // namespace gpu

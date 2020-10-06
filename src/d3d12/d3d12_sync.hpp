@@ -22,8 +22,6 @@ namespace gpu
         D3D12Fence(D3D12Device& device);
         void Wait() override;
         ID3D12Fence* GetD3D12Fence() const { return fence_.Get(); }
-
-        void SetNewEventValue();
         std::uint64_t GetCurrentValue() const { return current_value_; }
 
     private:

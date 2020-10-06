@@ -13,7 +13,7 @@ namespace gpu
     {
     public:
         // Resources
-        //virtual BufferPtr CreateBuffer() = 0;
+        virtual BufferPtr CreateBuffer(std::size_t size) = 0;
         virtual ImagePtr CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format) = 0;
 
         // Synchronization primitives

@@ -27,7 +27,7 @@ namespace gpu
         D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
         root_signature_desc.NumParameters = 0;
         root_signature_desc.pParameters = nullptr;
-        root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;//D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+        root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
         ComPtr<ID3D10Blob> root_signature_blob;
         ComPtr<ID3D10Blob> root_signature_error_blob;
@@ -99,18 +99,15 @@ namespace gpu
         depth_stencil_state.StencilEnable = false;
 
         ///@TODO: make configurable input layout
-        D3D12_INPUT_ELEMENT_DESC input_element_desc = {};
-        input_element_desc.SemanticName = "POSITION";
-        input_element_desc.SemanticIndex = 0;
-        input_element_desc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-        input_element_desc.InputSlot = 0;
-        input_element_desc.AlignedByteOffset = 0;
-        input_element_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-        input_element_desc.InstanceDataStepRate = 0;
+        D3D12_INPUT_ELEMENT_DESC input_element_descs[2] =
+        {
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+            { "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        };
 
         D3D12_INPUT_LAYOUT_DESC input_layout = {};
-        input_layout.pInputElementDescs = nullptr;// &input_element_desc;
-        input_layout.NumElements = 0u;//1u;
+        input_layout.pInputElementDescs = input_element_descs;
+        input_layout.NumElements = 2u;
 
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline_state_desc = {};
         pipeline_state_desc.pRootSignature = root_signature_.Get();

@@ -36,10 +36,6 @@ namespace gpu
         if (fence)
         {
             D3D12Fence* d3d12_fence = static_cast<D3D12Fence*>(fence.get());
-
-            // Set new value to fence's event
-            d3d12_fence->SetNewEventValue();
-            // And get this value that will be set by the queue
             queue_->Signal(d3d12_fence->GetD3D12Fence(), d3d12_fence->GetCurrentValue());
         }
     }

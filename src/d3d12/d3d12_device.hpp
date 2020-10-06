@@ -17,7 +17,7 @@ namespace gpu
         D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter);
 
         // Resources
-        //BufferPtr CreateBuffer() override;
+        BufferPtr CreateBuffer(std::size_t size) override;
         ImagePtr CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format) override;
 
         // Synchronization primitives

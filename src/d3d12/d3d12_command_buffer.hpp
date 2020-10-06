@@ -20,6 +20,8 @@ namespace gpu
         void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) override;
         //void BindComputePipeline(ComputePipelinePtr const& pipeline) override;
 
+        void SetVertexBuffer(BufferPtr buffer) override;
+
         void ClearImage(ImagePtr image, float r, float g, float b, float a) override;
 
         void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) override;
@@ -31,10 +33,6 @@ namespace gpu
         ID3D12GraphicsCommandList* GetCommandList() const { return cmd_list_.Get(); }
 
     private:
-        //D3D12Device& device_;
-        //D3D12Queue& queue_;
-        //D3D12_COMMAND_LIST_TYPE command_list_type_;
-
         ComPtr<ID3D12GraphicsCommandList> cmd_list_;
 
     };

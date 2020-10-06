@@ -17,6 +17,8 @@ namespace gpu
         virtual void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) = 0;
         //virtual void BindComputePipeline(ComputePipelinePtr const& pipeline) = 0;
 
+        virtual void SetVertexBuffer(BufferPtr buffer) = 0;
+
         virtual void ClearImage(ImagePtr image, float r, float g, float b, float a) = 0;
 
         virtual void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) = 0;
