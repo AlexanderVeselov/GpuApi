@@ -56,10 +56,23 @@ namespace gpu
         DrawInstanced(vertex_count, 1u, start_vertex_location, 0u);
     }
 
+    void D3D12CommandBuffer::DrawIndexed(std::uint32_t index_count, std::uint32_t start_index_location,
+        std::uint32_t start_vertex_location)
+    {
+        DrawIndexedInstanced(index_count, 1u, start_index_location, start_vertex_location, 0u);
+    }
+
     void D3D12CommandBuffer::DrawInstanced(std::uint32_t vertex_count, std::uint32_t instance_count,
         std::uint32_t start_vertex_location, std::uint32_t start_instance_location)
     {
         cmd_list_->DrawInstanced(vertex_count, instance_count, start_vertex_location, start_instance_location);
+    }
+
+    void D3D12CommandBuffer::DrawIndexedInstanced(std::uint32_t index_count,
+        std::uint32_t instance_count, std::uint32_t start_index_location,
+        std::uint32_t start_vertex_location, std::uint32_t start_instance_location)
+    {
+        cmd_list_->DrawIndexedInstanced(index_count, instance_count, start_index_location, start_vertex_location, start_instance_location);
     }
 
     void D3D12CommandBuffer::BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline)
