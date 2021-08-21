@@ -12,7 +12,7 @@ namespace gpu
     class D3D12Swapchain : public Swapchain
     {
     public:
-        D3D12Swapchain(D3D12Device& device, HWND hwnd, std::uint32_t width, std::uint32_t height);
+        D3D12Swapchain(D3D12Device& device, void* window_native_handle, std::uint32_t width, std::uint32_t height);
         void Present() override;
 
     private:

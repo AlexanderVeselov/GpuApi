@@ -2,10 +2,6 @@
 #define GPU_DEVICE_HPP_
 
 #include "gpu_types.hpp"
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#endif
 
 namespace gpu
 {
@@ -27,11 +23,8 @@ namespace gpu
         virtual GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) = 0;
         //virtual ComputePipelinePtr CreateComputePipeline() = 0;
 
-        // Swapchain
-#ifdef WIN32
-        virtual SwapchainPtr CreateSwapchain(HWND hwnd, std::uint32_t width, std::uint32_t height) = 0;
-#endif
-
+        // Swapchain. Requires HWND in the case of WIN32 platform
+        virtual SwapchainPtr CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height) = 0;
     };
 
 } // namespace gpu

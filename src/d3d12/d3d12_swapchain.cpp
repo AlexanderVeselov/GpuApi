@@ -7,7 +7,7 @@
 
 namespace gpu
 {
-    D3D12Swapchain::D3D12Swapchain(D3D12Device& device, HWND hwnd,
+    D3D12Swapchain::D3D12Swapchain(D3D12Device& device, void* window_native_handle,
         std::uint32_t width, std::uint32_t height)
         : device_(device)
     {
@@ -31,6 +31,7 @@ namespace gpu
         Queue& gfx_queue = device_.GetQueue(QueueType::kGraphics);
         D3D12Queue& d3d12_queue = static_cast<D3D12Queue&>(gfx_queue);
 
+        HWND hwnd = (HWND)window_native_handle;
         ThrowIfFailed(dxgi_factory->CreateSwapChainForHwnd(d3d12_queue.GetQueue(), hwnd,
             &swapchain_desc, nullptr, nullptr, &swapchain_));
 
