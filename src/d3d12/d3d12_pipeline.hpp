@@ -22,10 +22,15 @@ namespace gpu
         ComPtr<ID3D12PipelineState> pipeline_state_;
     };
 
-    class D3D12ComputePipeline : public GraphicsPipeline
+    class D3D12ComputePipeline : public ComputePipeline
     {
     public:
+        D3D12ComputePipeline(D3D12Device& device, char const* cs_filename);
 
+    private:
+        D3D12Device& device_;
+        ComPtr<ID3D12RootSignature> root_signature_;
+        ComPtr<ID3D12PipelineState> pipeline_state_;
     };
 
 } // namespace gpu

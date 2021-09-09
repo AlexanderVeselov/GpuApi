@@ -28,7 +28,7 @@ namespace gpu
 
         // Pipelines
         GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) override;
-        //ComputePipelinePtr CreateComputePipeline() override;
+        ComputePipelinePtr CreateComputePipeline(char const* cs_filename) override;
 
         SwapchainPtr CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height) override;
 
