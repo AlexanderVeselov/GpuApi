@@ -173,7 +173,7 @@ D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_f
     ComPtr<ID3DBlob> error_blob;
     HRESULT hr = (D3DCompileFromFile(StringToWstring(cs_filename).c_str(),
         nullptr, nullptr, "main",
-        "vs_5_1", compile_flags, 0, &cs_blob, &error_blob));
+        "cs_5_1", compile_flags, 0, &cs_blob, &error_blob));
 
     if (FAILED(hr))
     {

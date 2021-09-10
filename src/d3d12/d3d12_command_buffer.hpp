@@ -11,7 +11,8 @@ namespace gpu
     public:
         D3D12CommandBuffer(D3D12Device& device, D3D12Queue& queue, D3D12_COMMAND_LIST_TYPE command_list_type);
 
-        //void Dispatch(std::uint32_t num_groups_x, std::uint32_t num_groups_y, std::uint32_t num_groups_z) override;
+        void Dispatch(ComputePipelinePtr const& pipeline, std::uint32_t num_groups_x,
+            std::uint32_t num_groups_y, std::uint32_t num_groups_z) override;
         void Draw(std::uint32_t vertex_count, std::uint32_t start_vertex_location) override;
         void DrawIndexed(std::uint32_t index_count, std::uint32_t start_index_location,
             std::uint32_t start_vertex_location) override;

@@ -51,6 +51,18 @@ namespace gpu
             queue.GetCommandAllocator(), nullptr, IID_PPV_ARGS(&cmd_list_)));
     }
 
+    void D3D12CommandBuffer::Dispatch(ComputePipelinePtr const& pipeline, std::uint32_t num_groups_x,
+        std::uint32_t num_groups_y, std::uint32_t num_groups_z)
+    {
+        assert(num_groups_x > 0 && num_groups_y > 0 && num_groups_z > 0);
+
+        D3D12ComputePipeline* d3d12_pipeline = static_cast<D3D12ComputePipeline*>(pipeline.get());
+
+        cmd_list_->SetPipelineState(d3d12_pipeline->GetPipelineState());
+        cmd_list_->SetComputeRootSignature(d3d12_pipeline->GetRootSignature());
+        cmd_list_->Dispatch(num_groups_x, num_groups_y, num_groups_z);
+    }
+
     void D3D12CommandBuffer::Draw(std::uint32_t vertex_count, std::uint32_t start_vertex_location)
     {
         DrawInstanced(vertex_count, 1u, start_vertex_location, 0u);

@@ -8,7 +8,8 @@ namespace gpu
     class CommandBuffer
     {
     public:
-        //virtual void Dispatch(std::uint32_t num_groups_x, std::uint32_t num_groups_y, std::uint32_t num_groups_z) = 0;
+        virtual void Dispatch(ComputePipelinePtr const& pipeline, std::uint32_t num_groups_x,
+            std::uint32_t num_groups_y, std::uint32_t num_groups_z) = 0;
         virtual void Draw(std::uint32_t vertex_count, std::uint32_t start_vertex_location) = 0;
         virtual void DrawIndexed(std::uint32_t index_count, std::uint32_t start_index_location,
             std::uint32_t start_vertex_location) = 0;

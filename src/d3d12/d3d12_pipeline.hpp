@@ -26,6 +26,9 @@ namespace gpu
     {
     public:
         D3D12ComputePipeline(D3D12Device& device, char const* cs_filename);
+        ID3D12PipelineState* GetPipelineState() const { return pipeline_state_.Get(); }
+        ID3D12RootSignature* GetRootSignature() const { return root_signature_.Get(); }
+        D3D12Device& GetD3D12Device() const { return device_; }
 
     private:
         D3D12Device& device_;
