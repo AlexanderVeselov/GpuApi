@@ -14,7 +14,8 @@ namespace gpu
 
         if (event_ == NULL)
         {
-            throw D3D12Exception(HRESULT_FROM_WIN32(GetLastError()), __FILE__, __LINE__);
+            throw D3D12Exception("Failed to create event",
+                HRESULT_FROM_WIN32(GetLastError()), __FILE__, __LINE__);
         }
     }
 

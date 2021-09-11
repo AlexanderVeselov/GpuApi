@@ -16,7 +16,35 @@ std::wstring StringToWstring(const std::string& str)
     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
     return myconv.from_bytes(str);
 }
+
+ID3D12RootSignature* CreateRootSignature(ID3D12Device* d3d12_device, ID3D12ShaderReflection* shader_reflection)
+{
+    D3D12_SHADER_DESC shader_desc = {};
+    ThrowIfFailed(shader_reflection->GetDesc(&shader_desc));
+    std::uint32_t resource_idx = 0;
+    //for (std::uint32_t resource_idx = 0; resource_idx < shader_desc.BoundResources; ++resource_idx)
+    //{
+        D3D12_SHADER_INPUT_BIND_DESC resource_desc = {};
+        ThrowIfFailed(shader_reflection->GetResourceBindingDesc(resource_idx, &resource_desc));
+    //}
+
+    D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
+    root_signature_desc.NumParameters = 0;
+    root_signature_desc.pParameters = nullptr;
+    root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    ComPtr<ID3D10Blob> root_signature_blob;
+    ComPtr<ID3D10Blob> root_signature_error_blob;
+    ThrowIfFailed(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
+        &root_signature_blob, &root_signature_error_blob));
+
+    ID3D12RootSignature* root_signature;
+    ThrowIfFailed(d3d12_device->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
+        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature)));
+
+    return root_signature;
 }
+} // namespace
 
 D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc)
     : GraphicsPipeline(pipeline_desc)
@@ -53,8 +81,9 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
 
     if (FAILED(hr))
     {
-        std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
-        throw D3D12Exception(hr, __FILE__, __LINE__);
+        std::string error_message = "Failed to compile shader: ";
+        error_message += (char*)error_blob->GetBufferPointer();
+        throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
 
     hr = (D3DCompileFromFile(StringToWstring(pipeline_desc_.ps_filename).c_str(),
@@ -63,8 +92,9 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
 
     if (FAILED(hr))
     {
-        std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
-        throw D3D12Exception(hr, __FILE__, __LINE__);
+        std::string error_message = "Failed to compile shader: ";
+        error_message += (char*)error_blob->GetBufferPointer();
+        throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
 
     D3D12_SHADER_BYTECODE vs_bytecode = {};
@@ -149,19 +179,6 @@ D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_f
 {
     auto d3d12_device = device_.GetD3D12Device();
 
-    D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
-    root_signature_desc.NumParameters = 0;
-    root_signature_desc.pParameters = nullptr;
-    root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-    ComPtr<ID3D10Blob> root_signature_blob;
-    ComPtr<ID3D10Blob> root_signature_error_blob;
-    ThrowIfFailed(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
-        &root_signature_blob, &root_signature_error_blob));
-
-    ThrowIfFailed(d3d12_device->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
-        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature_)));
-
 #ifndef NDEBUG
     // Enable shader debugging
     UINT compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -177,9 +194,16 @@ D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_f
 
     if (FAILED(hr))
     {
-        std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
-        throw D3D12Exception(hr, __FILE__, __LINE__);
+        std::string error_message = "Failed to compile shader: ";
+        error_message += (char*)error_blob->GetBufferPointer();
+        throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
+
+    ComPtr<ID3D12ShaderReflection> shader_reflection;
+    ThrowIfFailed(D3DReflect(cs_blob->GetBufferPointer(), cs_blob->GetBufferSize(),
+        IID_PPV_ARGS(&shader_reflection)));
+
+    root_signature_ = CreateRootSignature(d3d12_device, shader_reflection.Get());
 
     D3D12_SHADER_BYTECODE cs_bytecode = {};
     cs_bytecode.BytecodeLength = cs_blob->GetBufferSize();
