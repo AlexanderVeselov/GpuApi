@@ -6,6 +6,8 @@
 #include <d3dcompiler.h>
 #include <iostream>
 #include <codecvt>
+#include <vector>
+#include <cassert>
 
 namespace gpu
 {
@@ -17,21 +19,75 @@ std::wstring StringToWstring(const std::string& str)
     return myconv.from_bytes(str);
 }
 
+D3D12_DESCRIPTOR_RANGE_TYPE ShaderInputToDescriptorRangeType(D3D_SHADER_INPUT_TYPE input_type)
+{
+    switch (input_type)
+    {
+    case D3D_SIT_TEXTURE:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    case D3D_SIT_UAV_RWTYPED:
+    case D3D_SIT_UAV_RWSTRUCTURED:
+    case D3D_SIT_UAV_RWBYTEADDRESS:
+    case D3D_SIT_UAV_APPEND_STRUCTURED:
+    case D3D_SIT_UAV_CONSUME_STRUCTURED:
+    case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    case D3D_SIT_CBUFFER:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+    case D3D_SIT_SAMPLER:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+    case D3D_SIT_TBUFFER:
+    case D3D_SIT_STRUCTURED:
+    case D3D_SIT_BYTEADDRESS:
+        assert(0);
+        break;
+    default:
+        assert(0);
+        break;
+    }
+}
+
+std::vector<D3D12_DESCRIPTOR_RANGE> CollectDescriptorRanges(ID3D12ShaderReflection* shader_reflection,
+    std::uint32_t num_bound_resources)
+{
+    std::vector<D3D12_DESCRIPTOR_RANGE> descriptor_ranges;
+    descriptor_ranges.reserve(num_bound_resources);
+
+    for (std::uint32_t resource_idx = 0; resource_idx < num_bound_resources; ++resource_idx)
+    {
+        D3D12_SHADER_INPUT_BIND_DESC resource_desc = {};
+        ThrowIfFailed(shader_reflection->GetResourceBindingDesc(resource_idx, &resource_desc));
+
+        D3D12_DESCRIPTOR_RANGE descriptor_range = {};
+        descriptor_range.RangeType = ShaderInputToDescriptorRangeType(resource_desc.Type);
+        descriptor_range.NumDescriptors = resource_desc.BindCount;
+        descriptor_range.BaseShaderRegister = resource_desc.BindPoint;
+        descriptor_range.RegisterSpace = resource_desc.Space;
+        descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+        descriptor_ranges.push_back(std::move(descriptor_range));
+    }
+
+    return descriptor_ranges;
+}
+
 ID3D12RootSignature* CreateRootSignature(ID3D12Device* d3d12_device, ID3D12ShaderReflection* shader_reflection)
 {
     D3D12_SHADER_DESC shader_desc = {};
     ThrowIfFailed(shader_reflection->GetDesc(&shader_desc));
     std::uint32_t resource_idx = 0;
-    //for (std::uint32_t resource_idx = 0; resource_idx < shader_desc.BoundResources; ++resource_idx)
-    //{
-        D3D12_SHADER_INPUT_BIND_DESC resource_desc = {};
-        ThrowIfFailed(shader_reflection->GetResourceBindingDesc(resource_idx, &resource_desc));
-    //}
+
+    std::vector<D3D12_DESCRIPTOR_RANGE> descriptor_ranges = CollectDescriptorRanges(shader_reflection, shader_desc.BoundResources);
+
+    D3D12_ROOT_PARAMETER root_parameter = {};
+    root_parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    root_parameter.DescriptorTable.pDescriptorRanges = descriptor_ranges.data();
+    root_parameter.DescriptorTable.NumDescriptorRanges = (std::uint32_t)descriptor_ranges.size();
 
     D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
-    root_signature_desc.NumParameters = 0;
-    root_signature_desc.pParameters = nullptr;
-    root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+    root_signature_desc.NumParameters = 1;
+    root_signature_desc.pParameters = &root_parameter;
+    root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
 
     ComPtr<ID3D10Blob> root_signature_blob;
     ComPtr<ID3D10Blob> root_signature_error_blob;

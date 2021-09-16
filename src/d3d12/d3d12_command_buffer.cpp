@@ -57,7 +57,7 @@ namespace gpu
         assert(num_groups_x > 0 && num_groups_y > 0 && num_groups_z > 0);
 
         D3D12ComputePipeline* d3d12_pipeline = static_cast<D3D12ComputePipeline*>(pipeline.get());
-
+        //cmd_list_->SetComputeRootDescriptorTable()
         cmd_list_->SetPipelineState(d3d12_pipeline->GetPipelineState());
         cmd_list_->SetComputeRootSignature(d3d12_pipeline->GetRootSignature());
         cmd_list_->Dispatch(num_groups_x, num_groups_y, num_groups_z);
