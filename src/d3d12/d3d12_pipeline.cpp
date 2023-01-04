@@ -53,7 +53,11 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
 
     if (FAILED(hr))
     {
-        std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
+        if (error_blob)
+        {
+            std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
+        }
+
         throw D3D12Exception(hr, __FILE__, __LINE__);
     }
 
@@ -63,7 +67,11 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
 
     if (FAILED(hr))
     {
-        std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
+        if (error_blob)
+        {
+            std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
+        }
+
         throw D3D12Exception(hr, __FILE__, __LINE__);
     }
 

@@ -2,6 +2,7 @@
 #include "gpu_device.hpp"
 #include "gpu_queue.hpp"
 #include "gpu_command_buffer.hpp"
+#include "gpu_pipeline.hpp"
 #include "gpu_sync.hpp"
 #include "gpu_swapchain.hpp"
 
@@ -62,6 +63,18 @@ int main()
 
         auto& graphics_queue = device->GetQueue(gpu::QueueType::kGraphics);
 
+        std::vector<gpu::GraphicsPipelinePtr> pipelines;
+
+
+        for (int i = 0; i < 3; ++i)
+        {
+            gpu::GraphicsPipelineDesc pipeline_desc;
+            pipeline_desc.vs_filename = "shader.vert";
+            pipeline_desc.ps_filename = "shader.frag";
+            pipeline_desc.color_attachments.push_back(swapchain->GetImages()[i]);
+            pipelines.push_back(device->CreateGraphicsPipeline(pipeline_desc));
+        }
+
         while (!glfwWindowShouldClose(window))
         {
             glfwPollEvents();
@@ -70,6 +83,8 @@ int main()
             gpu::ImagePtr swapchain_image = swapchain->GetCurrentImage();
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kPresent, gpu::ImageLayout::kRenderTarget);
             cmd_buffer->ClearImage(swapchain_image, 0.5f, 0.5f, 1.0f, 1.0f);
+            cmd_buffer->BindGraphicsPipeline(pipelines[swapchain->GetCurrentImageIndex()]);
+            cmd_buffer->Draw(3, 0);
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kRenderTarget, gpu::ImageLayout::kPresent);
             cmd_buffer->End();
 
