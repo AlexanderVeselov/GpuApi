@@ -6,11 +6,6 @@
 
 namespace gpu
 {
-    Api* Api::CreateD3D12Api()
-    {
-        return new D3D12Api();
-    }
-
     D3D12Api::D3D12Api()
     {
         UINT dxgi_factory_flags = 0;
