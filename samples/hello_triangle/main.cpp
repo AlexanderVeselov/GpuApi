@@ -1,5 +1,6 @@
 #include "gpu_api.hpp"
 #include "gpu_device.hpp"
+#include "gpu_buffer.hpp"
 #include "gpu_queue.hpp"
 #include "gpu_command_buffer.hpp"
 #include "gpu_pipeline.hpp"
@@ -65,7 +66,6 @@ int main()
 
         std::vector<gpu::GraphicsPipelinePtr> pipelines;
 
-
         for (int i = 0; i < 3; ++i)
         {
             gpu::GraphicsPipelineDesc pipeline_desc;
@@ -74,6 +74,23 @@ int main()
             pipeline_desc.color_attachments.push_back(swapchain->GetImages()[i]);
             pipelines.push_back(device->CreateGraphicsPipeline(pipeline_desc));
         }
+
+        struct Vertex
+        {
+            float position[3];
+            float color[3];
+        };
+
+        Vertex vertices[3] = {
+            { -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f },
+            {  0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f },
+            {  0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f },
+        };
+
+        gpu::BufferPtr vertex_buffer = device->CreateBuffer(sizeof(Vertex) * 3);
+        Vertex* data = (Vertex*)vertex_buffer->Map();
+        memcpy(data, vertices, sizeof(vertices));
+        vertex_buffer->Unmap();
 
         while (!glfwWindowShouldClose(window))
         {
@@ -84,6 +101,7 @@ int main()
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kPresent, gpu::ImageLayout::kRenderTarget);
             cmd_buffer->ClearImage(swapchain_image, 0.5f, 0.5f, 1.0f, 1.0f);
             cmd_buffer->BindGraphicsPipeline(pipelines[swapchain->GetCurrentImageIndex()]);
+            cmd_buffer->SetVertexBuffer(vertex_buffer);
             cmd_buffer->Draw(3, 0);
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kRenderTarget, gpu::ImageLayout::kPresent);
             cmd_buffer->End();

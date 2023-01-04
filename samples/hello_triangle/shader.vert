@@ -12,21 +12,9 @@ struct VS_OUTPUT
 
 VS_OUTPUT main(VS_INPUT input, uint vertex_id : SV_VertexID)
 {
-    float4 positions[3] = {
-        { -0.5f, -0.5f, 0.0f, 1.0f },
-        {  0.5f, -0.5f, 0.0f, 1.0f },
-        {  0.0f,  0.5f, 0.0f, 1.0f }
-    };
-
-    float3 colors[3] = {
-        { 1.0f, 0.0f, 0.0f },
-        { 0.0f, 1.0f, 0.0f },
-        { 0.0f, 0.0f, 1.0f }
-    };
-
     VS_OUTPUT output;
-    output.position = positions[vertex_id % 3];
-    output.color = colors[vertex_id % 3];
+    output.position = float4(input.position, 1.0f);
+    output.color = input.color;
 
     return output;
 }
