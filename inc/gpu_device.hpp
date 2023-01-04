@@ -24,7 +24,8 @@ namespace gpu
         virtual ComputePipelinePtr CreateComputePipeline(char const* cs_filename) = 0;
 
         // Swapchain. Requires HWND in the case of WIN32 platform
-        virtual SwapchainPtr CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height) = 0;
+        virtual SwapchainPtr CreateSwapchain(void* window_native_handle,
+            std::uint32_t width, std::uint32_t height, std::uint32_t image_count) = 0;
     };
 
 } // namespace gpu

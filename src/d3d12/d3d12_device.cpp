@@ -59,9 +59,9 @@ namespace gpu
         return std::make_unique<D3D12ComputePipeline>(*this, cs_filename);
     }
 
-    SwapchainPtr D3D12Device::CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height)
+    SwapchainPtr D3D12Device::CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height, std::uint32_t image_count)
     {
-        return std::make_unique<D3D12Swapchain>(*this, window_native_handle, width, height);
+        return std::make_unique<D3D12Swapchain>(*this, window_native_handle, width, height, image_count);
     }
 
     FencePtr D3D12Device::CreateFence()

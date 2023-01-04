@@ -30,7 +30,8 @@ namespace gpu
         GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) override;
         ComputePipelinePtr CreateComputePipeline(char const* cs_filename) override;
 
-        SwapchainPtr CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height) override;
+        SwapchainPtr CreateSwapchain(void* window_native_handle,
+            std::uint32_t width, std::uint32_t height, std::uint32_t image_count) override;
 
         ID3D12Device* GetD3D12Device() const { return d3d12_device_.Get(); }
 

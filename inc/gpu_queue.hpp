@@ -9,7 +9,7 @@ namespace gpu
     {
     public:
         virtual CommandBufferPtr CreateCommandBuffer() = 0;
-        virtual void Submit(CommandBufferPtr const& cmd_buffer, FencePtr fence) = 0;
+        virtual void Submit(CommandBufferPtr const& cmd_buffer, FencePtr fence = nullptr) = 0;
         virtual void WaitIdle() = 0;
 
     };
