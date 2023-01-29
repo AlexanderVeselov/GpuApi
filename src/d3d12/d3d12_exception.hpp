@@ -15,7 +15,7 @@ namespace gpu
         D3D12Exception(char const* message, HRESULT hr, std::string file, std::uint32_t line)
             : std::exception(message), hr_(hr), file_(file), line_(line) {}
 
-        char const* what() const
+        char const* what() const override
         {
             static std::string error_info = std::exception::what();
             error_info += " (HRESULT = " + std::to_string(hr_) +
