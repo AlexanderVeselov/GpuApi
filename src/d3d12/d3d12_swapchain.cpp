@@ -5,10 +5,12 @@
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
 
+#include <string>
+
 namespace gpu
 {
     D3D12Swapchain::D3D12Swapchain(D3D12Device& device, void* window_native_handle,
-        std::uint32_t width, std::uint32_t height)
+        std::uint32_t width, std::uint32_t height, std::uint32_t image_count)
         : device_(device)
     {
         auto& api = device_.GetD3D12Api();
@@ -41,13 +43,16 @@ namespace gpu
             swapchain_->GetBuffer(i, IID_PPV_ARGS(&image_resource));
             swapchain_images_[i] = std::make_shared<D3D12Image>(device, image_resource,
                 width, height, ImageFormat::kRGBA8_UNorm);
-        }
 
+            std::wstring resource_name(L"Swapchain image ");
+            resource_name += std::to_wstring(i);
+            image_resource->SetName(resource_name.c_str());
+        }
     }
 
     void D3D12Swapchain::Present()
     {
         ThrowIfFailed(swapchain_->Present(1, 0));
+        current_image_index_ = (current_image_index_ + 1) % GetImageCount();
     }
-
 }

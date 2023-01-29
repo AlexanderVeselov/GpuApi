@@ -1,3 +1,9 @@
+cmake_minimum_required(VERSION 3.22)
+
+project(GpuApi)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 set(VULKAN_SOURCES
     src/vulkan/vulkan_api.cpp
     src/vulkan/vulkan_api.hpp
@@ -54,15 +60,33 @@ set(D3D12_FILES
     src/d3d12/d3d12_pipeline.hpp
     src/d3d12/d3d12_queue.cpp
     src/d3d12/d3d12_queue.hpp
+    src/d3d12/d3d12_shader_manager.cpp
+    src/d3d12/d3d12_shader_manager.hpp
     src/d3d12/d3d12_swapchain.cpp
     src/d3d12/d3d12_swapchain.hpp
     src/d3d12/d3d12_sync.cpp
     src/d3d12/d3d12_sync.hpp
 )
 
-source_group("vulkan" FILES ${VULKAN_SOURCES})
+set(COMMON_SOURCES
+    src/common/gpu_api.cpp
+    src/common/utils.hpp
+)
+
+set(DXC_PATH ${CMAKE_SOURCE_DIR}/third_party/dxc_2022_12_16)
+
+add_library(dxcompiler SHARED IMPORTED)
+set_target_properties(dxcompiler PROPERTIES
+    IMPORTED_LOCATION ${DXC_PATH}/bin/x64/dxcompiler.dll
+    IMPORTED_IMPLIB ${DXC_PATH}/lib/x64/dxcompiler.lib
+)
+
+#source_group("vulkan" FILES ${VULKAN_SOURCES})
 source_group("d3d12" FILES ${D3D12_FILES})
-add_library(GpuApi STATIC ${INCLUDE_FILES} ${D3D12_FILES})
+add_library(GpuApi STATIC ${INCLUDE_FILES} ${D3D12_FILES} ${COMMON_SOURCES})
 target_include_directories(GpuApi PUBLIC inc)
-target_link_libraries(GpuApi Vulkan::Vulkan d3d12.lib dxgi.lib d3dcompiler.lib)
+target_include_directories(GpuApi PRIVATE ${DXC_PATH}/inc)
+target_link_libraries(GpuApi d3d12.lib dxgi.lib d3dcompiler.lib dxcompiler)
+add_subdirectory(samples)
+#target_link_libraries(GpuApi Vulkan::Vulkan)
 #target_compile_features(VulkanLabs PUBLIC cxx_std_17)

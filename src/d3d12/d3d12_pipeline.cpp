@@ -1,107 +1,12 @@
+#include "d3d12_api.hpp"
 #include "d3d12_pipeline.hpp"
 #include "d3d12_device.hpp"
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
-
-#include <d3dcompiler.h>
-#include <iostream>
-#include <codecvt>
-#include <vector>
-#include <cassert>
+#include "../common/utils.hpp"
 
 namespace gpu
 {
-namespace
-{
-std::wstring StringToWstring(const std::string& str)
-{
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-    return myconv.from_bytes(str);
-}
-
-D3D12_DESCRIPTOR_RANGE_TYPE ShaderInputToDescriptorRangeType(D3D_SHADER_INPUT_TYPE input_type)
-{
-    switch (input_type)
-    {
-    case D3D_SIT_TEXTURE:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    case D3D_SIT_UAV_RWTYPED:
-    case D3D_SIT_UAV_RWSTRUCTURED:
-    case D3D_SIT_UAV_RWBYTEADDRESS:
-    case D3D_SIT_UAV_APPEND_STRUCTURED:
-    case D3D_SIT_UAV_CONSUME_STRUCTURED:
-    case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-    case D3D_SIT_CBUFFER:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-    case D3D_SIT_SAMPLER:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-    case D3D_SIT_TBUFFER:
-    case D3D_SIT_STRUCTURED:
-    case D3D_SIT_BYTEADDRESS:
-        assert(0);
-        break;
-    default:
-        assert(0);
-        break;
-    }
-}
-
-std::vector<D3D12_DESCRIPTOR_RANGE> CollectDescriptorRanges(ID3D12ShaderReflection* shader_reflection,
-    std::uint32_t num_bound_resources)
-{
-    std::vector<D3D12_DESCRIPTOR_RANGE> descriptor_ranges;
-    descriptor_ranges.reserve(num_bound_resources);
-
-    for (std::uint32_t resource_idx = 0; resource_idx < num_bound_resources; ++resource_idx)
-    {
-        D3D12_SHADER_INPUT_BIND_DESC resource_desc = {};
-        ThrowIfFailed(shader_reflection->GetResourceBindingDesc(resource_idx, &resource_desc));
-
-        D3D12_DESCRIPTOR_RANGE descriptor_range = {};
-        descriptor_range.RangeType = ShaderInputToDescriptorRangeType(resource_desc.Type);
-        descriptor_range.NumDescriptors = resource_desc.BindCount;
-        descriptor_range.BaseShaderRegister = resource_desc.BindPoint;
-        descriptor_range.RegisterSpace = resource_desc.Space;
-        descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-        descriptor_ranges.push_back(std::move(descriptor_range));
-    }
-
-    return descriptor_ranges;
-}
-
-ID3D12RootSignature* CreateRootSignature(ID3D12Device* d3d12_device, ID3D12ShaderReflection* shader_reflection)
-{
-    D3D12_SHADER_DESC shader_desc = {};
-    ThrowIfFailed(shader_reflection->GetDesc(&shader_desc));
-    std::uint32_t resource_idx = 0;
-
-    std::vector<D3D12_DESCRIPTOR_RANGE> descriptor_ranges = CollectDescriptorRanges(shader_reflection, shader_desc.BoundResources);
-
-    D3D12_ROOT_PARAMETER root_parameter = {};
-    root_parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-    root_parameter.DescriptorTable.pDescriptorRanges = descriptor_ranges.data();
-    root_parameter.DescriptorTable.NumDescriptorRanges = (std::uint32_t)descriptor_ranges.size();
-
-    D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
-    root_signature_desc.NumParameters = 1;
-    root_signature_desc.pParameters = &root_parameter;
-    root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
-
-    ComPtr<ID3D10Blob> root_signature_blob;
-    ComPtr<ID3D10Blob> root_signature_error_blob;
-    ThrowIfFailed(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
-        &root_signature_blob, &root_signature_error_blob));
-
-    ID3D12RootSignature* root_signature;
-    ThrowIfFailed(d3d12_device->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
-        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature)));
-
-    return root_signature;
-}
-} // namespace
-
 D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc)
     : GraphicsPipeline(pipeline_desc)
     , device_(device)
@@ -137,8 +42,13 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
 
     if (FAILED(hr))
     {
-        std::string error_message = "Failed to compile shader: ";
-        error_message += (char*)error_blob->GetBufferPointer();
+        static std::string error_message = "Failed to compile " + pipeline_desc_.vs_filename;
+        if (error_blob)
+        {
+            error_message += ":\n";
+            error_message += (char*)error_blob->GetBufferPointer();
+        }
+
         throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
 
@@ -148,8 +58,13 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
 
     if (FAILED(hr))
     {
-        std::string error_message = "Failed to compile shader: ";
-        error_message += (char*)error_blob->GetBufferPointer();
+        static std::string error_message = "Failed to compile " + pipeline_desc_.ps_filename;
+        if (error_blob)
+        {
+            error_message += ":\n";
+            error_message += (char*)error_blob->GetBufferPointer();
+        }
+
         throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
 
@@ -187,9 +102,11 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
     ///@TODO: make configurable input layout
     D3D12_INPUT_ELEMENT_DESC input_element_descs[2] =
     {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
+
+    ID3D12ShaderReflection* shader_reflection;
 
     D3D12_INPUT_LAYOUT_DESC input_layout = {};
     input_layout.pInputElementDescs = input_element_descs;
@@ -250,8 +167,13 @@ D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_f
 
     if (FAILED(hr))
     {
-        std::string error_message = "Failed to compile shader: ";
-        error_message += (char*)error_blob->GetBufferPointer();
+        static std::string error_message = "Failed to compile " + std::string(cs_filename);
+        if (error_blob)
+        {
+            error_message += ":\n";
+            error_message += (char*)error_blob->GetBufferPointer();
+        }
+
         throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
 

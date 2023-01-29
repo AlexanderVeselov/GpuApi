@@ -3,6 +3,7 @@
 
 #include "gpu_api.hpp"
 #include "d3d12_common.hpp"
+#include "dxcapi.h"
 
 #include <vector>
 
@@ -16,7 +17,9 @@ namespace gpu
         D3D12Api();
         DevicePtr CreateDevice() override;
 
-        IDXGIFactory4* GetDXGIFactory() { return dxgi_factory_.Get(); }
+        IDXGIFactory4* GetDXGIFactory() const { return dxgi_factory_.Get(); }
+        IDxcUtils* GetDxcUtils() const { return dxc_utils_.Get(); }
+        IDxcCompiler3* GetDxcCompiler() const { return dxc_compiler_.Get(); }
 
     private:
         ComPtr<IDXGIFactory4> dxgi_factory_;
