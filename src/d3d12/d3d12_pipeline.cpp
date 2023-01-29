@@ -1,23 +1,12 @@
+#include "d3d12_api.hpp"
 #include "d3d12_pipeline.hpp"
 #include "d3d12_device.hpp"
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
-
-#include <d3dcompiler.h>
-#include <iostream>
-#include <codecvt>
+#include "../common/utils.hpp"
 
 namespace gpu
 {
-namespace
-{
-std::wstring StringToWstring(const std::string& str)
-{
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-    return myconv.from_bytes(str);
-}
-}
-
 D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc)
     : GraphicsPipeline(pipeline_desc)
     , device_(device)
@@ -53,12 +42,14 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
 
     if (FAILED(hr))
     {
+        static std::string error_message = "Failed to compile " + pipeline_desc_.vs_filename;
         if (error_blob)
         {
-            std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
+            error_message += ":\n";
+            error_message += (char*)error_blob->GetBufferPointer();
         }
 
-        throw D3D12Exception(hr, __FILE__, __LINE__);
+        throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
 
     hr = (D3DCompileFromFile(StringToWstring(pipeline_desc_.ps_filename).c_str(),
@@ -67,12 +58,14 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
 
     if (FAILED(hr))
     {
+        static std::string error_message = "Failed to compile " + pipeline_desc_.ps_filename;
         if (error_blob)
         {
-            std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
+            error_message += ":\n";
+            error_message += (char*)error_blob->GetBufferPointer();
         }
 
-        throw D3D12Exception(hr, __FILE__, __LINE__);
+        throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
 
     D3D12_SHADER_BYTECODE vs_bytecode = {};
@@ -109,9 +102,11 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
     ///@TODO: make configurable input layout
     D3D12_INPUT_ELEMENT_DESC input_element_descs[2] =
     {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
+
+    ID3D12ShaderReflection* shader_reflection;
 
     D3D12_INPUT_LAYOUT_DESC input_layout = {};
     input_layout.pInputElementDescs = input_element_descs;
@@ -185,8 +180,14 @@ D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_f
 
     if (FAILED(hr))
     {
-        std::cout << (char*)error_blob->GetBufferPointer() << std::endl;
-        throw D3D12Exception(hr, __FILE__, __LINE__);
+        static std::string error_message = "Failed to compile " + std::string(cs_filename);
+        if (error_blob)
+        {
+            error_message += ":\n";
+            error_message += (char*)error_blob->GetBufferPointer();
+        }
+
+        throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
 
     D3D12_SHADER_BYTECODE cs_bytecode = {};
