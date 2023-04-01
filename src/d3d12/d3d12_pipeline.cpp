@@ -4,15 +4,15 @@
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
 #include "../common/utils.hpp"
+#include <d3d12shader.h>
+#include <dxcapi.h>
 
 namespace gpu
 {
-D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc)
-    : GraphicsPipeline(pipeline_desc)
-    , device_(device)
+namespace
 {
-    auto d3d12_device = device_.GetD3D12Device();
-
+ComPtr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* d3d12_device)
+{
     D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
     root_signature_desc.NumParameters = 0;
     root_signature_desc.pParameters = nullptr;
@@ -23,58 +23,32 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
     ThrowIfFailed(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
         &root_signature_blob, &root_signature_error_blob));
 
+    ComPtr<ID3D12RootSignature> root_signature;
     ThrowIfFailed(d3d12_device->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
-        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature_)));
+        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature)));
 
-#ifndef NDEBUG
-    // Enable shader debugging
-    UINT compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-    UINT compile_flags = 0;
-#endif
+    return root_signature;
+}
+}
 
-    ComPtr<ID3DBlob> vs_blob;
-    ComPtr<ID3DBlob> ps_blob;
-    ComPtr<ID3DBlob> error_blob;
-    HRESULT hr = (D3DCompileFromFile(StringToWstring(pipeline_desc_.vs_filename).c_str(),
-        nullptr, nullptr, "main",
-        "vs_5_1", compile_flags, 0, &vs_blob, &error_blob));
+D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc)
+    : GraphicsPipeline(pipeline_desc)
+    , device_(device)
+{
+    auto d3d12_device = device_.GetD3D12Device();
 
-    if (FAILED(hr))
-    {
-        static std::string error_message = "Failed to compile " + pipeline_desc_.vs_filename;
-        if (error_blob)
-        {
-            error_message += ":\n";
-            error_message += (char*)error_blob->GetBufferPointer();
-        }
+    root_signature_ = CreateRootSignature(d3d12_device);
+    D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
-        throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
-    }
-
-    hr = (D3DCompileFromFile(StringToWstring(pipeline_desc_.ps_filename).c_str(),
-        nullptr, nullptr, "main",
-        "ps_5_1", compile_flags, 0, &ps_blob, &error_blob));
-
-    if (FAILED(hr))
-    {
-        static std::string error_message = "Failed to compile " + pipeline_desc_.ps_filename;
-        if (error_blob)
-        {
-            error_message += ":\n";
-            error_message += (char*)error_blob->GetBufferPointer();
-        }
-
-        throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
-    }
-
+    D3D12Shader vs_shader = shader_manager.CompileShader(pipeline_desc.vs_filename.c_str(), "main", "vs_6_0");
     D3D12_SHADER_BYTECODE vs_bytecode = {};
-    vs_bytecode.BytecodeLength = vs_blob->GetBufferSize();
-    vs_bytecode.pShaderBytecode = vs_blob->GetBufferPointer();
+    vs_bytecode.BytecodeLength = vs_shader.dxc_blob->GetBufferSize();
+    vs_bytecode.pShaderBytecode = vs_shader.dxc_blob->GetBufferPointer();
 
+    D3D12Shader ps_shader = shader_manager.CompileShader(pipeline_desc.ps_filename.c_str(), "main", "ps_6_0");
     D3D12_SHADER_BYTECODE ps_bytecode = {};
-    ps_bytecode.BytecodeLength = ps_blob->GetBufferSize();
-    ps_bytecode.pShaderBytecode = ps_blob->GetBufferPointer();
+    ps_bytecode.BytecodeLength = ps_shader.dxc_blob->GetBufferSize();
+    ps_bytecode.pShaderBytecode = ps_shader.dxc_blob->GetBufferPointer();
 
     ///@TODO: add blend support
     D3D12_BLEND_DESC blend_state = {};
@@ -105,8 +79,6 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         { "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
-
-    ID3D12ShaderReflection* shader_reflection;
 
     D3D12_INPUT_LAYOUT_DESC input_layout = {};
     input_layout.pInputElementDescs = input_element_descs;
@@ -151,41 +123,14 @@ D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_f
     : device_(device)
 {
     auto d3d12_device = device_.GetD3D12Device();
+    D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
-#ifndef NDEBUG
-    // Enable shader debugging
-    UINT compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-    UINT compile_flags = 0;
-#endif
-
-    ComPtr<ID3DBlob> cs_blob;
-    ComPtr<ID3DBlob> error_blob;
-    HRESULT hr = (D3DCompileFromFile(StringToWstring(cs_filename).c_str(),
-        nullptr, nullptr, "main",
-        "cs_5_1", compile_flags, 0, &cs_blob, &error_blob));
-
-    if (FAILED(hr))
-    {
-        static std::string error_message = "Failed to compile " + std::string(cs_filename);
-        if (error_blob)
-        {
-            error_message += ":\n";
-            error_message += (char*)error_blob->GetBufferPointer();
-        }
-
-        throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
-    }
-
-    ComPtr<ID3D12ShaderReflection> shader_reflection;
-    ThrowIfFailed(D3DReflect(cs_blob->GetBufferPointer(), cs_blob->GetBufferSize(),
-        IID_PPV_ARGS(&shader_reflection)));
-
-    root_signature_ = CreateRootSignature(d3d12_device, shader_reflection.Get());
+    root_signature_ = CreateRootSignature(d3d12_device);
+    D3D12Shader cs_shader = shader_manager.CompileShader(cs_filename, "main", "cs_6_0");
 
     D3D12_SHADER_BYTECODE cs_bytecode = {};
-    cs_bytecode.BytecodeLength = cs_blob->GetBufferSize();
-    cs_bytecode.pShaderBytecode = cs_blob->GetBufferPointer();
+    cs_bytecode.BytecodeLength = cs_shader.dxc_blob->GetBufferSize();
+    cs_bytecode.pShaderBytecode = cs_shader.dxc_blob->GetBufferPointer();
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC pipeline_state_desc = {};
     pipeline_state_desc.pRootSignature = root_signature_.Get();

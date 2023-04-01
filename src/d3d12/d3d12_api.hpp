@@ -3,7 +3,7 @@
 
 #include "gpu_api.hpp"
 #include "d3d12_common.hpp"
-#include "dxcapi.h"
+#include "d3d12_shader_manager.hpp"
 
 #include <vector>
 
@@ -18,12 +18,12 @@ namespace gpu
         DevicePtr CreateDevice() override;
 
         IDXGIFactory4* GetDXGIFactory() const { return dxgi_factory_.Get(); }
-        IDxcUtils* GetDxcUtils() const { return dxc_utils_.Get(); }
-        IDxcCompiler3* GetDxcCompiler() const { return dxc_compiler_.Get(); }
+        D3D12ShaderManager& GetShaderManager() { return shader_manager_; }
 
     private:
         ComPtr<IDXGIFactory4> dxgi_factory_;
         std::vector<IDXGIAdapter1*> dxgi_adapters_;
+        D3D12ShaderManager shader_manager_;
     };
 
 } // namespace gpu

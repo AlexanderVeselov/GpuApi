@@ -7,6 +7,7 @@
 namespace gpu
 {
     D3D12Api::D3D12Api()
+        : shader_manager_("")
     {
         UINT dxgi_factory_flags = 0;
 
