@@ -6,28 +6,92 @@
 #include "../common/utils.hpp"
 #include <d3d12shader.h>
 #include <dxcapi.h>
+#include <cassert>
 
 namespace gpu
 {
 namespace
 {
-ComPtr<ID3D12RootSignature> CreateRootSignature(ID3D12Device* d3d12_device)
+D3D12_SHADER_VISIBILITY GetShaderVisibility(D3D12_SHADER_VERSION_TYPE version_type)
 {
-    D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
-    root_signature_desc.NumParameters = 0;
-    root_signature_desc.pParameters = nullptr;
-    root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+    switch (version_type)
+    {
+    case D3D12_SHVER_PIXEL_SHADER:
+        return D3D12_SHADER_VISIBILITY_PIXEL;
+    case D3D12_SHVER_VERTEX_SHADER:
+        return D3D12_SHADER_VISIBILITY_VERTEX;
+    case D3D12_SHVER_GEOMETRY_SHADER:
+        return D3D12_SHADER_VISIBILITY_GEOMETRY;
+    case D3D12_SHVER_HULL_SHADER:
+        return D3D12_SHADER_VISIBILITY_HULL;
+    case D3D12_SHVER_DOMAIN_SHADER:
+        return D3D12_SHADER_VISIBILITY_DOMAIN;
+    case D3D12_SHVER_COMPUTE_SHADER:
+        return D3D12_SHADER_VISIBILITY_ALL;
+    default:
+        assert(!"Unknown shader type");
+        return D3D12_SHADER_VISIBILITY_ALL;
+    }
+}
 
-    ComPtr<ID3D10Blob> root_signature_blob;
-    ComPtr<ID3D10Blob> root_signature_error_blob;
-    ThrowIfFailed(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
-        &root_signature_blob, &root_signature_error_blob));
+D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(D3D_SHADER_INPUT_TYPE type)
+{
+    switch (type)
+    {
+    case D3D_SIT_CBUFFER:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+    case D3D_SIT_TEXTURE:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    case D3D_SIT_SAMPLER:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+    case D3D_SIT_UAV_RWSTRUCTURED:
+    case D3D_SIT_UAV_RWBYTEADDRESS:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    case D3D_SIT_UAV_RWTYPED:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    case D3D_SIT_BYTEADDRESS:
+    case D3D_SIT_STRUCTURED:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+#if VW_ENABLE_DXR_SUPPORT
+    case D3D_SIT_RTACCELERATIONSTRUCTURE:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+#endif
+    default:
+        assert(!"Not implemented");
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    }
 
-    ComPtr<ID3D12RootSignature> root_signature;
-    ThrowIfFailed(d3d12_device->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
-        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature)));
+}
 
-    return root_signature;
+void CollectRootParameters(ID3D12Device* d3d12_device,
+    ID3D12ShaderReflection* reflection, std::vector<D3D12_ROOT_PARAMETER>& root_parameters)
+{
+    // Get shader description
+    D3D12_SHADER_DESC shader_desc = {};
+    ThrowIfFailed(reflection->GetDesc(&shader_desc));
+
+    for (std::uint32_t i = 0; i < shader_desc.BoundResources; ++i)
+    {
+        D3D12_SHADER_INPUT_BIND_DESC resource_desc = {};
+        ThrowIfFailed(reflection->GetResourceBindingDesc(i, &resource_desc));
+
+        D3D12_ROOT_PARAMETER root_parameter = {};
+        root_parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        root_parameter.ShaderVisibility = GetShaderVisibility(
+            (D3D12_SHADER_VERSION_TYPE)D3D12_SHVER_GET_TYPE(shader_desc.Version));
+
+        D3D12_DESCRIPTOR_RANGE descriptor_range = {};
+        descriptor_range.RangeType = GetRangeType(resource_desc.Type);
+        descriptor_range.NumDescriptors = resource_desc.BindCount;
+        descriptor_range.BaseShaderRegister = resource_desc.BindPoint;
+        descriptor_range.RegisterSpace = resource_desc.Space;
+        descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+        root_parameter.DescriptorTable.NumDescriptorRanges = 1;
+        root_parameter.DescriptorTable.pDescriptorRanges = &descriptor_range;
+        root_parameters.push_back(root_parameter);
+    }
+
 }
 }
 
@@ -37,18 +101,34 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
 {
     auto d3d12_device = device_.GetD3D12Device();
 
-    root_signature_ = CreateRootSignature(d3d12_device);
     D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
+    std::vector<D3D12_ROOT_PARAMETER> root_parameters;
     D3D12Shader vs_shader = shader_manager.CompileShader(pipeline_desc.vs_filename.c_str(), "main", "vs_6_0");
     D3D12_SHADER_BYTECODE vs_bytecode = {};
     vs_bytecode.BytecodeLength = vs_shader.dxc_blob->GetBufferSize();
     vs_bytecode.pShaderBytecode = vs_shader.dxc_blob->GetBufferPointer();
+    CollectRootParameters(d3d12_device, vs_shader.reflection.Get(), root_parameters);
 
     D3D12Shader ps_shader = shader_manager.CompileShader(pipeline_desc.ps_filename.c_str(), "main", "ps_6_0");
     D3D12_SHADER_BYTECODE ps_bytecode = {};
     ps_bytecode.BytecodeLength = ps_shader.dxc_blob->GetBufferSize();
     ps_bytecode.pShaderBytecode = ps_shader.dxc_blob->GetBufferPointer();
+    CollectRootParameters(d3d12_device, ps_shader.reflection.Get(), root_parameters);
+
+    D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
+    root_signature_desc.NumParameters = (UINT)root_parameters.size();
+    root_signature_desc.pParameters = root_parameters.data();
+    root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    ComPtr<ID3D10Blob> root_signature_blob;
+    ComPtr<ID3D10Blob> root_signature_error_blob;
+    ThrowIfFailed(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
+        &root_signature_blob, &root_signature_error_blob));
+
+    ComPtr<ID3D12RootSignature> root_signature;
+    ThrowIfFailed(d3d12_device->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
+        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature_)));
 
     ///@TODO: add blend support
     D3D12_BLEND_DESC blend_state = {};
@@ -125,12 +205,26 @@ D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_f
     auto d3d12_device = device_.GetD3D12Device();
     D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
-    root_signature_ = CreateRootSignature(d3d12_device);
     D3D12Shader cs_shader = shader_manager.CompileShader(cs_filename, "main", "cs_6_0");
-
     D3D12_SHADER_BYTECODE cs_bytecode = {};
     cs_bytecode.BytecodeLength = cs_shader.dxc_blob->GetBufferSize();
     cs_bytecode.pShaderBytecode = cs_shader.dxc_blob->GetBufferPointer();
+
+    std::vector<D3D12_ROOT_PARAMETER> root_parameters;
+    CollectRootParameters(d3d12_device, cs_shader.reflection.Get(), root_parameters);
+
+    D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
+    root_signature_desc.NumParameters = (UINT)root_parameters.size();
+    root_signature_desc.pParameters = root_parameters.data();
+
+    ComPtr<ID3D10Blob> root_signature_blob;
+    ComPtr<ID3D10Blob> root_signature_error_blob;
+    ThrowIfFailed(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
+        &root_signature_blob, &root_signature_error_blob));
+
+    ComPtr<ID3D12RootSignature> root_signature;
+    ThrowIfFailed(d3d12_device->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
+        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature_)));
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC pipeline_state_desc = {};
     pipeline_state_desc.pRootSignature = root_signature_.Get();

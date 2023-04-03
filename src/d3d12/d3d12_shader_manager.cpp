@@ -74,19 +74,18 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
 
     // Get shader bytecode
     D3D12Shader shader = {};
-    //ThrowIfFailed(dxc_result->GetResult(&shader.dxc_blob));
     ThrowIfFailed(dxc_result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shader.dxc_blob), nullptr));
 
     // Get shader reflection
-    //ComPtr<IDxcBlob> dxc_reflection;
-    //ThrowIfFailed(dxc_result->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&dxc_reflection), nullptr));
+    ComPtr<IDxcBlob> dxc_reflection;
+    ThrowIfFailed(dxc_result->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&dxc_reflection), nullptr));
 
-    //// Create D3D12 reflection
-    //DxcBuffer reflection_buffer = {};
-    //reflection_buffer.Size = dxc_reflection->GetBufferSize();
-    //reflection_buffer.Ptr = dxc_reflection->GetBufferPointer();
+    // Create D3D12 reflection
+    DxcBuffer reflection_buffer = {};
+    reflection_buffer.Size = dxc_reflection->GetBufferSize();
+    reflection_buffer.Ptr = dxc_reflection->GetBufferPointer();
 
-    //dxc_utils_->CreateReflection(&reflection_buffer, IID_PPV_ARGS(&shader.reflection));
+    dxc_utils_->CreateReflection(&reflection_buffer, IID_PPV_ARGS(&shader.reflection));
     return shader;
 }
 
