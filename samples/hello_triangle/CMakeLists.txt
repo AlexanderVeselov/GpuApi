@@ -1,4 +1,8 @@
-set(SOURCES main.cpp)
+set(SOURCES
+    main.cpp
+    shader.ps
+    shader.vs
+    )
 
 add_executable(HelloTriangle ${SOURCES})
 target_link_libraries(HelloTriangle PRIVATE GpuApi glfw3::glfw3)

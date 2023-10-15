@@ -74,6 +74,10 @@ void CollectRootParameters(ID3D12Device* d3d12_device,
     {
         D3D12_SHADER_INPUT_BIND_DESC resource_desc = {};
         ThrowIfFailed(reflection->GetResourceBindingDesc(i, &resource_desc));
+        ID3D12ShaderReflectionConstantBuffer* buf = reflection->GetConstantBufferByIndex(i);
+
+        D3D12_SHADER_BUFFER_DESC buffer_desc = {};
+        buf->GetDesc(&buffer_desc);
 
         D3D12_ROOT_PARAMETER root_parameter = {};
         root_parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
@@ -122,9 +126,21 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
     root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
     ComPtr<ID3D10Blob> root_signature_blob;
-    ComPtr<ID3D10Blob> root_signature_error_blob;
-    ThrowIfFailed(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
-        &root_signature_blob, &root_signature_error_blob));
+    {
+        ComPtr<ID3D10Blob> root_signature_error_blob;
+        HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
+            &root_signature_blob, &root_signature_error_blob);
+        if (FAILED(hr))
+        {
+            std::string error_blob_message = (char*)root_signature_error_blob->GetBufferPointer();
+            error_blob_message.pop_back(); // remove \n
+
+            static std::string error_message = "Failed to serialize graphics root signature "
+                "(vs: " + pipeline_desc.vs_filename + ", ps: " + pipeline_desc.ps_filename + "): "
+                + error_blob_message;
+            throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
+        }
+    }
 
     ComPtr<ID3D12RootSignature> root_signature;
     ThrowIfFailed(d3d12_device->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),

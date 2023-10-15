@@ -69,9 +69,9 @@ int main()
         for (int i = 0; i < 3; ++i)
         {
             gpu::GraphicsPipelineDesc pipeline_desc;
-            pipeline_desc.vs_filename = "shader.vert";
-            pipeline_desc.ps_filename = "shader.frag";
-            pipeline_desc.color_attachments.push_back(swapchain->GetImages()[i]);
+            pipeline_desc.vs_filename = "shader.vs";
+            pipeline_desc.ps_filename = "shader.ps";
+            pipeline_desc.color_attachments.push_back(swapchain->GetImage(i));
             pipelines.push_back(device->CreateGraphicsPipeline(pipeline_desc));
         }
 

@@ -1,0 +1,21 @@
+float g_Scale : register(b0);
+RWStructuredBuffer<int> g_IntBuffer;
+float g_Bias : register(b2);
+
+cbuffer myObject : register(b1)
+{
+    float scale123;
+    float3   vObjectPosition;
+    int      arrayIndex;
+}
+
+struct VS_OUTPUT
+{
+    float4 position : SV_Position;
+    float3 color    : TEXCOORD0;
+};
+
+float4 main(VS_OUTPUT input) : SV_Target0
+{
+    return float4(input.color * g_Scale + g_Bias, 1.0f) * scale123 + g_IntBuffer[0];
+}

@@ -16,7 +16,7 @@ namespace gpu
         auto& api = device_.GetD3D12Api();
         auto dxgi_factory = api.GetDXGIFactory();
 
-        swapchain_images_.resize(3);
+        swapchain_images_.resize(image_count);
 
         DXGI_SWAP_CHAIN_DESC1 swapchain_desc = {};
         swapchain_desc.Width = width;

@@ -6,6 +6,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <comdef.h>
 
 namespace gpu
 {
@@ -17,8 +18,12 @@ namespace gpu
 
         char const* what() const override
         {
+            _com_error err(hr_);
+            std::string hr_string = err.ErrorMessage();
+            hr_string.pop_back(); // Remove "." at the end of the string
+
             static std::string error_info = std::exception::what();
-            error_info += " (HRESULT = " + std::to_string(hr_) +
+            error_info += " (HRESULT = " + std::to_string(hr_) + ", \"" + hr_string + "\"" +
                 ", file: " + file_ + ", line: " + std::to_string(line_) + ")";
             return error_info.c_str();
         }
