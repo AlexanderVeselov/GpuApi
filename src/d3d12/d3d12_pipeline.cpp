@@ -41,61 +41,160 @@ D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(D3D_SHADER_INPUT_TYPE type)
     case D3D_SIT_CBUFFER:
         return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
     case D3D_SIT_TEXTURE:
+    case D3D_SIT_STRUCTURED:
+    case D3D_SIT_BYTEADDRESS:
+    case D3D_SIT_RTACCELERATIONSTRUCTURE:
         return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     case D3D_SIT_SAMPLER:
         return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+    case D3D_SIT_UAV_RWTYPED:
     case D3D_SIT_UAV_RWSTRUCTURED:
     case D3D_SIT_UAV_RWBYTEADDRESS:
         return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-    case D3D_SIT_UAV_RWTYPED:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-    case D3D_SIT_BYTEADDRESS:
-    case D3D_SIT_STRUCTURED:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-#if VW_ENABLE_DXR_SUPPORT
-    case D3D_SIT_RTACCELERATIONSTRUCTURE:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-#endif
     default:
-        assert(!"Not implemented");
+        assert(!"GetRangeType(...): D3D_SHADER_INPUT_TYPE is not supported");
         return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     }
 
 }
 
-void CollectRootParameters(ID3D12Device* d3d12_device,
-    ID3D12ShaderReflection* reflection, std::vector<D3D12_ROOT_PARAMETER>& root_parameters)
+D3D12_ROOT_PARAMETER_TYPE GetRootParameterType(D3D_SHADER_INPUT_TYPE type)
+{
+    switch (type)
+    {
+    case D3D_SIT_CBUFFER:
+        return D3D12_ROOT_PARAMETER_TYPE_CBV;
+    case D3D_SIT_TEXTURE:
+    case D3D_SIT_STRUCTURED:
+    case D3D_SIT_BYTEADDRESS:
+    case D3D_SIT_RTACCELERATIONSTRUCTURE:
+        return D3D12_ROOT_PARAMETER_TYPE_SRV;
+    case D3D_SIT_SAMPLER:
+        return D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    case D3D_SIT_UAV_RWTYPED:
+    case D3D_SIT_UAV_RWSTRUCTURED:
+    case D3D_SIT_UAV_RWBYTEADDRESS:
+        return D3D12_ROOT_PARAMETER_TYPE_UAV;
+    default:
+        assert(!"GetRootParameterType(...): D3D_SHADER_INPUT_TYPE is not supported");
+        return D3D12_ROOT_PARAMETER_TYPE_SRV;
+    }
+}
+
+void CollectRootParameters(ID3D12ShaderReflection* reflection,
+    std::vector<D3D12_ROOT_PARAMETER>& root_parameters)
 {
     // Get shader description
     D3D12_SHADER_DESC shader_desc = {};
     ThrowIfFailed(reflection->GetDesc(&shader_desc));
-
     for (std::uint32_t i = 0; i < shader_desc.BoundResources; ++i)
     {
         D3D12_SHADER_INPUT_BIND_DESC resource_desc = {};
         ThrowIfFailed(reflection->GetResourceBindingDesc(i, &resource_desc));
         ID3D12ShaderReflectionConstantBuffer* buf = reflection->GetConstantBufferByIndex(i);
 
+        if (std::string(resource_desc.Name) == "$Globals")
+        {
+            assert(!"Root constants are not supported for now");
+        }
+        printf("Resource %s\n", resource_desc.Name);
+
         D3D12_SHADER_BUFFER_DESC buffer_desc = {};
         buf->GetDesc(&buffer_desc);
 
         D3D12_ROOT_PARAMETER root_parameter = {};
-        root_parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        root_parameter.ParameterType = GetRootParameterType(resource_desc.Type);
         root_parameter.ShaderVisibility = GetShaderVisibility(
             (D3D12_SHADER_VERSION_TYPE)D3D12_SHVER_GET_TYPE(shader_desc.Version));
 
-        D3D12_DESCRIPTOR_RANGE descriptor_range = {};
-        descriptor_range.RangeType = GetRangeType(resource_desc.Type);
-        descriptor_range.NumDescriptors = resource_desc.BindCount;
-        descriptor_range.BaseShaderRegister = resource_desc.BindPoint;
-        descriptor_range.RegisterSpace = resource_desc.Space;
-        descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+        if (root_parameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS)
+        {
+            root_parameter.Constants.ShaderRegister = resource_desc.BindPoint;
+            root_parameter.Constants.RegisterSpace = resource_desc.Space;
+            root_parameter.Constants.Num32BitValues = buffer_desc.Size / 4;
+        }
+        else if (root_parameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV
+              || root_parameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV
+              || root_parameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV)
+        {
+            root_parameter.Descriptor.ShaderRegister = resource_desc.BindPoint;
+            root_parameter.Descriptor.RegisterSpace = resource_desc.Space;
+        }
+        else
+        {
+            assert(!"Not implemented! Need to save descriptor_range somewhere");
+            D3D12_DESCRIPTOR_RANGE descriptor_range = {};
+            descriptor_range.RangeType = GetRangeType(resource_desc.Type);
+            descriptor_range.NumDescriptors = resource_desc.BindCount;
+            descriptor_range.BaseShaderRegister = resource_desc.BindPoint;
+            descriptor_range.RegisterSpace = resource_desc.Space;
+            descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+            root_parameter.DescriptorTable.NumDescriptorRanges = 1;
+            root_parameter.DescriptorTable.pDescriptorRanges = &descriptor_range;
+        }
 
-        root_parameter.DescriptorTable.NumDescriptorRanges = 1;
-        root_parameter.DescriptorTable.pDescriptorRanges = &descriptor_range;
         root_parameters.push_back(root_parameter);
     }
+}
 
+DXGI_FORMAT ShaderReflectionTypeToFormat(D3D_REGISTER_COMPONENT_TYPE component_type, BYTE mask)
+{
+    if (component_type == D3D_REGISTER_COMPONENT_FLOAT32)
+    {
+        if (mask == 0x1) return DXGI_FORMAT_R32_FLOAT;
+        if (mask == 0x3) return DXGI_FORMAT_R32G32_FLOAT;
+        if (mask == 0x7) return DXGI_FORMAT_R32G32B32_FLOAT;
+        if (mask == 0xF) return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    }
+    else if (component_type == D3D_REGISTER_COMPONENT_UINT32)
+    {
+        if (mask == 0x1) return DXGI_FORMAT_R32_UINT;
+        if (mask == 0x3) return DXGI_FORMAT_R32G32_UINT;
+        if (mask == 0x7) return DXGI_FORMAT_R32G32B32_UINT;
+        if (mask == 0xF) return DXGI_FORMAT_R32G32B32A32_UINT;
+    }
+    else if (component_type == D3D_REGISTER_COMPONENT_SINT32)
+    {
+        if (mask == 0x1) return DXGI_FORMAT_R32_SINT;
+        if (mask == 0x3) return DXGI_FORMAT_R32G32_SINT;
+        if (mask == 0x7) return DXGI_FORMAT_R32G32B32_SINT;
+        if (mask == 0xF) return DXGI_FORMAT_R32G32B32A32_SINT;
+    }
+    assert(!"ShaderReflectionTypeToFormat(...): unknown format");
+    return DXGI_FORMAT_UNKNOWN;
+}
+
+void GetInputElementDescs(ID3D12ShaderReflection* reflection,
+    std::vector<D3D12_INPUT_ELEMENT_DESC>& element_descs)
+{
+    // Get the shader's input parameter count
+    D3D12_SHADER_DESC shader_desc;
+    reflection->GetDesc(&shader_desc);
+
+    for (std::uint32_t i = 0; i < shader_desc.InputParameters; ++i)
+    {
+        D3D12_SIGNATURE_PARAMETER_DESC param_desc;
+        reflection->GetInputParameterDesc(i, &param_desc);
+
+        // Skip system-generated semantics (e.g., SV_VertexID)
+        if (param_desc.SystemValueType != D3D_NAME_UNDEFINED)
+        {
+            continue;
+        }
+
+        // Create an input element description
+        D3D12_INPUT_ELEMENT_DESC input_element_desc = {};
+        input_element_desc.SemanticName = param_desc.SemanticName;
+        input_element_desc.SemanticIndex = param_desc.SemanticIndex;
+        input_element_desc.Format = ShaderReflectionTypeToFormat(param_desc.ComponentType, param_desc.Mask);
+        input_element_desc.InputSlot = 0;
+        input_element_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+        input_element_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        input_element_desc.InstanceDataStepRate = 0;
+
+        // Add the input element description to the vector
+        element_descs.push_back(input_element_desc);
+    }
 }
 }
 
@@ -112,13 +211,13 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
     D3D12_SHADER_BYTECODE vs_bytecode = {};
     vs_bytecode.BytecodeLength = vs_shader.dxc_blob->GetBufferSize();
     vs_bytecode.pShaderBytecode = vs_shader.dxc_blob->GetBufferPointer();
-    CollectRootParameters(d3d12_device, vs_shader.reflection.Get(), root_parameters);
+    CollectRootParameters(vs_shader.reflection.Get(), root_parameters);
 
     D3D12Shader ps_shader = shader_manager.CompileShader(pipeline_desc.ps_filename.c_str(), "main", "ps_6_0");
     D3D12_SHADER_BYTECODE ps_bytecode = {};
     ps_bytecode.BytecodeLength = ps_shader.dxc_blob->GetBufferSize();
     ps_bytecode.pShaderBytecode = ps_shader.dxc_blob->GetBufferPointer();
-    CollectRootParameters(d3d12_device, ps_shader.reflection.Get(), root_parameters);
+    CollectRootParameters(ps_shader.reflection.Get(), root_parameters);
 
     D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
     root_signature_desc.NumParameters = (UINT)root_parameters.size();
@@ -169,16 +268,12 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
     depth_stencil_state.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
     depth_stencil_state.StencilEnable = false;
 
-    ///@TODO: make configurable input layout
-    D3D12_INPUT_ELEMENT_DESC input_element_descs[2] =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR",    0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-    };
+    std::vector<D3D12_INPUT_ELEMENT_DESC> input_element_descs;
+    GetInputElementDescs(vs_shader.reflection.Get(), input_element_descs);
 
     D3D12_INPUT_LAYOUT_DESC input_layout = {};
-    input_layout.pInputElementDescs = input_element_descs;
-    input_layout.NumElements = 2u;
+    input_layout.pInputElementDescs = input_element_descs.data();
+    input_layout.NumElements = (std::uint32_t)input_element_descs.size();
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline_state_desc = {};
     pipeline_state_desc.pRootSignature = root_signature_.Get();
@@ -227,7 +322,7 @@ D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_f
     cs_bytecode.pShaderBytecode = cs_shader.dxc_blob->GetBufferPointer();
 
     std::vector<D3D12_ROOT_PARAMETER> root_parameters;
-    CollectRootParameters(d3d12_device, cs_shader.reflection.Get(), root_parameters);
+    CollectRootParameters(cs_shader.reflection.Get(), root_parameters);
 
     D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
     root_signature_desc.NumParameters = (UINT)root_parameters.size();
