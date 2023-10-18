@@ -114,8 +114,8 @@ void CollectRootParameters(ID3D12ShaderReflection* reflection,
             root_parameter.Constants.Num32BitValues = buffer_desc.Size / 4;
         }
         else if (root_parameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_CBV
-              || root_parameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV
-              || root_parameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV)
+            || root_parameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_SRV
+            || root_parameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_UAV)
         {
             root_parameter.Descriptor.ShaderRegister = resource_desc.BindPoint;
             root_parameter.Descriptor.RegisterSpace = resource_desc.Space;
@@ -198,22 +198,42 @@ void GetInputElementDescs(ID3D12ShaderReflection* reflection,
 }
 }
 
+D3D12Pipeline::D3D12Pipeline(D3D12Device& device)
+    : device_(device)
+{
+
+}
+
+void D3D12Pipeline::BindBuffer(BufferPtr const& buffer, std::uint32_t binding, std::uint32_t space)
+{
+
+}
+
+void D3D12Pipeline::BindImage(ImagePtr const& image, std::uint32_t binding, std::uint32_t space)
+{
+
+}
+
 D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc)
-    : GraphicsPipeline(pipeline_desc)
-    , device_(device)
+    : GraphicsPipeline(pipeline_desc), D3D12Pipeline(device)
+{
+    Reload();
+}
+
+void D3D12GraphicsPipeline::Reload()
 {
     auto d3d12_device = device_.GetD3D12Device();
 
     D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
     std::vector<D3D12_ROOT_PARAMETER> root_parameters;
-    D3D12Shader vs_shader = shader_manager.CompileShader(pipeline_desc.vs_filename.c_str(), "main", "vs_6_0");
+    D3D12Shader vs_shader = shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(), "main", "vs_6_0");
     D3D12_SHADER_BYTECODE vs_bytecode = {};
     vs_bytecode.BytecodeLength = vs_shader.dxc_blob->GetBufferSize();
     vs_bytecode.pShaderBytecode = vs_shader.dxc_blob->GetBufferPointer();
     CollectRootParameters(vs_shader.reflection.Get(), root_parameters);
 
-    D3D12Shader ps_shader = shader_manager.CompileShader(pipeline_desc.ps_filename.c_str(), "main", "ps_6_0");
+    D3D12Shader ps_shader = shader_manager.CompileShader(pipeline_desc_.ps_filename.c_str(), "main", "ps_6_0");
     D3D12_SHADER_BYTECODE ps_bytecode = {};
     ps_bytecode.BytecodeLength = ps_shader.dxc_blob->GetBufferSize();
     ps_bytecode.pShaderBytecode = ps_shader.dxc_blob->GetBufferPointer();
@@ -235,7 +255,7 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
             error_blob_message.pop_back(); // remove \n
 
             static std::string error_message = "Failed to serialize graphics root signature "
-                "(vs: " + pipeline_desc.vs_filename + ", ps: " + pipeline_desc.ps_filename + "): "
+                "(vs: " + pipeline_desc_.vs_filename + ", ps: " + pipeline_desc_.ps_filename + "): "
                 + error_blob_message;
             throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
         }
@@ -311,12 +331,17 @@ D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipeli
 }
 
 D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_filename)
-    : device_(device)
+    : ComputePipeline(cs_filename), D3D12Pipeline(device)
+{
+    Reload();
+}
+
+void D3D12ComputePipeline::Reload()
 {
     auto d3d12_device = device_.GetD3D12Device();
     D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
-    D3D12Shader cs_shader = shader_manager.CompileShader(cs_filename, "main", "cs_6_0");
+    D3D12Shader cs_shader = shader_manager.CompileShader(cs_filename_.c_str(), "main", "cs_6_0");
     D3D12_SHADER_BYTECODE cs_bytecode = {};
     cs_bytecode.BytecodeLength = cs_shader.dxc_blob->GetBufferSize();
     cs_bytecode.pShaderBytecode = cs_shader.dxc_blob->GetBufferPointer();

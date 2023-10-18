@@ -70,6 +70,7 @@ set(D3D12_FILES
 
 set(COMMON_SOURCES
     src/common/gpu_api.cpp
+    src/common/gpu_pipeline.cpp
     src/common/utils.hpp
 )
 

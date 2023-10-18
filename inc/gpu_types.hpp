@@ -29,6 +29,7 @@ namespace gpu
     // Unique resources
     using DevicePtr             = Ptr<Device>;
     using CommandBufferPtr      = Ptr<CommandBuffer>;
+    using PipelinePtr           = Ptr<Pipeline>;
     using GraphicsPipelinePtr   = Ptr<GraphicsPipeline>;
     using ComputePipelinePtr    = Ptr<ComputePipeline>;
     using SwapchainPtr          = Ptr<Swapchain>;
