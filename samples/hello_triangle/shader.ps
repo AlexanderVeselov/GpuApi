@@ -1,12 +1,12 @@
 //float g_Scale : register(b0);
-RWStructuredBuffer<int> g_IntBuffer;
+//RWStructuredBuffer<int> g_IntBuffer;
 //float g_Bias : register(b2);
 
-cbuffer ConstantBuffer : register(b1)
-{
-    float3  offset;
-    float   scale;
-}
+//cbuffer ConstantBuffer : register(b1)
+//{
+//    float3  custom_color;
+//    float   scale;
+//}
 
 struct VS_OUTPUT
 {
@@ -16,5 +16,5 @@ struct VS_OUTPUT
 
 float4 main(VS_OUTPUT input) : SV_Target0
 {
-    return float4(input.color + offset, 1.0f) * scale + g_IntBuffer[0];
+    return float4(input.color, 1.0f);
 }

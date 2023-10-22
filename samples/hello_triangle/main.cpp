@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <thread>
 
 GLFWwindow* CreateWindow(std::uint32_t width, std::uint32_t height)
 {
@@ -95,15 +96,15 @@ int main()
         while (!glfwWindowShouldClose(window))
         {
             glfwPollEvents();
-
             gpu::CommandBufferPtr cmd_buffer = graphics_queue.CreateCommandBuffer();
             gpu::ImagePtr swapchain_image = swapchain->GetCurrentImage();
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kPresent, gpu::ImageLayout::kRenderTarget);
             cmd_buffer->ClearImage(swapchain_image, 0.5f, 0.5f, 1.0f, 1.0f);
             cmd_buffer->BindGraphicsPipeline(pipelines[swapchain->GetCurrentImageIndex()]);
-            cmd_buffer->SetVertexBuffer(vertex_buffer);
+            cmd_buffer->SetVertexBuffer(vertex_buffer, sizeof(Vertex));
             cmd_buffer->Draw(3, 0);
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kRenderTarget, gpu::ImageLayout::kPresent);
+
             cmd_buffer->End();
 
             graphics_queue.Submit(cmd_buffer);

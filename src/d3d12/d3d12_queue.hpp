@@ -18,13 +18,11 @@ namespace gpu
         void WaitIdle() override;
 
         ID3D12CommandQueue* GetQueue() const { return queue_.Get(); }
-        ID3D12CommandAllocator* GetCommandAllocator() const { return command_allocator_.Get(); }
 
     private:
         D3D12Device& device_;
         D3D12_COMMAND_LIST_TYPE command_list_type_;
         ComPtr<ID3D12CommandQueue> queue_;
-        ComPtr<ID3D12CommandAllocator> command_allocator_;
 
     };
 

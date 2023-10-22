@@ -13,8 +13,11 @@ namespace gpu
     public:
         D3D12DescriptorManager(D3D12Device& device, D3D12_DESCRIPTOR_HEAP_TYPE desc_type);
 
-        D3D12_CPU_DESCRIPTOR_HANDLE AllocateDescriptor();
-        void FreeDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE handle);
+        std::uint32_t AllocateDescriptor();
+        void FreeDescriptor(std::uint32_t descriptor);
+
+        D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle(std::uint32_t descriptor);
+        D3D12_GPU_DESCRIPTOR_HANDLE GetGPUDescriptorHandle(std::uint32_t descriptor);
         ID3D12DescriptorHeap* GetDescriptorHeap() const { return descriptor_heap_.Get(); }
 
     private:

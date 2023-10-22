@@ -37,9 +37,6 @@ namespace gpu
 
 } // namespace gpu
 
-#define ThrowIfFailed(x, msg) \
-    { HRESULT hr = (x); if (FAILED(hr)) { throw D3D12Exception(msg, hr, __FILE__, __LINE__); } }
-
 #define ThrowIfFailed(x) \
     { HRESULT hr = (x); if (FAILED(hr)) { static std::string msg = "Failed to execute " + std::string(#x); throw D3D12Exception(msg.c_str(), hr, __FILE__, __LINE__); } }
 

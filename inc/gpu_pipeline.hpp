@@ -5,39 +5,19 @@
 
 namespace gpu
 {
-enum class BindingType
-{
-    kBuffer,
-    kImage,
-    kSampler
-};
-
-struct Binding
-{
-    std::string name;
-    std::uint32_t binding;
-    std::uint32_t space;
-    BindingType type;
-    union
-    {
-        BufferPtr buffer;
-        ImagePtr image;
-        // SamplerPtr sampler;
-    };
-};
 
 class Pipeline
 {
 public:
-    void BindBuffer(BufferPtr const& buffer, std::uint32_t binding, std::uint32_t space);
-    void BindImage(ImagePtr const& image, std::uint32_t binding, std::uint32_t space);
+    virtual void BindBuffer(BufferPtr const& buffer, std::uint32_t binding, std::uint32_t space) = 0;
+    virtual void BindImage(ImagePtr const& image, std::uint32_t binding, std::uint32_t space) = 0;
     virtual void Reload() = 0;
+    virtual ~Pipeline() = default;
 
 protected:
-    std::vector<Binding> bindings_;
 };
 
-class GraphicsPipeline : public Pipeline
+class GraphicsPipeline : virtual public Pipeline
 {
 public:
     GraphicsPipeline(GraphicsPipelineDesc const& desc) : pipeline_desc_(desc) {}
@@ -47,7 +27,7 @@ protected:
     GraphicsPipelineDesc pipeline_desc_;
 };
 
-class ComputePipeline : public Pipeline
+class ComputePipeline : virtual public Pipeline
 {
 public:
     ComputePipeline(char const* cs_filename) : cs_filename_(cs_filename) {}

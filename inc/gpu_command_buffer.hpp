@@ -23,7 +23,7 @@ namespace gpu
         virtual void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) = 0;
         //virtual void BindComputePipeline(ComputePipelinePtr const& pipeline) = 0;
 
-        virtual void SetVertexBuffer(BufferPtr buffer) = 0;
+        virtual void SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride) = 0;
 
         virtual void ClearImage(ImagePtr image, float r, float g, float b, float a) = 0;
 
@@ -31,7 +31,9 @@ namespace gpu
 
         virtual void StorageBarrier(ImagePtr image) = 0;
 
+        virtual void Reset() = 0;
         virtual void End() = 0;
+        virtual ~CommandBuffer() = default;
     };
 
 } // namespace gpu

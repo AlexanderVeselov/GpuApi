@@ -43,6 +43,7 @@ namespace gpu
     D3D12Image::D3D12Image(D3D12Device& device, std::uint32_t width, std::uint32_t height,
         ImageFormat format)
         : Image(width, height, format)
+        , device_(device)
     {
         auto d3d12_device = device.GetD3D12Device();
 
@@ -69,26 +70,41 @@ namespace gpu
 
         ThrowIfFailed(d3d12_device->CreateCommittedResource(&heap_properties, D3D12_HEAP_FLAG_NONE,
             &resource_desc, D3D12_RESOURCE_STATE_COMMON, &clear_value, IID_PPV_ARGS(&resource_)));
-
-        // Create default RTV
-        rtv_handle_ = device.GetRTVDescManager().AllocateDescriptor();
-        device.GetD3D12Device()->CreateRenderTargetView(resource_.Get(), nullptr, rtv_handle_);
-
     }
 
     D3D12Image::D3D12Image(D3D12Device& device, ID3D12Resource* resource,
         std::uint32_t width, std::uint32_t height, ImageFormat format)
         : Image(width, height, format)
         , resource_(resource)
+        , device_(device)
     {
-        // Create default RTV
-        rtv_handle_ = device.GetRTVDescManager().AllocateDescriptor();
-        device.GetD3D12Device()->CreateRenderTargetView(resource_.Get(), nullptr, rtv_handle_);
     }
 
     DXGI_FORMAT D3D12Image::GetDXGIFormat() const
     {
         return ImageToDXGIFormat(format_);
     }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetRTVHandle()
+    {
+        D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle;
+
+        if (default_rtv_ == kNullDescriptor)
+        {
+            default_rtv_ = device_.GetRTVDescManager().AllocateDescriptor();
+            rtv_handle = device_.GetRTVDescManager().GetCPUDescriptorHandle(default_rtv_);
+            device_.GetD3D12Device()->CreateRenderTargetView(resource_.Get(), nullptr, rtv_handle);
+            return rtv_handle;
+        }
+        else
+        {
+            return device_.GetRTVDescManager().GetCPUDescriptorHandle(default_rtv_);
+        }
+    }
+
+    //D3D12_GPU_DESCRIPTOR_HANDLE D3D12Image::GetSRVHandle()
+    //{
+    //
+    //}
 
 } // namespace gpu

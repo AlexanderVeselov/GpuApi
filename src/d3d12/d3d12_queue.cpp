@@ -16,9 +16,6 @@ namespace gpu
         queue_desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         queue_desc.Type = command_list_type_;
         ThrowIfFailed(d3d12_device->CreateCommandQueue(&queue_desc, IID_PPV_ARGS(&queue_)));
-
-        ThrowIfFailed(d3d12_device->CreateCommandAllocator(command_list_type_, IID_PPV_ARGS(&command_allocator_)));
-
     }
 
     CommandBufferPtr D3D12Queue::CreateCommandBuffer()
