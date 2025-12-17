@@ -22,7 +22,7 @@ namespace gpu
             std::string hr_string = err.ErrorMessage();
             hr_string.pop_back(); // Remove "." at the end of the string
 
-            static std::string error_info = std::exception::what();
+            std::string error_info = std::exception::what();
             error_info += " (HRESULT = " + std::to_string(hr_) + ", \"" + hr_string + "\"" +
                 ", file: " + file_ + ", line: " + std::to_string(line_) + ")";
             return error_info.c_str();
@@ -38,6 +38,6 @@ namespace gpu
 } // namespace gpu
 
 #define ThrowIfFailed(x) \
-    { HRESULT hr = (x); if (FAILED(hr)) { static std::string msg = "Failed to execute " + std::string(#x); throw D3D12Exception(msg.c_str(), hr, __FILE__, __LINE__); } }
+    { HRESULT hr = (x); if (FAILED(hr)) { std::string msg = "Failed to execute " + std::string(#x); throw D3D12Exception(msg.c_str(), hr, __FILE__, __LINE__); } }
 
 #endif // D3D12_API_HPP_
