@@ -19,8 +19,6 @@ namespace gpu
     private:
         D3D12Device& device_;
         ComPtr<IDXGISwapChain1> swapchain_;
-
-
     };
 
 } // namespace gpu

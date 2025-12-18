@@ -1,6 +1,7 @@
 #include "gpu_api.hpp"
 #include "gpu_device.hpp"
 #include "gpu_buffer.hpp"
+#include "gpu_image.hpp"
 #include "gpu_queue.hpp"
 #include "gpu_command_buffer.hpp"
 #include "gpu_pipeline.hpp"
@@ -65,16 +66,14 @@ int main()
 
         auto& graphics_queue = device->GetQueue(gpu::QueueType::kGraphics);
 
-        std::vector<gpu::GraphicsPipelinePtr> pipelines;
+        gpu::GraphicsPipelinePtr pipeline;
 
-        for (int i = 0; i < 3; ++i)
-        {
-            gpu::GraphicsPipelineDesc pipeline_desc;
-            pipeline_desc.vs_filename = "shader.vs";
-            pipeline_desc.ps_filename = "shader.ps";
-            pipeline_desc.color_attachments.push_back(swapchain->GetImage(i));
-            pipelines.push_back(device->CreateGraphicsPipeline(pipeline_desc));
-        }
+        gpu::GraphicsPipelineDesc pipeline_desc;
+        pipeline_desc.vs_filename = "shader.vs";
+        pipeline_desc.ps_filename = "shader.ps";
+        pipeline_desc.color_attachment_formats = { swapchain->GetFormat() };
+        pipeline_desc.depth_enabled = false;
+        pipeline = device->CreateGraphicsPipeline(pipeline_desc);
 
         struct Vertex
         {
@@ -100,7 +99,10 @@ int main()
             gpu::ImagePtr swapchain_image = swapchain->GetCurrentImage();
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kPresent, gpu::ImageLayout::kRenderTarget);
             cmd_buffer->ClearImage(swapchain_image, 0.5f, 0.5f, 1.0f, 1.0f);
-            cmd_buffer->BindGraphicsPipeline(pipelines[swapchain->GetCurrentImageIndex()]);
+            cmd_buffer->BindGraphicsPipeline(pipeline);
+            cmd_buffer->SetViewport(swapchain_image->GetWidth(), swapchain_image->GetHeight());
+            cmd_buffer->SetScissorRect(swapchain_image->GetWidth(), swapchain_image->GetHeight());
+            cmd_buffer->SetRenderTarget(swapchain_image, nullptr);
             cmd_buffer->SetVertexBuffer(vertex_buffer, sizeof(Vertex));
             cmd_buffer->Draw(3, 0);
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kRenderTarget, gpu::ImageLayout::kPresent);

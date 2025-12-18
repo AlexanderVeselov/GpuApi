@@ -31,6 +31,12 @@ public:
 
     void SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride) override;
 
+    void SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment) override;
+    void SetRenderTargets(std::vector<ImagePtr> const& color_attachments,
+        ImagePtr depth_attachment) override;
+    void SetViewport(std::uint32_t width, std::uint32_t height) override;
+    void SetScissorRect(std::uint32_t width, std::uint32_t height) override;
+
     void ClearImage(ImagePtr image, float r, float g, float b, float a) override;
 
     void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) override;

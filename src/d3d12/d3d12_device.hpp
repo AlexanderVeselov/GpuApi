@@ -38,6 +38,7 @@ namespace gpu
         D3D12Api& GetD3D12Api() { return api_; }
 
         D3D12DescriptorManager& GetRTVDescManager() const { return *rtv_desc_manager_; }
+        D3D12DescriptorManager& GetDSVDescManager() const { return *dsv_desc_manager_; }
         D3D12DescriptorManager& GetCBVSRVUAVDescManager() const { return *cbv_srv_uav_desc_manager_; }
 
     private:
@@ -46,6 +47,7 @@ namespace gpu
         std::unique_ptr<Queue> graphics_queue_;
         std::unique_ptr<Queue> compute_queue_;
         std::unique_ptr<D3D12DescriptorManager> rtv_desc_manager_;
+        std::unique_ptr<D3D12DescriptorManager> dsv_desc_manager_;
         std::unique_ptr<D3D12DescriptorManager> cbv_srv_uav_desc_manager_;
 
     };

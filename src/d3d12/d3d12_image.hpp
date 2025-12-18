@@ -17,6 +17,7 @@ namespace gpu
             std::uint32_t width, std::uint32_t height, ImageFormat format);
 
         D3D12_CPU_DESCRIPTOR_HANDLE GetRTVHandle();
+        D3D12_CPU_DESCRIPTOR_HANDLE GetDSVHandle();
         //D3D12_GPU_DESCRIPTOR_HANDLE GetSRVHandle();
         ID3D12Resource* GetResource() const { return resource_.Get(); }
         DXGI_FORMAT GetDXGIFormat() const;
@@ -26,7 +27,8 @@ namespace gpu
         D3D12Device& device_;
         std::vector<std::uint32_t> srv_descriptors_;
         std::vector<std::uint32_t> uav_descriptors_;
-        std::uint32_t default_rtv_ = kNullDescriptor;
+        uint32_t default_rtv_ = kNullDescriptor;
+        uint32_t dsv_ = kNullDescriptor;
     };
 
 } // namespace gpu

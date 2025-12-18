@@ -11,7 +11,7 @@ namespace gpu
 {
     D3D12Swapchain::D3D12Swapchain(D3D12Device& device, void* window_native_handle,
         std::uint32_t width, std::uint32_t height, std::uint32_t image_count)
-        : device_(device)
+        : Swapchain(ImageFormat::kRGBA8_UNorm), device_(device)
     {
         auto& api = device_.GetD3D12Api();
         auto dxgi_factory = api.GetDXGIFactory();
@@ -21,7 +21,7 @@ namespace gpu
         DXGI_SWAP_CHAIN_DESC1 swapchain_desc = {};
         swapchain_desc.Width = width;
         swapchain_desc.Height = height;
-        swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        swapchain_desc.Format = ImageToDXGIFormat(image_format_);
         swapchain_desc.SampleDesc = { 1, 0 };
         swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapchain_desc.BufferCount = static_cast<std::uint32_t>(swapchain_images_.size());

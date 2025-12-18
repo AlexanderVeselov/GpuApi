@@ -61,6 +61,34 @@ D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(D3D_SHADER_INPUT_TYPE type)
     }
 }
 
+D3D12_COMPARISON_FUNC DepthFuncToD3D12(DepthFunc depth_func)
+{
+    switch (depth_func)
+    {
+    case DepthFunc::kNone:
+        return D3D12_COMPARISON_FUNC_NONE;
+    case DepthFunc::kNever:
+        return D3D12_COMPARISON_FUNC_NEVER;
+    case DepthFunc::kLess:
+        return D3D12_COMPARISON_FUNC_LESS;
+    case DepthFunc::kEqual:
+        return D3D12_COMPARISON_FUNC_EQUAL;
+    case DepthFunc::kLessEqual:
+        return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    case DepthFunc::kGreater:
+        return D3D12_COMPARISON_FUNC_GREATER;
+    case DepthFunc::kNotEqual:
+        return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+    case DepthFunc::kGreaterEqual:
+        return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+    case DepthFunc::kAlways:
+        return D3D12_COMPARISON_FUNC_ALWAYS;
+    default:
+        assert(!"DepthFuncToD3D12: unknown depth func");
+        return D3D12_COMPARISON_FUNC_NONE;
+    }
+}
+
 void CollectRootParameters(ID3D12ShaderReflection* reflection,
     std::vector<D3D12_DESCRIPTOR_RANGE>& descriptor_ranges,
     std::vector<D3D12_ROOT_PARAMETER>& root_parameters)
@@ -354,9 +382,9 @@ void D3D12GraphicsPipeline::Reload()
     rasterizer_state.ForcedSampleCount = 0;
 
     D3D12_DEPTH_STENCIL_DESC depth_stencil_state = {};
-    depth_stencil_state.DepthEnable = (pipeline_desc_.depth_attachment != nullptr);
+    depth_stencil_state.DepthEnable = pipeline_desc_.depth_enabled;
     depth_stencil_state.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
-    depth_stencil_state.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+    depth_stencil_state.DepthFunc = DepthFuncToD3D12(pipeline_desc_.depth_func);
     depth_stencil_state.StencilEnable = FALSE;
     depth_stencil_state.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
     depth_stencil_state.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
@@ -382,21 +410,19 @@ void D3D12GraphicsPipeline::Reload()
     pipeline_state_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
     // Color attachments
-    pipeline_state_desc.NumRenderTargets = pipeline_desc_.color_attachments.size();
+    pipeline_state_desc.NumRenderTargets = pipeline_desc_.color_attachment_formats.size();
     assert(pipeline_state_desc.NumRenderTargets < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT);
 
-    for (std::uint32_t rt_index = 0; rt_index < pipeline_desc_.color_attachments.size(); ++rt_index)
+    for (std::uint32_t rt_index = 0; rt_index < pipeline_desc_.color_attachment_formats.size(); ++rt_index)
     {
-        auto& rt = pipeline_desc_.color_attachments[rt_index];
-        D3D12Image* d3d12_rt = static_cast<D3D12Image*>(rt.get());
-        pipeline_state_desc.RTVFormats[rt_index] = d3d12_rt->GetDXGIFormat();
+        auto img_format = pipeline_desc_.color_attachment_formats[rt_index];
+        pipeline_state_desc.RTVFormats[rt_index] = ImageToDXGIFormat(img_format);
     }
 
     // Depth attachment
-    if (pipeline_desc_.depth_attachment != nullptr)
+    if (pipeline_desc_.depth_enabled)
     {
-        D3D12Image* d3d12_depth_image = static_cast<D3D12Image*>(pipeline_desc_.depth_attachment.get());
-        pipeline_state_desc.DSVFormat = d3d12_depth_image->GetDXGIFormat();
+        pipeline_state_desc.DSVFormat = ImageToDXGIFormat(pipeline_desc_.depth_attachment_format);
     }
 
     pipeline_state_desc.SampleDesc.Count = 1u;

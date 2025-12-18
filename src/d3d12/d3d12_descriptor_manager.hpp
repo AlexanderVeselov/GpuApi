@@ -11,7 +11,8 @@ namespace gpu
     class D3D12DescriptorManager
     {
     public:
-        D3D12DescriptorManager(D3D12Device& device, D3D12_DESCRIPTOR_HEAP_TYPE desc_type);
+        D3D12DescriptorManager(D3D12Device& device, D3D12_DESCRIPTOR_HEAP_TYPE desc_type,
+            uint32_t num_descriptors);
 
         std::uint32_t AllocateDescriptor();
         void FreeDescriptor(std::uint32_t descriptor);
@@ -24,7 +25,7 @@ namespace gpu
         ComPtr<ID3D12DescriptorHeap> descriptor_heap_;
         std::uint32_t desc_size_;
         std::uint32_t num_allocated_descriptors_ = 0;
-
+        uint32_t num_descriptors_ = 0;
     };
 }
 

@@ -23,6 +23,12 @@ namespace gpu
         virtual void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) = 0;
         //virtual void BindComputePipeline(ComputePipelinePtr const& pipeline) = 0;
 
+        virtual void SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment) = 0;
+        virtual void SetRenderTargets(std::vector<ImagePtr> const& color_attachments,
+            ImagePtr depth_attachment) = 0;
+        virtual void SetViewport(std::uint32_t width, std::uint32_t height) = 0;
+        virtual void SetScissorRect(std::uint32_t width, std::uint32_t height) = 0;
+
         virtual void SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride) = 0;
 
         virtual void ClearImage(ImagePtr image, float r, float g, float b, float a) = 0;

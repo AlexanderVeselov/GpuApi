@@ -53,7 +53,7 @@ D3D12CommandBuffer::D3D12CommandBuffer(D3D12Device& device,
 
 void D3D12CommandBuffer::BindDescriptorsGraphics()
 {
-    assert(current_graphics_pipeline_ != nullptr);
+    assert(current_graphics_pipeline_);
 
     auto const& bindings = current_graphics_pipeline_->GetBindings();
 
@@ -77,7 +77,7 @@ void D3D12CommandBuffer::BindDescriptorsGraphics()
 
 void D3D12CommandBuffer::BindDescriptorsCompute(D3D12ComputePipeline* d3d12_pipeline)
 {
-    assert(d3d12_pipeline != nullptr);
+    assert(d3d12_pipeline);
 
     //current_pipeline_
     //cmd_list_->SetGraphicsRoot32BitConstants
@@ -127,53 +127,18 @@ void D3D12CommandBuffer::DrawIndexedInstanced(std::uint32_t index_count,
 void D3D12CommandBuffer::BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline)
 {
     D3D12GraphicsPipeline* d3d12_pipeline = static_cast<D3D12GraphicsPipeline*>(pipeline.get());
+    assert(d3d12_pipeline && "D3D12CommandBuffer::BindGraphicsPipeline: pipeline is not a D3D12GraphicsPipeline");
     current_graphics_pipeline_ = d3d12_pipeline;
 
-    auto& pipeline_desc = d3d12_pipeline->GetDesc();
-
-    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtvs;
-    rtvs.resize(pipeline_desc.color_attachments.size());
-
-    std::uint32_t width = 0;
-    std::uint32_t height = 0;
-
-    for (auto i = 0; i < rtvs.size(); ++i)
-    {
-        D3D12Image* d3d12_image = static_cast<D3D12Image*>(pipeline_desc.color_attachments[i].get());
-        rtvs[i] = d3d12_image->GetRTVHandle();
-
-        ///@TODO: check if all images are equal width/height
-        width = d3d12_image->GetWidth();
-        height = d3d12_image->GetHeight();
-    }
-
-    D3D12_VIEWPORT viewport = {};
-    viewport.TopLeftX = 0.0f;
-    viewport.TopLeftY = 0.0f;
-    viewport.Width = width;
-    viewport.Height = height;
-    viewport.MinDepth = 0.0f;
-    viewport.MaxDepth = 1.0f;
-    cmd_list_->RSSetViewports(1u, &viewport);
-
-    D3D12_RECT scissor = {};
-    scissor.left = 0;
-    scissor.top = 0;
-    scissor.right = width;
-    scissor.bottom = height;
-    cmd_list_->RSSetScissorRects(1u, &scissor);
-
-    ///@TODO: add DSV!!!
-    cmd_list_->OMSetRenderTargets(rtvs.size(), rtvs.data(), false, nullptr);
     cmd_list_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     cmd_list_->SetPipelineState(d3d12_pipeline->GetPipelineState());
     cmd_list_->SetGraphicsRootSignature(d3d12_pipeline->GetRootSignature());
-
 }
 
 void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride)
 {
     D3D12Buffer* d3d12_buffer = static_cast<D3D12Buffer*>(buffer.get());
+    assert(d3d12_buffer && "D3D12CommandBuffer::SetVertexBuffer: buffer is not a D3D12Buffer");
 
     D3D12_VERTEX_BUFFER_VIEW vertex_buffer_view = {};
     vertex_buffer_view.BufferLocation = d3d12_buffer->GetResource()->GetGPUVirtualAddress();
@@ -183,13 +148,71 @@ void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer, std::size_t vertex_st
     cmd_list_->IASetVertexBuffers(0, 1, &vertex_buffer_view);
 }
 
+void D3D12CommandBuffer::SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment)
+{
+    SetRenderTargets({ color_attachment }, depth_attachment);
+}
+
+void D3D12CommandBuffer::SetRenderTargets(std::vector<ImagePtr> const& color_attachments,
+    ImagePtr depth_attachment)
+{
+    assert(color_attachments.size() <= D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT);
+
+    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtv_handles;
+    rtv_handles.resize(color_attachments.size());
+
+    for (size_t i = 0; i < color_attachments.size(); ++i)
+    {
+        D3D12Image* d3d12_image = static_cast<D3D12Image*>(color_attachments[i].get());
+        assert(d3d12_image &&
+            "D3D12CommandBuffer::SetRenderTargets: color attachment is not a D3D12Image");
+        rtv_handles[i] = d3d12_image->GetRTVHandle();
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE dsv_handle = {};
+
+    if (depth_attachment)
+    {
+        D3D12Image* d3d12_image = static_cast<D3D12Image*>(depth_attachment.get());
+        assert(d3d12_image &&
+            "D3D12CommandBuffer::SetRenderTargets: depth attachment is not a D3D12Image");
+        dsv_handle = d3d12_image->GetDSVHandle();
+    }
+
+    cmd_list_->OMSetRenderTargets(static_cast<UINT>(rtv_handles.size()),
+        !rtv_handles.empty() ? rtv_handles.data() : nullptr, FALSE,
+        depth_attachment ? &dsv_handle : nullptr);
+}
+
+void D3D12CommandBuffer::SetViewport(std::uint32_t width, std::uint32_t height)
+{
+    D3D12_VIEWPORT viewport = {};
+    viewport.TopLeftX = 0.0f;
+    viewport.TopLeftY = 0.0f;
+    viewport.Width = static_cast<FLOAT>(width);
+    viewport.Height = static_cast<FLOAT>(height);
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+    cmd_list_->RSSetViewports(1u, &viewport);
+}
+
+void D3D12CommandBuffer::SetScissorRect(std::uint32_t width, std::uint32_t height)
+{
+    D3D12_RECT scissor_rect = {};
+    scissor_rect.left = 0;
+    scissor_rect.top = 0;
+    scissor_rect.right = static_cast<LONG>(width);
+    scissor_rect.bottom = static_cast<LONG>(height);
+    cmd_list_->RSSetScissorRects(1u, &scissor_rect);
+}
+
 void D3D12CommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, float a)
 {
     D3D12Image* d3d12_image = static_cast<D3D12Image*>(image.get());
+    assert(d3d12_image && "D3D12CommandBuffer::ClearImage: image is not a D3D12Image");
 
     D3D12_RECT rect = { 0, 0, (LONG)image->GetWidth(), (LONG)image->GetHeight() };
     float color[4] = { r, g, b, a };
-
     cmd_list_->ClearRenderTargetView(d3d12_image->GetRTVHandle(), color, 1u, &rect);
 }
 

@@ -19,10 +19,13 @@ namespace gpu
         compute_queue_ = std::make_unique<D3D12Queue>(*this, D3D12_COMMAND_LIST_TYPE_COMPUTE);
 
         rtv_desc_manager_ = std::make_unique<D3D12DescriptorManager>(*this,
-            D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+            D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 32);
+
+        dsv_desc_manager_ = std::make_unique<D3D12DescriptorManager>(*this,
+            D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 8);
 
         cbv_srv_uav_desc_manager_ = std::make_unique<D3D12DescriptorManager>(*this,
-            D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024);
     }
 
     Queue& D3D12Device::GetQueue(QueueType queue_type)
