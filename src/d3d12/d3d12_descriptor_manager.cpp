@@ -21,18 +21,42 @@ D3D12DescriptorManager::D3D12DescriptorManager(D3D12Device& device,
 
     // Get descriptor handle size
     desc_size_ = d3d12_device->GetDescriptorHandleIncrementSize(desc_type);
+
+#ifndef NDEBUG
+    descriptor_allocated_.resize(num_descriptors_);
+#endif
 }
 
 std::uint32_t D3D12DescriptorManager::AllocateDescriptor()
 {
-    // TODO: this is the simplest way
+    if (!free_descriptors_.empty())
+    {
+        const std::uint32_t descriptor = free_descriptors_.back();
+        free_descriptors_.pop_back();
+#ifndef NDEBUG
+        assert(!descriptor_allocated_[descriptor]);
+        descriptor_allocated_[descriptor] = true;
+#endif
+        return descriptor;
+    }
+
     assert(num_allocated_descriptors_ < num_descriptors_);
-    return num_allocated_descriptors_++;
+    const std::uint32_t descriptor = num_allocated_descriptors_++;
+#ifndef NDEBUG
+    descriptor_allocated_[descriptor] = true;
+#endif
+    return descriptor;
 }
 
-void D3D12DescriptorManager::FreeDescriptor(std::uint32_t /*handle*/)
+void D3D12DescriptorManager::FreeDescriptor(std::uint32_t descriptor)
 {
-    // Do nothing for now
+    assert(descriptor < num_descriptors_);
+#ifndef NDEBUG
+    assert(descriptor < num_allocated_descriptors_);
+    assert(descriptor_allocated_[descriptor]);
+    descriptor_allocated_[descriptor] = false;
+#endif
+    free_descriptors_.push_back(descriptor);
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorManager::GetCPUDescriptorHandle(std::uint32_t descriptor)

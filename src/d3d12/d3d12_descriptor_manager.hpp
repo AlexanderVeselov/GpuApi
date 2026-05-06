@@ -3,6 +3,7 @@
 
 #include "d3d12_common.hpp"
 #include <cstdint>
+#include <vector>
 
 namespace gpu
 {
@@ -24,6 +25,10 @@ namespace gpu
     private:
         ComPtr<ID3D12DescriptorHeap> descriptor_heap_;
         std::uint32_t desc_size_;
+        std::vector<std::uint32_t> free_descriptors_;
+#ifndef NDEBUG
+        std::vector<bool> descriptor_allocated_;
+#endif
         std::uint32_t num_allocated_descriptors_ = 0;
         uint32_t num_descriptors_ = 0;
     };
