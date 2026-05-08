@@ -2,6 +2,7 @@
 
 #include "gpu_image.hpp"
 #include "d3d12_common.hpp"
+#include "d3d12_descriptor_manager.hpp"
 #include <cstdint>
 
 namespace gpu
@@ -24,10 +25,10 @@ public:
 private:
     ComPtr<ID3D12Resource> resource_;
     D3D12Device& device_;
-    std::vector<std::uint32_t> srv_descriptors_;
-    std::vector<std::uint32_t> uav_descriptors_;
-    uint32_t default_rtv_ = kNullDescriptor;
-    uint32_t dsv_ = kNullDescriptor;
+    std::vector<D3D12Descriptor> srv_descriptors_;
+    std::vector<D3D12Descriptor> uav_descriptors_;
+    D3D12Descriptor default_rtv_;
+    D3D12Descriptor dsv_;
 };
 
 } // namespace gpu

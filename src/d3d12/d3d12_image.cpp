@@ -53,11 +53,12 @@ DXGI_FORMAT D3D12Image::GetDXGIFormat() const
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetRTVHandle()
 {
     D3D12_CPU_DESCRIPTOR_HANDLE rtv_handle;
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
 
-    if (default_rtv_ == kNullDescriptor)
+    if (!default_rtv_.IsValid())
     {
-        default_rtv_ = device_.GetRTVDescManager().AllocateDescriptor();
-        rtv_handle = device_.GetRTVDescManager().GetCPUDescriptorHandle(default_rtv_);
+        default_rtv_ = descriptor_manager.AllocateCPURTV();
+        rtv_handle = descriptor_manager.GetCPU(default_rtv_);
 
         DXGI_FORMAT dxgi_format = GetDXGIFormat();
 
@@ -71,14 +72,15 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetRTVHandle()
     }
     else
     {
-        return device_.GetRTVDescManager().GetCPUDescriptorHandle(default_rtv_);
+        return descriptor_manager.GetCPU(default_rtv_);
     }
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetDSVHandle()
 {
     D3D12_CPU_DESCRIPTOR_HANDLE dsv_handle;
-    if (dsv_ == kNullDescriptor)
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
+    if (!dsv_.IsValid())
     {
         DXGI_FORMAT dxgi_format = GetDXGIFormat();
 
@@ -89,14 +91,14 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetDSVHandle()
         dsv_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
         dsv_desc.Texture2D.MipSlice = 0;
 
-        dsv_ = device_.GetDSVDescManager().AllocateDescriptor();
-        dsv_handle = device_.GetDSVDescManager().GetCPUDescriptorHandle(dsv_);
+        dsv_ = descriptor_manager.AllocateCPUDSV();
+        dsv_handle = descriptor_manager.GetCPU(dsv_);
         device_.GetD3D12Device()->CreateDepthStencilView(resource_.Get(), &dsv_desc, dsv_handle);
         return dsv_handle;
     }
     else
     {
-        return device_.GetDSVDescManager().GetCPUDescriptorHandle(dsv_);
+        return descriptor_manager.GetCPU(dsv_);
     }
 }
 
