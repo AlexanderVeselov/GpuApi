@@ -1,5 +1,4 @@
-#ifndef D3D12_COMMAND_BUFFER_HPP_
-#define D3D12_COMMAND_BUFFER_HPP_
+#pragma once
 
 #include "gpu_command_buffer.hpp"
 #include "d3d12_queue.hpp"
@@ -61,5 +60,3 @@ private:
 };
 
 } // namespace gpu
-
-#endif // D3D12_COMMAND_BUFFER_HPP_

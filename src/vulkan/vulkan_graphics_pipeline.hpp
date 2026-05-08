@@ -1,5 +1,4 @@
-#ifndef VULKAN_GRAPHICS_PIPELINE_HPP_
-#define VULKAN_GRAPHICS_PIPELINE_HPP_
+#pragma once
 
 #include "vulkan_shared_object.hpp"
 #include "vulkan_shader.hpp"
@@ -67,5 +66,3 @@ private:
     VkExtent2D extent_;
 
 };
-
-#endif // VULKAN_GRAPHICS_PIPELINE_HPP_

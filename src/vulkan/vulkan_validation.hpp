@@ -1,5 +1,4 @@
-#ifndef VULKAN_VALIDATION_HPP_
-#define VULKAN_VALIDATION_HPP_
+#pragma once
 
 #include <vector>
 #include <iostream>
@@ -50,5 +49,3 @@ inline void DestroyDebugUtilsMessengerEXT(
         func(instance, callback, pAllocator);
     }
 }
-
-#endif // VULKAN_VALIDATION_HPP_

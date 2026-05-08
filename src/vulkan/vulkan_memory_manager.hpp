@@ -1,5 +1,4 @@
-#ifndef VULKAN_MEMORY_MANAGER_HPP_
-#define VULKAN_MEMORY_MANAGER_HPP_
+#pragma once
 
 #include <vulkan/vulkan.h>
 
@@ -17,5 +16,3 @@ private:
     VulkanDevice & device_;
 
 };
-
-#endif // VULKAN_MEMORY_MANAGER_HPP_

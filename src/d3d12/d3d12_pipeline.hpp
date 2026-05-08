@@ -1,5 +1,4 @@
-#ifndef D3D12_PIPELINE_HPP_
-#define D3D12_PIPELINE_HPP_
+#pragma once
 
 #include "gpu_pipeline.hpp"
 #include "d3d12_common.hpp"
@@ -69,5 +68,3 @@ public:
 };
 
 } // namespace gpu
-
-#endif // D3D12_PIPELINE_HPP_

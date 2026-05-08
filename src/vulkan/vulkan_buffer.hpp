@@ -1,5 +1,4 @@
-#ifndef VULKAN_BUFFER_HPP_
-#define VULKAN_BUFFER_HPP_
+#pragma once
 
 #include "vulkan_shared_object.hpp"
 #include "vulkan_device.hpp"
@@ -18,5 +17,3 @@ private:
     VulkanScopedObject<VkDeviceMemory, nullptr, vkFreeMemory> memory_;
 
 };
-
-#endif // VULKAN_BUFFER_HPP_

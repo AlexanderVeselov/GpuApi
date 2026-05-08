@@ -10,67 +10,67 @@
 
 namespace gpu
 {
-    D3D12Device::D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter)
-        : api_(gpu_api)
+D3D12Device::D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter)
+    : api_(gpu_api)
+{
+    ThrowIfFailed(D3D12CreateDevice(dxgi_adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12_device_)));
+
+    graphics_queue_ = std::make_unique<D3D12Queue>(*this, D3D12_COMMAND_LIST_TYPE_DIRECT);
+    compute_queue_ = std::make_unique<D3D12Queue>(*this, D3D12_COMMAND_LIST_TYPE_COMPUTE);
+
+    rtv_desc_manager_ = std::make_unique<D3D12DescriptorManager>(*this,
+        D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 32);
+
+    dsv_desc_manager_ = std::make_unique<D3D12DescriptorManager>(*this,
+        D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 8);
+
+    cbv_srv_uav_desc_manager_ = std::make_unique<D3D12DescriptorManager>(*this,
+        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024);
+}
+
+Queue& D3D12Device::GetQueue(QueueType queue_type)
+{
+    switch (queue_type)
     {
-        ThrowIfFailed(D3D12CreateDevice(dxgi_adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12_device_)));
-
-        graphics_queue_ = std::make_unique<D3D12Queue>(*this, D3D12_COMMAND_LIST_TYPE_DIRECT);
-        compute_queue_ = std::make_unique<D3D12Queue>(*this, D3D12_COMMAND_LIST_TYPE_COMPUTE);
-
-        rtv_desc_manager_ = std::make_unique<D3D12DescriptorManager>(*this,
-            D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 32);
-
-        dsv_desc_manager_ = std::make_unique<D3D12DescriptorManager>(*this,
-            D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 8);
-
-        cbv_srv_uav_desc_manager_ = std::make_unique<D3D12DescriptorManager>(*this,
-            D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024);
+    case QueueType::kGraphics:
+        return *graphics_queue_;
+    case QueueType::kCompute:
+        return *compute_queue_;
+    default:
+        assert(!"D3D12Device::GetQueue: unimplemented");
+        return *graphics_queue_;
     }
+}
 
-    Queue& D3D12Device::GetQueue(QueueType queue_type)
-    {
-        switch (queue_type)
-        {
-        case QueueType::kGraphics:
-            return *graphics_queue_;
-        case QueueType::kCompute:
-            return *compute_queue_;
-        default:
-            assert(!"D3D12Device::GetQueue: unimplemented");
-            return *graphics_queue_;
-        }
-    }
+BufferPtr D3D12Device::CreateBuffer(std::size_t size)
+{
+    return std::make_shared<D3D12Buffer>(*this, size);
+}
 
-    BufferPtr D3D12Device::CreateBuffer(std::size_t size)
-    {
-        return std::make_shared<D3D12Buffer>(*this, size);
-    }
+ImagePtr D3D12Device::CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format)
+{
+    return std::make_shared<D3D12Image>(*this, width, height, format);
+}
 
-    ImagePtr D3D12Device::CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format)
-    {
-        return std::make_shared<D3D12Image>(*this, width, height, format);
-    }
+GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc)
+{
+    return std::make_unique<D3D12GraphicsPipeline>(*this, pipeline_desc);
+}
 
-    GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc)
-    {
-        return std::make_unique<D3D12GraphicsPipeline>(*this, pipeline_desc);
-    }
+ComputePipelinePtr D3D12Device::CreateComputePipeline(char const* cs_filename)
+{
+    return std::make_unique<D3D12ComputePipeline>(*this, cs_filename);
+}
 
-    ComputePipelinePtr D3D12Device::CreateComputePipeline(char const* cs_filename)
-    {
-        return std::make_unique<D3D12ComputePipeline>(*this, cs_filename);
-    }
+SwapchainPtr D3D12Device::CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height, std::uint32_t image_count)
+{
+    return std::make_unique<D3D12Swapchain>(*this, window_native_handle, width, height, image_count);
+}
 
-    SwapchainPtr D3D12Device::CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height, std::uint32_t image_count)
-    {
-        return std::make_unique<D3D12Swapchain>(*this, window_native_handle, width, height, image_count);
-    }
-
-    FencePtr D3D12Device::CreateFence()
-    {
-        return std::make_shared<D3D12Fence>(*this);
-    }
+FencePtr D3D12Device::CreateFence()
+{
+    return std::make_shared<D3D12Fence>(*this);
+}
 
 
 }

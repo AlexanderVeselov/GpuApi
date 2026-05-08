@@ -1,5 +1,4 @@
-#ifndef VULKAN_SHARED_OBJECT_HPP_
-#define VULKAN_SHARED_OBJECT_HPP_
+#pragma once
 
 #include <memory>
 #include <vulkan/vulkan.h>
@@ -99,5 +98,3 @@ private:
     VkDevice device_;
 
 };
-
-#endif // VULKAN_SHARED_OBJECT_HPP_

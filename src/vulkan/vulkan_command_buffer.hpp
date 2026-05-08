@@ -1,5 +1,4 @@
-#ifndef VULKAN_COMMAND_BUFFER_HPP_
-#define VULKAN_COMMAND_BUFFER_HPP_
+#pragma once
 
 #include "vulkan_device.hpp"
 #include <vulkan/vulkan.h>
@@ -28,5 +27,3 @@ private:
     std::shared_ptr<VulkanGraphicsPipeline> current_pipeline_;
 
 };
-
-#endif // VULKAN_COMMAND_BUFFER_HPP_

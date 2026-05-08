@@ -1,5 +1,4 @@
-#ifndef VULKAN_SWAPCHAIN_HPP_
-#define VULKAN_SWAPCHAIN_HPP_
+#pragma once
 
 #include "videoapi/vulkan_shared_object.hpp"
 #include "videoapi/vulkan_device.hpp"
@@ -26,5 +25,3 @@ private:
     VkQueue present_queue_;
 
 };
-
-#endif // VULKAN_SWAPCHAIN_HPP_

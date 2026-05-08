@@ -1,5 +1,4 @@
-#ifndef VULKAN_EXCEPTION_HPP_
-#define VULKAN_EXCEPTION_HPP_
+#pragma once
 
 #include <vulkan/vulkan.h>
 #include <stdexcept>
@@ -60,5 +59,3 @@ public:
     {                            \
         throw std::runtime_error(std::string(__FUNCTION__) + "(...): " + msg); \
     }
-
-#endif // VULKAN_EXCEPTION_HPP_

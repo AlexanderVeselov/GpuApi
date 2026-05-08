@@ -1,7 +1,4 @@
-#ifndef VULKAN_BASE_HPP_
-#define VULKAN_BASE_HPP_
+#pragma once
 
 
 #include <vulkan/vulkan.hpp>
-
-#endif // VULKAN_BASE_HPP_

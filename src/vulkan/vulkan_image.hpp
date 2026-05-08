@@ -1,5 +1,4 @@
-#ifndef VULKAN_IMAGE_HPP_
-#define VULKAN_IMAGE_HPP_
+#pragma once
 
 #include "vulkan_shared_object.hpp"
 #include "vulkan_device.hpp"
@@ -16,5 +15,3 @@ private:
     VulkanScopedObject<VkImageView, vkCreateImageView, vkDestroyImageView> image_view_;
 
 };
-
-#endif // VULKAN_IMAGE_HPP_

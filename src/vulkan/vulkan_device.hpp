@@ -1,5 +1,4 @@
-#ifndef VULKAN_DEVICE_HPP_
-#define VULKAN_DEVICE_HPP_
+#pragma once
 
 #include "vulkan_shared_object.hpp"
 #include "vulkan_memory_manager.hpp"
@@ -69,5 +68,3 @@ private:
     VulkanScopedObject<VkDescriptorPool, vkCreateDescriptorPool, vkDestroyDescriptorPool> descriptor_pool_;
 
 };
-
-#endif // VULKAN_DEVICE_HPP_

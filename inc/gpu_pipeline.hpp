@@ -1,5 +1,4 @@
-#ifndef GPU_PIPELINE_HPP_
-#define GPU_PIPELINE_HPP_
+#pragma once
 
 #include "gpu_types.hpp"
 
@@ -38,5 +37,3 @@ protected:
 };
 
 } // namespace gpu
-
-#endif // GPU_PIPELINE_HPP_

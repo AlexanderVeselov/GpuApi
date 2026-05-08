@@ -1,5 +1,4 @@
-#ifndef VULKAN_SHADER_HPP_
-#define VULKAN_SHADER_HPP_
+#pragma once
 
 #include "vulkan_device.hpp"
 #include "vulkan_shared_object.hpp"
@@ -61,5 +60,3 @@ private:
     std::unordered_map<std::uint32_t, DescriptorSet> descriptor_sets_;
 
 };
-
-#endif // VULKAN_SHADER_HPP_
