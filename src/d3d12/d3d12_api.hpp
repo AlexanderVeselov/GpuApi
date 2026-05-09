@@ -21,7 +21,7 @@ public:
 
 private:
     ComPtr<IDXGIFactory4> dxgi_factory_;
-    std::vector<IDXGIAdapter1*> dxgi_adapters_;
+    std::vector<ComPtr<IDXGIAdapter1>> dxgi_adapters_;
     D3D12ShaderManager shader_manager_;
 };
 

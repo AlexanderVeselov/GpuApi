@@ -2,10 +2,51 @@
 #include "d3d12_exception.hpp"
 #include "d3d12_device.hpp"
 
+#include <dxgi1_6.h>
+
+#include <algorithm>
 #include <stdexcept>
 
 namespace gpu
 {
+namespace
+{
+bool SupportsD3D12(IDXGIAdapter1* adapter)
+{
+    return SUCCEEDED(D3D12CreateDevice(
+        adapter,
+        D3D_FEATURE_LEVEL_11_0,
+        _uuidof(ID3D12Device),
+        nullptr));
+}
+
+bool IsHardwareAdapter(IDXGIAdapter1* adapter)
+{
+    DXGI_ADAPTER_DESC1 adapter_desc = {};
+    ThrowIfFailed(adapter->GetDesc1(&adapter_desc));
+    return (adapter_desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0;
+}
+
+std::uint64_t GetDedicatedVideoMemory(IDXGIAdapter1* adapter)
+{
+    DXGI_ADAPTER_DESC1 adapter_desc = {};
+    ThrowIfFailed(adapter->GetDesc1(&adapter_desc));
+    return static_cast<std::uint64_t>(adapter_desc.DedicatedVideoMemory);
+}
+
+void AddAdapterIfUsable(
+    std::vector<ComPtr<IDXGIAdapter1>>& adapters,
+    IDXGIAdapter1* adapter)
+{
+    if (!adapter || !IsHardwareAdapter(adapter) || !SupportsD3D12(adapter))
+    {
+        return;
+    }
+
+    adapters.emplace_back(adapter);
+}
+}
+
 D3D12Api::D3D12Api()
     : shader_manager_("")
 {
@@ -28,25 +69,60 @@ D3D12Api::D3D12Api()
 
     ThrowIfFailed(CreateDXGIFactory2(dxgi_factory_flags, IID_PPV_ARGS(&dxgi_factory_)));
 
-    IDXGIAdapter1* dxgi_adapter;
-    for (std::uint32_t adapter_idx = 0;
-        dxgi_factory_->EnumAdapters1(adapter_idx, &dxgi_adapter) != DXGI_ERROR_NOT_FOUND; ++adapter_idx)
+    ComPtr<IDXGIFactory6> dxgi_factory6;
+    if (SUCCEEDED(dxgi_factory_.As(&dxgi_factory6)))
     {
-        DXGI_ADAPTER_DESC1 adapter_desc;
-        ThrowIfFailed(dxgi_adapter->GetDesc1(&adapter_desc));
-
-        if (adapter_desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+        for (std::uint32_t adapter_idx = 0;; ++adapter_idx)
         {
-            // Don't select the Basic Render Driver adapter.
-            continue;
+            ComPtr<IDXGIAdapter1> dxgi_adapter;
+            HRESULT status = dxgi_factory6->EnumAdapterByGpuPreference(
+                adapter_idx,
+                DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+                IID_PPV_ARGS(&dxgi_adapter));
+            if (status == DXGI_ERROR_NOT_FOUND)
+            {
+                break;
+            }
+
+            ThrowIfFailed(status);
+            AddAdapterIfUsable(dxgi_adapters_, dxgi_adapter.Get());
+        }
+    }
+    else
+    {
+        for (std::uint32_t adapter_idx = 0;; ++adapter_idx)
+        {
+            ComPtr<IDXGIAdapter1> dxgi_adapter;
+            HRESULT status = dxgi_factory_->EnumAdapters1(adapter_idx, &dxgi_adapter);
+            if (status == DXGI_ERROR_NOT_FOUND)
+            {
+                break;
+            }
+
+            ThrowIfFailed(status);
+            AddAdapterIfUsable(dxgi_adapters_, dxgi_adapter.Get());
         }
 
-        // Check to see if the adapter supports Direct3D 12, but don't create
-        // the actual device yet.
-        ComPtr<ID3D12Device> test_device;
-        if (SUCCEEDED(D3D12CreateDevice(dxgi_adapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+        std::sort(
+            dxgi_adapters_.begin(),
+            dxgi_adapters_.end(),
+            [](ComPtr<IDXGIAdapter1> const& lhs, ComPtr<IDXGIAdapter1> const& rhs)
+            {
+                return GetDedicatedVideoMemory(lhs.Get()) > GetDedicatedVideoMemory(rhs.Get());
+            });
+    }
+
+    if (dxgi_adapters_.empty())
+    {
+        ComPtr<IDXGIAdapter> warp_adapter;
+        ThrowIfFailed(dxgi_factory_->EnumWarpAdapter(IID_PPV_ARGS(&warp_adapter)));
+
+        ComPtr<IDXGIAdapter1> warp_adapter1;
+        ThrowIfFailed(warp_adapter.As(&warp_adapter1));
+
+        if (SupportsD3D12(warp_adapter1.Get()))
         {
-            dxgi_adapters_.push_back(dxgi_adapter);
+            dxgi_adapters_.push_back(warp_adapter1);
         }
     }
 }
@@ -55,11 +131,10 @@ DevicePtr D3D12Api::CreateDevice()
 {
     if (dxgi_adapters_.empty())
     {
-        throw std::runtime_error("No DXGI adapters found");
+        throw std::runtime_error("No D3D12-capable DXGI adapters found");
     }
 
-    ///@NOTE: this is my GTX 1050 Ti
-    return std::make_unique<D3D12Device>(*this, dxgi_adapters_[1]);
+    return std::make_unique<D3D12Device>(*this, dxgi_adapters_.front().Get());
 }
 
 } // namespace gpu
