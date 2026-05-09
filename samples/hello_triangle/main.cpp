@@ -4,6 +4,7 @@
 #include "gpu_image.hpp"
 #include "gpu_queue.hpp"
 #include "gpu_command_buffer.hpp"
+#include "gpu_descriptor_set.hpp"
 #include "gpu_pipeline.hpp"
 #include "gpu_sync.hpp"
 #include "gpu_swapchain.hpp"
@@ -92,6 +93,15 @@ int main()
         memcpy(data, vertices, sizeof(vertices));
         vertex_buffer->Unmap();
 
+        gpu::BufferPtr scale_buffer = device->CreateBuffer(sizeof(float), sizeof(float),
+            gpu::BufferFlags::kCpuAccess | gpu::BufferFlags::kConstant);
+        float* scale = (float*)scale_buffer->Map();
+        *scale = 3.5f;
+        scale_buffer->Unmap();
+
+        gpu::DescriptorSetPtr descriptor_set = pipeline->CreateDescriptorSet();
+        descriptor_set->BindBuffer(*scale_buffer, 0, 0);
+
         while (!glfwWindowShouldClose(window))
         {
             glfwPollEvents();
@@ -100,6 +110,7 @@ int main()
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kPresent, gpu::ImageLayout::kRenderTarget);
             cmd_buffer->ClearImage(swapchain_image, 0.5f, 0.5f, 1.0f, 1.0f);
             cmd_buffer->BindPipeline(pipeline);
+            cmd_buffer->BindDescriptorSet(descriptor_set);
             cmd_buffer->SetViewport(swapchain_image->GetWidth(), swapchain_image->GetHeight());
             cmd_buffer->SetScissorRect(swapchain_image->GetWidth(), swapchain_image->GetHeight());
             cmd_buffer->SetRenderTarget(swapchain_image, nullptr);

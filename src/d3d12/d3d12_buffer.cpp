@@ -47,6 +47,11 @@ D3D12_RESOURCE_STATES GetInitialState(BufferFlags flags)
 
 D3D12_RESOURCE_DESC CreateBufferDesc(uint64_t size, BufferFlags flags)
 {
+    if (HasFlag(flags, BufferFlags::kConstant))
+    {
+        size = AlignUp(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    }
+
     D3D12_RESOURCE_DESC desc = {};
     desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     desc.Alignment = 0;
