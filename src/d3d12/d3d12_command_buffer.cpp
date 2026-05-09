@@ -227,6 +227,7 @@ void D3D12CommandBuffer::TransitionBarrier(ImagePtr image, ImageLayout layout_be
     barrier.Transition.StateAfter = LayoutToD3D12ResourceState(layout_after, false);
 
     cmd_list_->ResourceBarrier(1u, &barrier);
+    d3d12_image->SetCurrentState(barrier.Transition.StateAfter);
 }
 
 void D3D12CommandBuffer::StorageBarrier(ImagePtr image)
