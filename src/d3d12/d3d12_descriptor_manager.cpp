@@ -43,13 +43,13 @@ D3D12DescriptorHeapAllocator::D3D12DescriptorHeapAllocator(
 
 uint32_t D3D12DescriptorHeapAllocator::Allocate()
 {
-    assert(!free_list_.empty());
+    assert(!free_list_.empty() && "D3D12DescriptorHeapAllocator::Allocate: descriptor heap is full");
 
     const uint32_t index = free_list_.back();
     free_list_.pop_back();
 
 #ifndef NDEBUG
-    assert(!allocated_[index]);
+    assert(!allocated_[index] && "D3D12DescriptorHeapAllocator::Allocate: descriptor is already allocated");
     allocated_[index] = true;
 #endif
     return index;
@@ -57,9 +57,9 @@ uint32_t D3D12DescriptorHeapAllocator::Allocate()
 
 void D3D12DescriptorHeapAllocator::Free(uint32_t index)
 {
-    assert(index < capacity_);
+    assert(index < capacity_ && "D3D12DescriptorHeapAllocator::Free: descriptor index is out of range");
 #ifndef NDEBUG
-    assert(allocated_[index]);
+    assert(allocated_[index] && "D3D12DescriptorHeapAllocator::Free: descriptor was not allocated or was already freed");
     allocated_[index] = false;
 #endif
     free_list_.push_back(index);
@@ -67,7 +67,7 @@ void D3D12DescriptorHeapAllocator::Free(uint32_t index)
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorHeapAllocator::CPU(uint32_t index) const
 {
-    assert(index < capacity_);
+    assert(index < capacity_ && "D3D12DescriptorHeapAllocator::CPU: descriptor index is out of range");
     D3D12_CPU_DESCRIPTOR_HANDLE handle = cpu_start_;
     handle.ptr += descriptor_size_ * index;
     return handle;
@@ -75,8 +75,8 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorHeapAllocator::CPU(uint32_t index) co
 
 D3D12_GPU_DESCRIPTOR_HANDLE D3D12DescriptorHeapAllocator::GPU(uint32_t index) const
 {
-    assert(shader_visible_);
-    assert(index < capacity_);
+    assert(shader_visible_ && "D3D12DescriptorHeapAllocator::GPU: heap is not shader visible");
+    assert(index < capacity_ && "D3D12DescriptorHeapAllocator::GPU: descriptor index is out of range");
     D3D12_GPU_DESCRIPTOR_HANDLE handle = gpu_start_;
     handle.ptr += descriptor_size_ * index;
     return handle;
@@ -135,23 +135,25 @@ void D3D12DescriptorManager::Free(D3D12Descriptor descriptor)
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorManager::GetCPU(D3D12Descriptor descriptor) const
 {
-    assert(descriptor.IsValid());
+    assert(descriptor.IsValid() && "D3D12DescriptorManager::GetCPU: descriptor is invalid");
     return GetAllocator(descriptor.heap).CPU(descriptor.index);
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE D3D12DescriptorManager::GetGPU(D3D12Descriptor descriptor) const
 {
-    assert(descriptor.IsValid());
-    assert(descriptor.heap == D3D12DescriptorHeapId::GPU_CBV_SRV_UAV ||
-        descriptor.heap == D3D12DescriptorHeapId::GPU_SAMPLER);
+    assert(descriptor.IsValid() && "D3D12DescriptorManager::GetGPU: descriptor is invalid");
+    assert((descriptor.heap == D3D12DescriptorHeapId::GPU_CBV_SRV_UAV ||
+        descriptor.heap == D3D12DescriptorHeapId::GPU_SAMPLER) &&
+        "D3D12DescriptorManager::GetGPU: descriptor must come from a GPU-visible heap");
 
     return GetAllocator(descriptor.heap).GPU(descriptor.index);
 }
 
 D3D12Descriptor D3D12DescriptorManager::CopyToGPUCBVSRVUAV(D3D12Descriptor src)
 {
-    assert(src.IsValid());
-    assert(src.heap == D3D12DescriptorHeapId::CPU_CBV_SRV_UAV);
+    assert(src.IsValid() && "D3D12DescriptorManager::CopyToGPUCBVSRVUAV: source descriptor is invalid");
+    assert(src.heap == D3D12DescriptorHeapId::CPU_CBV_SRV_UAV &&
+        "D3D12DescriptorManager::CopyToGPUCBVSRVUAV: source descriptor must come from CPU_CBV_SRV_UAV heap");
 
     D3D12Descriptor dst = AllocateGPUCBVSRVUAV();
 
@@ -166,8 +168,9 @@ D3D12Descriptor D3D12DescriptorManager::CopyToGPUCBVSRVUAV(D3D12Descriptor src)
 
 D3D12Descriptor D3D12DescriptorManager::CopyToGPUSampler(D3D12Descriptor src)
 {
-    assert(src.IsValid());
-    assert(src.heap == D3D12DescriptorHeapId::CPU_SAMPLER);
+    assert(src.IsValid() && "D3D12DescriptorManager::CopyToGPUSampler: source descriptor is invalid");
+    assert(src.heap == D3D12DescriptorHeapId::CPU_SAMPLER &&
+        "D3D12DescriptorManager::CopyToGPUSampler: source descriptor must come from CPU_SAMPLER heap");
 
     D3D12Descriptor dst = AllocateGPUSampler();
 
@@ -208,7 +211,7 @@ D3D12DescriptorHeapAllocator& D3D12DescriptorManager::GetAllocator(D3D12Descript
         return gpu_sampler_;
     }
 
-    assert(false);
+    assert(false && "D3D12DescriptorManager::GetAllocator: unknown descriptor heap id");
     return cpu_cbv_srv_uav_;
 }
 
@@ -230,7 +233,7 @@ D3D12DescriptorHeapAllocator const& D3D12DescriptorManager::GetAllocator(D3D12De
         return gpu_sampler_;
     }
 
-    assert(false);
+    assert(false && "D3D12DescriptorManager::GetAllocator const: unknown descriptor heap id");
     return cpu_cbv_srv_uav_;
 }
 

@@ -82,9 +82,9 @@ D3D12Buffer::D3D12Buffer(
     , current_state_(GetInitialState(flags))
     , stride_(stride)
 {
-    assert(size_ > 0);
-    assert(stride_ > 0);
-    assert(size_ % stride_ == 0);
+    assert(size_ > 0 && "D3D12Buffer: size must be greater than zero");
+    assert(stride_ > 0 && "D3D12Buffer: stride must be greater than zero");
+    assert(size_ % stride_ == 0 && "D3D12Buffer: size must be divisible by stride");
 
     auto d3d12_device = device.GetD3D12Device();
 
@@ -145,8 +145,8 @@ D3D12Descriptor const& D3D12Buffer::GetUAV()
 
 void* D3D12Buffer::Map()
 {
-    assert(HasFlag(flags_, BufferFlags::kCpuAccess));
-    assert(!mapped_);
+    assert(HasFlag(flags_, BufferFlags::kCpuAccess) && "D3D12Buffer::Map: buffer was not created with CPU access");
+    assert(!mapped_ && "D3D12Buffer::Map: buffer is already mapped");
 
     D3D12_RANGE read_range = {};
     void* data = nullptr;
@@ -157,7 +157,7 @@ void* D3D12Buffer::Map()
 
 void D3D12Buffer::Unmap()
 {
-    assert(mapped_);
+    assert(mapped_ && "D3D12Buffer::Unmap: buffer is not mapped");
 
     resource_->Unmap(0, nullptr);
     mapped_ = false;
@@ -165,7 +165,7 @@ void D3D12Buffer::Unmap()
 
 D3D12Descriptor D3D12Buffer::CreateCBV()
 {
-    assert(HasFlag(flags_, BufferFlags::kConstant));
+    assert(HasFlag(flags_, BufferFlags::kConstant) && "D3D12Buffer::CreateCBV: buffer was not created with constant-buffer support");
 
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
@@ -183,7 +183,7 @@ D3D12Descriptor D3D12Buffer::CreateCBV()
 
 D3D12Descriptor D3D12Buffer::CreateSRV()
 {
-    assert(HasFlag(flags_, BufferFlags::kShaderResource));
+    assert(HasFlag(flags_, BufferFlags::kShaderResource) && "D3D12Buffer::CreateSRV: buffer was not created with shader-resource support");
 
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
@@ -207,7 +207,7 @@ D3D12Descriptor D3D12Buffer::CreateSRV()
 
 D3D12Descriptor D3D12Buffer::CreateUAV()
 {
-    assert(HasFlag(flags_, BufferFlags::kStorage));
+    assert(HasFlag(flags_, BufferFlags::kStorage) && "D3D12Buffer::CreateUAV: buffer was not created with storage/UAV support");
 
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();

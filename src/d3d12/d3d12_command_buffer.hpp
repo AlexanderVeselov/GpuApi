@@ -1,62 +1,63 @@
 #pragma once
 
 #include "gpu_command_buffer.hpp"
-#include "d3d12_queue.hpp"
+#include "d3d12_common.hpp"
 
 namespace gpu
 {
+class D3D12Device;
+class D3D12Queue;
 class D3D12GraphicsPipeline;
-class D3D12ComputePipeline;
 
-class D3D12CommandBuffer : public CommandBuffer
+class D3D12CommandBuffer final : public CommandBuffer
 {
 public:
-    D3D12CommandBuffer(D3D12Device& device, D3D12Queue& queue, D3D12_COMMAND_LIST_TYPE command_list_type);
+    D3D12CommandBuffer(
+        D3D12Device& device,
+        D3D12Queue& queue,
+        D3D12_COMMAND_LIST_TYPE command_list_type);
 
-    void Dispatch(ComputePipelinePtr const& pipeline, std::uint32_t num_groups_x,
-        std::uint32_t num_groups_y, std::uint32_t num_groups_z) override;
-    void Draw(std::uint32_t vertex_count, std::uint32_t start_vertex_location) override;
-    void DrawIndexed(std::uint32_t index_count, std::uint32_t start_index_location,
-        std::uint32_t start_vertex_location) override;
-
-    void DrawInstanced(std::uint32_t vertex_count, std::uint32_t instance_count,
-        std::uint32_t start_vertex_location, std::uint32_t start_instance_location) override;
-    void DrawIndexedInstanced(std::uint32_t index_count, std::uint32_t instance_count,
-        std::uint32_t start_index_location, std::uint32_t start_vertex_location,
-        std::uint32_t start_instance_location) override;
-
-    void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) override;
-    //void BindComputePipeline(ComputePipelinePtr const& pipeline) override;
+    ID3D12GraphicsCommandList* GetCommandList() const { return cmd_list_.Get(); }
 
     void SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride) override;
+    void SetIndexBuffer(BufferPtr buffer) override;
+
+    void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) override;
+    void Dispatch(ComputePipelinePtr const& pipeline, std::uint32_t num_groups_x,
+        std::uint32_t num_groups_y, std::uint32_t num_groups_z) override;
+    void Draw(uint32_t vertex_count, uint32_t instance_count = 1,
+        uint32_t first_vertex = 0, uint32_t first_instance = 0) override;
+    void DrawIndexed(uint32_t index_count, uint32_t instance_count = 1,
+        uint32_t first_index = 0, int32_t vertex_offset = 0, uint32_t first_instance = 0) override;
 
     void SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment) override;
     void SetRenderTargets(std::vector<ImagePtr> const& color_attachments,
         ImagePtr depth_attachment) override;
-    void SetViewport(std::uint32_t width, std::uint32_t height) override;
-    void SetScissorRect(std::uint32_t width, std::uint32_t height) override;
+
+    void SetViewport(const Viewport& viewport) override;
+    void SetScissor(const Rect& rect) override;
 
     void ClearImage(ImagePtr image, float r, float g, float b, float a) override;
 
     void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) override;
-
     void StorageBarrier(ImagePtr image) override;
 
-    void Reset() override;
-    void End() override;
+    void CopyBuffer(Buffer* src, uint64_t src_offset, Buffer* dst, uint64_t dst_offset, uint64_t size) override;
+    void CopyBufferToImage(Image* dst, Buffer* src) override;
 
-    ID3D12GraphicsCommandList* GetCommandList() const { return cmd_list_.Get(); }
-    ID3D12CommandAllocator* GetCommandAllocator() const { return command_allocator_.Get(); }
+    void End() override;
 
 private:
     void BindDescriptorsGraphics();
-    void BindDescriptorsCompute(D3D12ComputePipeline* d3d12_pipeline);
-    D3D12Queue& queue_;
+    void BindDescriptorsCompute();
 
+private:
+    D3D12Device& device_;
+    D3D12Queue& queue_;
+    D3D12_COMMAND_LIST_TYPE command_list_type_;
     ComPtr<ID3D12CommandAllocator> command_allocator_;
     ComPtr<ID3D12GraphicsCommandList> cmd_list_;
-    D3D12GraphicsPipeline* current_graphics_pipeline_ = nullptr; // TODO: Fix it
-
+    D3D12GraphicsPipeline* current_graphics_pipeline_ = nullptr;
 };
 
 } // namespace gpu

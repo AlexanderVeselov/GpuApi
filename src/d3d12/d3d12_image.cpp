@@ -78,7 +78,7 @@ D3D12Image::D3D12Image(
     , flags_(D3D12_RESOURCE_FLAG_NONE)
     , current_state_(D3D12_RESOURCE_STATE_PRESENT)
 {
-    assert(resource_);
+    assert(resource_ && "D3D12Image: wrapped resource must not be null");
 
     D3D12_RESOURCE_DESC desc = resource_->GetDesc();
     mip_count_ = desc.MipLevels;
@@ -162,7 +162,8 @@ D3D12Image::~D3D12Image()
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetRTVHandle()
 {
-    assert(flags_ & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+    assert((flags_ & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) &&
+        "D3D12Image::GetRTVHandle: image was not created with render-target support");
 
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     if (!default_rtv_.IsValid())
@@ -195,7 +196,8 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetRTVHandle()
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetDSVHandle()
 {
-    assert(flags_ & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+    assert((flags_ & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) &&
+        "D3D12Image::GetDSVHandle: image was not created with depth-stencil support");
 
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     if (!dsv_.IsValid())
@@ -240,9 +242,9 @@ D3D12Descriptor const& D3D12Image::GetView(ImageView const& view)
 
 D3D12Descriptor D3D12Image::CreateView(ImageView const& view)
 {
-    assert(view.mip < mip_count_);
-    assert(view.mip_count > 0);
-    assert(view.mip + view.mip_count <= mip_count_);
+    assert(view.mip < mip_count_ && "D3D12Image::CreateView: base mip is out of range");
+    assert(view.mip_count > 0 && "D3D12Image::CreateView: mip count must be greater than zero");
+    assert(view.mip + view.mip_count <= mip_count_ && "D3D12Image::CreateView: mip range exceeds image mip count");
 
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();

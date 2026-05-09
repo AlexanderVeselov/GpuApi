@@ -104,7 +104,7 @@ int main()
             cmd_buffer->SetScissorRect(swapchain_image->GetWidth(), swapchain_image->GetHeight());
             cmd_buffer->SetRenderTarget(swapchain_image, nullptr);
             cmd_buffer->SetVertexBuffer(vertex_buffer, sizeof(Vertex));
-            cmd_buffer->Draw(3, 0);
+            cmd_buffer->Draw(3);
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kRenderTarget, gpu::ImageLayout::kPresent);
 
             cmd_buffer->End();
