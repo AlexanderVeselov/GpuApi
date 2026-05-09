@@ -8,8 +8,6 @@ namespace gpu
 class Pipeline
 {
 public:
-    virtual void BindBuffer(BufferPtr const& buffer, std::uint32_t binding, std::uint32_t space) = 0;
-    virtual void BindImage(ImagePtr const& image, std::uint32_t binding, std::uint32_t space) = 0;
     virtual void Reload() = 0;
     virtual ~Pipeline() = default;
 

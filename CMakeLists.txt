@@ -32,6 +32,7 @@ set(INCLUDE_FILES
     inc/gpu_api.hpp
     inc/gpu_buffer.hpp
     inc/gpu_command_buffer.hpp
+    inc/gpu_descriptor_set.hpp
     inc/gpu_device.hpp
     inc/gpu_image.hpp
     inc/gpu_pipeline.hpp
@@ -60,6 +61,8 @@ set(D3D12_FILES
     src/d3d12/d3d12_image.hpp
     src/d3d12/d3d12_pipeline.cpp
     src/d3d12/d3d12_pipeline.hpp
+    src/d3d12/d3d12_pipeline_layout.cpp
+    src/d3d12/d3d12_pipeline_layout.hpp
     src/d3d12/d3d12_queue.cpp
     src/d3d12/d3d12_queue.hpp
     src/d3d12/d3d12_shader_manager.cpp

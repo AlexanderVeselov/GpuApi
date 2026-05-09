@@ -16,6 +16,7 @@ class Api;
 class Device;
 class Buffer;
 class CommandBuffer;
+class DescriptorSet;
 class Device;
 class Image;
 class Pipeline;
@@ -29,6 +30,7 @@ class Fence;
 // Unique resources
 using DevicePtr             = Ptr<Device>;
 using CommandBufferPtr      = Ptr<CommandBuffer>;
+using DescriptorSetPtr      = Ptr<DescriptorSet>;
 //using PipelinePtr           = Ptr<Pipeline>;
 using GraphicsPipelinePtr   = Ptr<GraphicsPipeline>;
 using ComputePipelinePtr    = Ptr<ComputePipeline>;

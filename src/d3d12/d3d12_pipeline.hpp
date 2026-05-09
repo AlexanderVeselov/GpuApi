@@ -2,55 +2,24 @@
 
 #include "gpu_pipeline.hpp"
 #include "d3d12_common.hpp"
+#include "d3d12_pipeline_layout.hpp"
 
 namespace gpu
 {
 class D3D12Device;
 
-
-struct D3D12Binding
-{
-    enum class ResourceType
-    {
-        kBuffer,
-        kImage,
-        kSampler
-    };
-
-    enum class DescriptorType
-    {
-        kRootConstant,
-        kDescriptorTable
-    };
-
-    std::string name;
-    std::uint32_t binding;
-    std::uint32_t space;
-    std::uint32_t root_parameter_index;
-    ResourceType type;
-    DescriptorType descriptor_type;
-    //union
-    //{
-    //    BufferPtr buffer;
-    //    ImagePtr image;
-    //    // SamplerPtr sampler;
-    //};
-};
-
 class D3D12Pipeline : virtual public Pipeline
 {
 public:
     D3D12Pipeline(D3D12Device& device);
-    void BindBuffer(BufferPtr const& buffer, std::uint32_t binding, std::uint32_t space) override;
-    void BindImage(ImagePtr const& image, std::uint32_t binding, std::uint32_t space) override;
     ID3D12PipelineState* GetPipelineState() const { return pipeline_state_.Get(); }
-    ID3D12RootSignature* GetRootSignature() const { return root_signature_.Get(); }
-    std::vector<D3D12Binding> const& GetBindings() const { return bindings_; }
+    ID3D12RootSignature* GetRootSignature() const { return layout_.GetRootSignature(); }
+    D3D12PipelineLayout const& GetLayout() const { return layout_; }
+    std::vector<D3D12Binding> const& GetBindings() const { return layout_.GetBindings(); }
 protected:
     D3D12Device& device_;
-    ComPtr<ID3D12RootSignature> root_signature_;
+    D3D12PipelineLayout layout_;
     ComPtr<ID3D12PipelineState> pipeline_state_;
-    std::vector<D3D12Binding> bindings_;
 };
 
 class D3D12GraphicsPipeline : public GraphicsPipeline, public D3D12Pipeline

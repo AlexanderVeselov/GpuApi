@@ -1,8 +1,6 @@
 #include "d3d12_descriptor_set.hpp"
 #include "d3d12_buffer.hpp"
-#include "d3d12_device.hpp"
 #include "d3d12_image.hpp"
-#include "d3d12_pipeline.hpp"
 
 #include <cassert>
 #include <stdexcept>
@@ -19,9 +17,24 @@ std::string BindingName(uint32_t binding, uint32_t space)
 }
 }
 
-D3D12DescriptorSet::D3D12DescriptorSet(D3D12Device& device, D3D12Pipeline const& pipeline)
-    : descriptor_manager_(device.GetDescriptorManager())
-    , pipeline_(pipeline)
+template <class TResource, class TBase>
+TResource& CastResource(TBase& resource, char const* function_name)
+{
+    TResource* d3d12_resource = dynamic_cast<TResource*>(&resource);
+    if (!d3d12_resource)
+    {
+        throw std::runtime_error(std::string(function_name) +
+            ": resource was not created by the D3D12 backend");
+    }
+
+    return *d3d12_resource;
+}
+
+D3D12DescriptorSet::D3D12DescriptorSet(
+    D3D12DescriptorManager& descriptor_manager,
+    D3D12PipelineLayout const& layout)
+    : descriptor_manager_(descriptor_manager)
+    , layout_(layout)
 {
 }
 
@@ -32,7 +45,7 @@ D3D12DescriptorSet::~D3D12DescriptorSet()
 
 D3D12DescriptorSet::D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept
     : descriptor_manager_(other.descriptor_manager_)
-    , pipeline_(other.pipeline_)
+    , layout_(other.layout_)
     , descriptors_(std::move(other.descriptors_))
 {
 }
@@ -40,7 +53,7 @@ D3D12DescriptorSet::D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept
 D3D12DescriptorSet& D3D12DescriptorSet::operator=(D3D12DescriptorSet&& other) noexcept
 {
     assert(&descriptor_manager_ == &other.descriptor_manager_ && "D3D12DescriptorSet::operator=: descriptor sets must use the same descriptor manager");
-    assert(&pipeline_ == &other.pipeline_ && "D3D12DescriptorSet::operator=: descriptor sets must belong to the same pipeline");
+    assert(&layout_ == &other.layout_ && "D3D12DescriptorSet::operator=: descriptor sets must use the same pipeline layout");
 
     if (this != &other)
     {
@@ -49,6 +62,25 @@ D3D12DescriptorSet& D3D12DescriptorSet::operator=(D3D12DescriptorSet&& other) no
     }
 
     return *this;
+}
+
+void D3D12DescriptorSet::BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space)
+{
+    BindBuffer(CastResource<D3D12Buffer>(buffer, "D3D12DescriptorSet::BindBuffer"), binding, space);
+}
+
+void D3D12DescriptorSet::BindImage(Image& image, uint32_t binding, uint32_t space)
+{
+    BindImage(CastResource<D3D12Image>(image, "D3D12DescriptorSet::BindImage"), binding, space);
+}
+
+void D3D12DescriptorSet::BindImage(
+    Image& image,
+    ImageView const& view,
+    uint32_t binding,
+    uint32_t space)
+{
+    BindImage(CastResource<D3D12Image>(image, "D3D12DescriptorSet::BindImage"), view, binding, space);
 }
 
 void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint32_t space)
@@ -122,7 +154,7 @@ void D3D12DescriptorSet::Clear()
 
 D3D12Binding const& D3D12DescriptorSet::FindBinding(uint32_t binding, uint32_t space) const
 {
-    for (D3D12Binding const& d3d12_binding : pipeline_.GetBindings())
+    for (D3D12Binding const& d3d12_binding : layout_.GetBindings())
     {
         if (d3d12_binding.binding == binding && d3d12_binding.space == space)
         {
@@ -130,7 +162,7 @@ D3D12Binding const& D3D12DescriptorSet::FindBinding(uint32_t binding, uint32_t s
         }
     }
 
-    throw std::runtime_error("D3D12DescriptorSet: pipeline binding " +
+    throw std::runtime_error("D3D12DescriptorSet: pipeline layout binding " +
         BindingName(binding, space) + " was not found");
 }
 

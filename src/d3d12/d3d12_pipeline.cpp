@@ -12,55 +12,6 @@ namespace gpu
 {
 namespace
 {
-D3D12_SHADER_VISIBILITY GetShaderVisibility(D3D12_SHADER_VERSION_TYPE version_type)
-{
-    switch (version_type)
-    {
-    case D3D12_SHVER_PIXEL_SHADER:
-        return D3D12_SHADER_VISIBILITY_PIXEL;
-    case D3D12_SHVER_VERTEX_SHADER:
-        return D3D12_SHADER_VISIBILITY_VERTEX;
-    case D3D12_SHVER_GEOMETRY_SHADER:
-        return D3D12_SHADER_VISIBILITY_GEOMETRY;
-    case D3D12_SHVER_HULL_SHADER:
-        return D3D12_SHADER_VISIBILITY_HULL;
-    case D3D12_SHVER_DOMAIN_SHADER:
-        return D3D12_SHADER_VISIBILITY_DOMAIN;
-    case D3D12_SHVER_COMPUTE_SHADER:
-        return D3D12_SHADER_VISIBILITY_ALL;
-    default:
-        assert(!"Unknown shader type");
-        return D3D12_SHADER_VISIBILITY_ALL;
-    }
-}
-
-D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(D3D_SHADER_INPUT_TYPE type)
-{
-    switch (type)
-    {
-    case D3D_SIT_CBUFFER:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-    case D3D_SIT_TBUFFER:
-    case D3D_SIT_TEXTURE:
-    case D3D_SIT_STRUCTURED:
-    case D3D_SIT_BYTEADDRESS:
-    case D3D_SIT_RTACCELERATIONSTRUCTURE:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    case D3D_SIT_SAMPLER:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-    case D3D_SIT_UAV_RWTYPED:
-    case D3D_SIT_UAV_RWSTRUCTURED:
-    case D3D_SIT_UAV_RWBYTEADDRESS:
-    case D3D_SIT_UAV_APPEND_STRUCTURED:
-    case D3D_SIT_UAV_CONSUME_STRUCTURED:
-    case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-    default:
-        assert(!"GetRangeType: unsupported D3D_SHADER_INPUT_TYPE");
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    }
-}
-
 D3D12_COMPARISON_FUNC DepthFuncToD3D12(DepthFunc depth_func)
 {
     switch (depth_func)
@@ -86,93 +37,6 @@ D3D12_COMPARISON_FUNC DepthFuncToD3D12(DepthFunc depth_func)
     default:
         assert(!"DepthFuncToD3D12: unknown depth func");
         return D3D12_COMPARISON_FUNC_NONE;
-    }
-}
-
-void CollectRootParameters(ID3D12ShaderReflection* reflection,
-    std::vector<D3D12_DESCRIPTOR_RANGE>& descriptor_ranges,
-    std::vector<D3D12_ROOT_PARAMETER>& root_parameters)
-{
-    assert(reflection);
-
-    // Get shader description
-    D3D12_SHADER_DESC shader_desc = {};
-    ThrowIfFailed(reflection->GetDesc(&shader_desc));
-
-    const D3D12_SHADER_VISIBILITY visibility = GetShaderVisibility(
-        (D3D12_SHADER_VERSION_TYPE)D3D12_SHVER_GET_TYPE(shader_desc.Version));
-
-    // Make sure we have stable descriptor ranges, since root parameters will reference them
-    descriptor_ranges.reserve(descriptor_ranges.size() + shader_desc.BoundResources);
-    root_parameters.reserve(root_parameters.size() + shader_desc.BoundResources);
-
-    for (std::uint32_t i = 0; i < shader_desc.BoundResources; ++i)
-    {
-        D3D12_SHADER_INPUT_BIND_DESC resource_desc = {};
-        ThrowIfFailed(reflection->GetResourceBindingDesc(i, &resource_desc));
-
-        const std::string resource_name = resource_desc.Name ? resource_desc.Name : "";
-
-        if (resource_desc.Type == D3D_SIT_CBUFFER)
-        {
-            // Buffer logic
-            ID3D12ShaderReflectionConstantBuffer* cb = reflection->GetConstantBufferByName(resource_name.c_str());
-            assert(cb && "GetConstantBufferByName returned null");
-
-            D3D12_SHADER_BUFFER_DESC buffer_desc{};
-            ThrowIfFailed(cb->GetDesc(&buffer_desc));
-
-            if (resource_name == "$Globals")
-            {
-                // Our policy: for buffers without "cbuffer" keyword use root constants
-                D3D12_ROOT_PARAMETER rp{};
-                rp.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-                rp.ShaderVisibility = visibility;
-                rp.Constants.ShaderRegister = resource_desc.BindPoint;
-                rp.Constants.RegisterSpace = resource_desc.Space;
-                rp.Constants.Num32BitValues = buffer_desc.Size / 4;
-
-                root_parameters.push_back(rp);
-            }
-            else
-            {
-                // For other buffers use CBV descriptor
-                D3D12_DESCRIPTOR_RANGE descriptor_range{};
-                descriptor_range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-                descriptor_range.NumDescriptors = resource_desc.BindCount;
-                descriptor_range.BaseShaderRegister = resource_desc.BindPoint;
-                descriptor_range.RegisterSpace = resource_desc.Space;
-                descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-                descriptor_ranges.push_back(descriptor_range);
-
-                D3D12_ROOT_PARAMETER rp{};
-                rp.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-                rp.ShaderVisibility = visibility;
-                rp.DescriptorTable.NumDescriptorRanges = 1;
-                rp.DescriptorTable.pDescriptorRanges = &descriptor_ranges.back();
-                root_parameters.push_back(rp);
-            }
-        }
-        else
-        {
-            // Other resource types: SRV, UAV, Sampler
-            D3D12_DESCRIPTOR_RANGE_TYPE range_type = GetRangeType(resource_desc.Type);
-
-            D3D12_DESCRIPTOR_RANGE descriptor_range{};
-            descriptor_range.RangeType = range_type;
-            descriptor_range.NumDescriptors = resource_desc.BindCount;
-            descriptor_range.BaseShaderRegister = resource_desc.BindPoint;
-            descriptor_range.RegisterSpace = resource_desc.Space;
-            descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-            descriptor_ranges.push_back(descriptor_range);
-
-            D3D12_ROOT_PARAMETER root_parameter{};
-            root_parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-            root_parameter.ShaderVisibility = visibility;
-            root_parameter.DescriptorTable.NumDescriptorRanges = 1;
-            root_parameter.DescriptorTable.pDescriptorRanges = &descriptor_ranges.back();
-            root_parameters.push_back(root_parameter);
-        }
     }
 }
 
@@ -236,67 +100,12 @@ void GetInputElementDescs(ID3D12ShaderReflection* reflection,
     }
 }
 
-std::size_t FindBinding(std::vector<D3D12Binding> const& bindings, std::uint32_t binding, std::uint32_t space)
-{
-    for (std::size_t i = 0; i < bindings.size(); ++i)
-    {
-        if (bindings[i].binding == binding && bindings[i].space == space)
-        {
-            return i;
-        }
-    }
-
-    return bindings.size();
-}
 }
 
 D3D12Pipeline::D3D12Pipeline(D3D12Device& device)
     : device_(device)
+    , layout_(device)
 {
-}
-
-void D3D12Pipeline::BindBuffer(BufferPtr const& buffer, std::uint32_t binding, std::uint32_t space)
-{
-    // Find binding
-    std::size_t binding_index = FindBinding(bindings_, binding, space);
-    if (binding_index == bindings_.size())
-    {
-        std::string error_message = "Binding (binding = " + std::to_string(binding) + ", space = "
-            + std::to_string(space) + ") not found";
-        throw std::runtime_error(error_message);
-    }
-
-    // Check if the binding is a buffer binding
-    if (bindings_[binding_index].type != D3D12Binding::ResourceType::kBuffer)
-    {
-        std::string error_message = "Binding (binding = " + std::to_string(binding) + ", space = "
-            + std::to_string(space) + ") is not a buffer binding";
-        throw std::runtime_error(error_message);
-    }
-
-    //bindings_[binding_index].buffer = buffer;
-}
-
-void D3D12Pipeline::BindImage(ImagePtr const& image, std::uint32_t binding, std::uint32_t space)
-{
-    // Find binding
-    std::size_t binding_index = FindBinding(bindings_, binding, space);
-    if (binding_index == bindings_.size())
-    {
-        std::string error_message = "Binding (binding = " + std::to_string(binding) + ", space = "
-            + std::to_string(space) + ") not found";
-        throw std::runtime_error(error_message);
-    }
-
-    // Check if the binding is an image binding
-    if (bindings_[binding_index].type != D3D12Binding::ResourceType::kImage)
-    {
-        std::string error_message = "Binding (binding = " + std::to_string(binding) + ", space = "
-            + std::to_string(space) + ") is not an image binding";
-        throw std::runtime_error(error_message);
-    }
-
-    //bindings_[binding_index].image = image;
 }
 
 D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc)
@@ -311,48 +120,16 @@ void D3D12GraphicsPipeline::Reload()
 
     D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
-    std::vector<D3D12_DESCRIPTOR_RANGE> descriptor_ranges;
-    std::vector<D3D12_ROOT_PARAMETER> root_parameters;
     D3D12Shader vs_shader = shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(), "main", "vs_6_0");
     D3D12_SHADER_BYTECODE vs_bytecode = {};
     vs_bytecode.BytecodeLength = vs_shader.dxc_blob->GetBufferSize();
     vs_bytecode.pShaderBytecode = vs_shader.dxc_blob->GetBufferPointer();
-    CollectRootParameters(vs_shader.reflection.Get(), descriptor_ranges, root_parameters);
 
     D3D12Shader ps_shader = shader_manager.CompileShader(pipeline_desc_.ps_filename.c_str(), "main", "ps_6_0");
     D3D12_SHADER_BYTECODE ps_bytecode = {};
     ps_bytecode.BytecodeLength = ps_shader.dxc_blob->GetBufferSize();
     ps_bytecode.pShaderBytecode = ps_shader.dxc_blob->GetBufferPointer();
-    CollectRootParameters(ps_shader.reflection.Get(), descriptor_ranges, root_parameters);
-
-    D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
-    root_signature_desc.NumParameters = (UINT)root_parameters.size();
-    root_signature_desc.pParameters = root_parameters.data();
-    root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT
-        | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS
-        | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS
-        | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
-
-    ComPtr<ID3D10Blob> root_signature_blob;
-    {
-        ComPtr<ID3D10Blob> root_signature_error_blob;
-        HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
-            &root_signature_blob, &root_signature_error_blob);
-        if (FAILED(hr))
-        {
-            std::string error_blob_message = (char*)root_signature_error_blob->GetBufferPointer();
-            error_blob_message.pop_back(); // remove \n
-
-            std::string error_message = "Failed to serialize graphics root signature "
-                "(vs: " + pipeline_desc_.vs_filename + ", ps: " + pipeline_desc_.ps_filename + "): "
-                + error_blob_message;
-            throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
-        }
-    }
-
-    ComPtr<ID3D12RootSignature> root_signature;
-    ThrowIfFailed(d3d12_device->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
-        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature_)));
+    layout_.Build({ &vs_shader, &ps_shader });
 
     ///@TODO: add blend support
     D3D12_BLEND_DESC blend_state = {};
@@ -399,7 +176,7 @@ void D3D12GraphicsPipeline::Reload()
     input_layout.NumElements = (std::uint32_t)input_element_descs.size();
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline_state_desc = {};
-    pipeline_state_desc.pRootSignature = root_signature_.Get();
+    pipeline_state_desc.pRootSignature = layout_.GetRootSignature();
     pipeline_state_desc.VS = vs_bytecode;
     pipeline_state_desc.PS = ps_bytecode;
     pipeline_state_desc.BlendState = blend_state;
@@ -448,25 +225,10 @@ void D3D12ComputePipeline::Reload()
     cs_bytecode.BytecodeLength = cs_shader.dxc_blob->GetBufferSize();
     cs_bytecode.pShaderBytecode = cs_shader.dxc_blob->GetBufferPointer();
 
-    std::vector<D3D12_ROOT_PARAMETER> root_parameters;
-    std::vector<D3D12_DESCRIPTOR_RANGE> descriptor_ranges;
-    CollectRootParameters(cs_shader.reflection.Get(), descriptor_ranges, root_parameters);
-
-    D3D12_ROOT_SIGNATURE_DESC root_signature_desc = {};
-    root_signature_desc.NumParameters = (UINT)root_parameters.size();
-    root_signature_desc.pParameters = root_parameters.data();
-
-    ComPtr<ID3D10Blob> root_signature_blob;
-    ComPtr<ID3D10Blob> root_signature_error_blob;
-    ThrowIfFailed(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
-        &root_signature_blob, &root_signature_error_blob));
-
-    ComPtr<ID3D12RootSignature> root_signature;
-    ThrowIfFailed(d3d12_device->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
-        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature_)));
+    layout_.Build({ &cs_shader });
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC pipeline_state_desc = {};
-    pipeline_state_desc.pRootSignature = root_signature_.Get();
+    pipeline_state_desc.pRootSignature = layout_.GetRootSignature();
     pipeline_state_desc.CS = cs_bytecode;
 
     ThrowIfFailed(d3d12_device->CreateComputePipelineState(&pipeline_state_desc,
