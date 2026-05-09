@@ -16,7 +16,7 @@ public:
     D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter);
 
     // Resources
-    BufferPtr CreateBuffer(std::size_t size) override;
+    BufferPtr CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags) override;
     ImagePtr CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format) override;
 
     // Synchronization primitives

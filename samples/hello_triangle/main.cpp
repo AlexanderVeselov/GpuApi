@@ -87,7 +87,7 @@ int main()
             {  0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f },
         };
 
-        gpu::BufferPtr vertex_buffer = device->CreateBuffer(sizeof(Vertex) * 3);
+        gpu::BufferPtr vertex_buffer = device->CreateBuffer(sizeof(Vertex) * 3, sizeof(Vertex), gpu::BufferFlags::kCpuAccess);
         Vertex* data = (Vertex*)vertex_buffer->Map();
         memcpy(data, vertices, sizeof(vertices));
         vertex_buffer->Unmap();

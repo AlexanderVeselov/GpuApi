@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gpu_buffer.hpp"
 #include "gpu_types.hpp"
 
 namespace gpu
@@ -8,7 +9,7 @@ class Device
 {
 public:
     // Resources
-    virtual BufferPtr CreateBuffer(std::size_t size) = 0;
+    virtual BufferPtr CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags) = 0;
     virtual ImagePtr CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format) = 0;
 
     // Synchronization primitives

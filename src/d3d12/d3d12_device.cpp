@@ -35,9 +35,9 @@ Queue& D3D12Device::GetQueue(QueueType queue_type)
     }
 }
 
-BufferPtr D3D12Device::CreateBuffer(std::size_t size)
+BufferPtr D3D12Device::CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags)
 {
-    return std::make_shared<D3D12Buffer>(*this, size);
+    return std::make_shared<D3D12Buffer>(*this, size, stride, flags);
 }
 
 ImagePtr D3D12Device::CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format)
