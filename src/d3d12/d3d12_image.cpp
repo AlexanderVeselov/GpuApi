@@ -45,6 +45,11 @@ DXGI_FORMAT GetSRVFormat(DXGI_FORMAT format)
     return format == DXGI_FORMAT_R32_TYPELESS ? DXGI_FORMAT_R32_FLOAT : format;
 }
 
+DXGI_FORMAT GetUAVFormat(DXGI_FORMAT format)
+{
+    return format == DXGI_FORMAT_R32_TYPELESS ? DXGI_FORMAT_R32_FLOAT : format;
+}
+
 bool IsDepthFormat(ImageFormat format)
 {
     return format == ImageFormat::kD32_Float || format == ImageFormat::kR32_Typeless;
@@ -154,9 +159,14 @@ D3D12Image::~D3D12Image()
     descriptor_manager.Free(default_rtv_);
     descriptor_manager.Free(dsv_);
 
-    for (auto& view : views_)
+    for (auto& srv : srvs_)
     {
-        descriptor_manager.Free(view.second);
+        descriptor_manager.Free(srv.second);
+    }
+
+    for (auto& uav : uavs_)
+    {
+        descriptor_manager.Free(uav.second);
     }
 }
 
@@ -230,21 +240,33 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetDSVHandle()
 
 D3D12Descriptor const& D3D12Image::GetView(ImageView const& view)
 {
-    auto it = views_.find(view);
-    if (it != views_.end())
+    auto it = srvs_.find(view);
+    if (it != srvs_.end())
     {
         return it->second;
     }
 
-    auto result = views_.emplace(view, CreateView(view));
+    auto result = srvs_.emplace(view, CreateSRV(view));
     return result.first->second;
 }
 
-D3D12Descriptor D3D12Image::CreateView(ImageView const& view)
+D3D12Descriptor const& D3D12Image::GetUAV(ImageView const& view)
 {
-    assert(view.mip < mip_count_ && "D3D12Image::CreateView: base mip is out of range");
-    assert(view.mip_count > 0 && "D3D12Image::CreateView: mip count must be greater than zero");
-    assert(view.mip + view.mip_count <= mip_count_ && "D3D12Image::CreateView: mip range exceeds image mip count");
+    auto it = uavs_.find(view);
+    if (it != uavs_.end())
+    {
+        return it->second;
+    }
+
+    auto result = uavs_.emplace(view, CreateUAV(view));
+    return result.first->second;
+}
+
+D3D12Descriptor D3D12Image::CreateSRV(ImageView const& view)
+{
+    assert(view.mip < mip_count_ && "D3D12Image::CreateSRV: base mip is out of range");
+    assert(view.mip_count > 0 && "D3D12Image::CreateSRV: mip count must be greater than zero");
+    assert(view.mip + view.mip_count <= mip_count_ && "D3D12Image::CreateSRV: mip range exceeds image mip count");
 
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
@@ -273,6 +295,41 @@ D3D12Descriptor D3D12Image::CreateView(ImageView const& view)
     device_.GetD3D12Device()->CreateShaderResourceView(
         resource_.Get(),
         &srv_desc,
+        descriptor_manager.GetCPU(descriptor));
+
+    return descriptor;
+}
+
+D3D12Descriptor D3D12Image::CreateUAV(ImageView const& view)
+{
+    assert((flags_ & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) &&
+        "D3D12Image::CreateUAV: image was not created with unordered-access support");
+    assert(view.mip < mip_count_ && "D3D12Image::CreateUAV: mip is out of range");
+    assert(view.mip_count == 1 && "D3D12Image::CreateUAV: UAV supports exactly one mip per view");
+
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
+    D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
+
+    D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
+    uav_desc.Format = GetUAVFormat(ImageToDXGIFormat(format_));
+    uav_desc.ViewDimension = array_size_ > 1 ? D3D12_UAV_DIMENSION_TEXTURE2DARRAY : D3D12_UAV_DIMENSION_TEXTURE2D;
+    if (array_size_ > 1)
+    {
+        uav_desc.Texture2DArray.MipSlice = view.mip;
+        uav_desc.Texture2DArray.FirstArraySlice = 0;
+        uav_desc.Texture2DArray.ArraySize = array_size_;
+        uav_desc.Texture2DArray.PlaneSlice = 0;
+    }
+    else
+    {
+        uav_desc.Texture2D.MipSlice = view.mip;
+        uav_desc.Texture2D.PlaneSlice = 0;
+    }
+
+    device_.GetD3D12Device()->CreateUnorderedAccessView(
+        resource_.Get(),
+        nullptr,
+        &uav_desc,
         descriptor_manager.GetCPU(descriptor));
 
     return descriptor;

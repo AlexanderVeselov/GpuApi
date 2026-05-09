@@ -46,6 +46,7 @@ public:
     virtual void CopyBuffer(Buffer* src, uint64_t src_offset, Buffer* dst, uint64_t dst_offset, uint64_t size) = 0;
 
     virtual void CopyBufferToImage(Image* dst, Buffer* src) = 0;
+    virtual void CopyImage(Image* dst, Image* src) = 0;
 
     virtual void End() = 0;
 };

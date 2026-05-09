@@ -147,9 +147,7 @@ void D3D12CommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_se
     current_descriptor_set_ = d3d12_descriptor_set;
 }
 
-void D3D12CommandBuffer::Dispatch(
-    std::uint32_t num_groups_x,
-    std::uint32_t num_groups_y,
+void D3D12CommandBuffer::Dispatch(std::uint32_t num_groups_x, std::uint32_t num_groups_y,
     std::uint32_t num_groups_z)
 {
     assert(num_groups_x > 0 && num_groups_y > 0 && num_groups_z > 0 &&
@@ -161,22 +159,15 @@ void D3D12CommandBuffer::Dispatch(
     cmd_list_->Dispatch(num_groups_x, num_groups_y, num_groups_z);
 }
 
-void D3D12CommandBuffer::Draw(
-    uint32_t vertex_count,
-    uint32_t instance_count,
-    uint32_t first_vertex,
-    uint32_t first_instance)
+void D3D12CommandBuffer::Draw(uint32_t vertex_count, uint32_t instance_count,
+    uint32_t first_vertex, uint32_t first_instance)
 {
     BindDescriptorsGraphics();
     cmd_list_->DrawInstanced(vertex_count, instance_count, first_vertex, first_instance);
 }
 
-void D3D12CommandBuffer::DrawIndexed(
-    uint32_t index_count,
-    uint32_t instance_count,
-    uint32_t first_index,
-    int32_t vertex_offset,
-    uint32_t first_instance)
+void D3D12CommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count,
+    uint32_t first_index, int32_t vertex_offset, uint32_t first_instance)
 {
     BindDescriptorsGraphics();
     cmd_list_->DrawIndexedInstanced(index_count, instance_count, first_index, vertex_offset, first_instance);
@@ -328,6 +319,28 @@ void D3D12CommandBuffer::CopyBufferToImage(Image* dst, Buffer* src)
     src_location.pResource = d3d12_src->GetResource();
     src_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     src_location.PlacedFootprint = footprint;
+
+    cmd_list_->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
+}
+
+void D3D12CommandBuffer::CopyImage(Image* dst, Image* src)
+{
+    D3D12Image* d3d12_dst = static_cast<D3D12Image*>(dst);
+    D3D12Image* d3d12_src = static_cast<D3D12Image*>(src);
+    assert(d3d12_dst && d3d12_src && "D3D12CommandBuffer::CopyImage: dst/src must be D3D12Image");
+    assert(dst->GetWidth() == src->GetWidth() && "D3D12CommandBuffer::CopyImage: source and destination widths must match");
+    assert(dst->GetHeight() == src->GetHeight() && "D3D12CommandBuffer::CopyImage: source and destination heights must match");
+    assert(dst->GetFormat() == src->GetFormat() && "D3D12CommandBuffer::CopyImage: source and destination formats must match");
+
+    D3D12_TEXTURE_COPY_LOCATION dst_location = {};
+    dst_location.pResource = d3d12_dst->GetResource();
+    dst_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dst_location.SubresourceIndex = 0;
+
+    D3D12_TEXTURE_COPY_LOCATION src_location = {};
+    src_location.pResource = d3d12_src->GetResource();
+    src_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    src_location.SubresourceIndex = 0;
 
     cmd_list_->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
 }

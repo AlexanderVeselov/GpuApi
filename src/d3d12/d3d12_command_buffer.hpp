@@ -15,10 +15,7 @@ class D3D12GraphicsPipeline;
 class D3D12CommandBuffer final : public CommandBuffer
 {
 public:
-    D3D12CommandBuffer(
-        D3D12Device& device,
-        D3D12Queue& queue,
-        D3D12_COMMAND_LIST_TYPE command_list_type);
+    D3D12CommandBuffer(D3D12Device& device, D3D12Queue& queue, D3D12_COMMAND_LIST_TYPE command_list_type);
     ~D3D12CommandBuffer();
 
     ID3D12GraphicsCommandList* GetCommandList() const { return cmd_list_.Get(); }
@@ -50,6 +47,7 @@ public:
 
     void CopyBuffer(Buffer* src, uint64_t src_offset, Buffer* dst, uint64_t dst_offset, uint64_t size) override;
     void CopyBufferToImage(Image* dst, Buffer* src) override;
+    void CopyImage(Image* dst, Image* src) override;
 
     void End() override;
 

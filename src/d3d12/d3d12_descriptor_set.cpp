@@ -103,7 +103,14 @@ void D3D12DescriptorSet::BindImage(D3D12Image& image, ImageView const& view, uin
             BindingName(binding, space) + " is not an image binding");
     }
 
-    BindDescriptor(d3d12_binding, image.GetView(view));
+    if (d3d12_binding.range_type == D3D12_DESCRIPTOR_RANGE_TYPE_UAV)
+    {
+        BindDescriptor(d3d12_binding, image.GetUAV(view));
+    }
+    else
+    {
+        BindDescriptor(d3d12_binding, image.GetView(view));
+    }
 }
 
 void D3D12DescriptorSet::Clear()
