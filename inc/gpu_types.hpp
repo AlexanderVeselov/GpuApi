@@ -24,8 +24,6 @@ class GraphicsPipeline;
 class ComputePipeline;
 class Queue;
 class Swapchain;
-class Semaphore;
-class Fence;
 
 // Unique resources
 using DevicePtr             = Ptr<Device>;
@@ -39,8 +37,6 @@ using SwapchainPtr          = Ptr<Swapchain>;
 // Shared resources
 using BufferPtr             = SharedPtr<Buffer>;
 using ImagePtr              = SharedPtr<Image>;
-using SemaphorePtr          = SharedPtr<Semaphore>;
-using FencePtr              = SharedPtr<Fence>;
 
 enum class QueueType
 {

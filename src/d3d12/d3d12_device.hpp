@@ -19,10 +19,6 @@ public:
     BufferPtr CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags) override;
     ImagePtr CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format) override;
 
-    // Synchronization primitives
-    //SemaphorePtr CreateSemaphore() override;
-    FencePtr CreateFence() override;
-
     Queue& GetQueue(QueueType queue_type) override;
 
     // Pipelines

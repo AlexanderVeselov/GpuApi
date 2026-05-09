@@ -6,7 +6,6 @@
 #include "gpu_command_buffer.hpp"
 #include "gpu_descriptor_set.hpp"
 #include "gpu_pipeline.hpp"
-#include "gpu_sync.hpp"
 #include "gpu_swapchain.hpp"
 
 #include "GLFW/glfw3.h"
@@ -19,6 +18,7 @@
 #include <iostream>
 #include <cassert>
 #include <thread>
+#include <utility>
 
 GLFWwindow* CreateWindow(std::uint32_t width, std::uint32_t height)
 {
@@ -120,7 +120,7 @@ int main()
 
             cmd_buffer->End();
 
-            graphics_queue.Submit(cmd_buffer);
+            graphics_queue.Submit(std::move(cmd_buffer));
             swapchain->Present();
             glfwSwapBuffers(window);
         }

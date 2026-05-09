@@ -19,6 +19,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace
 {
@@ -97,7 +98,7 @@ int main()
                 gpu::ImageLayout::kPresent);
             cmd_buffer->End();
 
-            queue.Submit(cmd_buffer);
+            queue.Submit(std::move(cmd_buffer));
             swapchain->Present();
             glfwSwapBuffers(window);
         }

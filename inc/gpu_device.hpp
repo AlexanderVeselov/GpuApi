@@ -12,10 +12,6 @@ public:
     virtual BufferPtr CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags) = 0;
     virtual ImagePtr CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format) = 0;
 
-    // Synchronization primitives
-    //virtual SemaphorePtr CreateSemaphore() = 0;
-    virtual FencePtr CreateFence() = 0;
-
     // Queues
     virtual Queue& GetQueue(QueueType queue_type) = 0;
 

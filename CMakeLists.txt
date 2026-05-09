@@ -38,7 +38,6 @@ set(INCLUDE_FILES
     inc/gpu_pipeline.hpp
     inc/gpu_queue.hpp
     inc/gpu_swapchain.hpp
-    inc/gpu_sync.hpp
     inc/gpu_types.hpp
 )
 
@@ -69,8 +68,6 @@ set(D3D12_FILES
     src/d3d12/d3d12_shader_manager.hpp
     src/d3d12/d3d12_swapchain.cpp
     src/d3d12/d3d12_swapchain.hpp
-    src/d3d12/d3d12_sync.cpp
-    src/d3d12/d3d12_sync.hpp
 )
 
 set(COMMON_SOURCES

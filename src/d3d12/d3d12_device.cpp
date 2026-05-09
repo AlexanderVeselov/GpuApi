@@ -4,7 +4,6 @@
 #include "d3d12_image.hpp"
 #include "d3d12_pipeline.hpp"
 #include "d3d12_swapchain.hpp"
-#include "d3d12_sync.hpp"
 
 #include <cassert>
 
@@ -59,11 +58,5 @@ SwapchainPtr D3D12Device::CreateSwapchain(void* window_native_handle, std::uint3
 {
     return std::make_unique<D3D12Swapchain>(*this, window_native_handle, width, height, image_count);
 }
-
-FencePtr D3D12Device::CreateFence()
-{
-    return std::make_shared<D3D12Fence>(*this);
-}
-
 
 }

@@ -7,8 +7,10 @@ namespace gpu
 class Queue
 {
 public:
+    virtual ~Queue() = default;
+
     virtual CommandBufferPtr CreateCommandBuffer() = 0;
-    virtual void Submit(CommandBufferPtr const& cmd_buffer, FencePtr fence = nullptr) = 0;
+    virtual void Submit(CommandBufferPtr cmd_buffer) = 0;
     virtual void WaitIdle() = 0;
 
 };
