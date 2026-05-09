@@ -30,29 +30,23 @@ TResource& CastResource(TBase& resource, char const* function_name)
     return *d3d12_resource;
 }
 
-D3D12DescriptorSet::D3D12DescriptorSet(
-    D3D12DescriptorManager& descriptor_manager,
-    D3D12PipelineLayout const& layout)
-    : descriptor_manager_(descriptor_manager)
-    , layout_(layout)
+D3D12DescriptorSet::D3D12DescriptorSet(D3D12PipelineLayout const& layout)
+    : layout_(layout)
 {
 }
 
 D3D12DescriptorSet::~D3D12DescriptorSet()
 {
-    Clear();
 }
 
 D3D12DescriptorSet::D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept
-    : descriptor_manager_(other.descriptor_manager_)
-    , layout_(other.layout_)
+    : layout_(other.layout_)
     , descriptors_(std::move(other.descriptors_))
 {
 }
 
 D3D12DescriptorSet& D3D12DescriptorSet::operator=(D3D12DescriptorSet&& other) noexcept
 {
-    assert(&descriptor_manager_ == &other.descriptor_manager_ && "D3D12DescriptorSet::operator=: descriptor sets must use the same descriptor manager");
     assert(&layout_ == &other.layout_ && "D3D12DescriptorSet::operator=: descriptor sets must use the same pipeline layout");
 
     if (this != &other)
@@ -112,43 +106,8 @@ void D3D12DescriptorSet::BindImage(D3D12Image& image, ImageView const& view, uin
     BindDescriptor(d3d12_binding, image.GetView(view));
 }
 
-bool D3D12DescriptorSet::HasRootTable(uint32_t root_parameter_index) const
-{
-    for (BoundDescriptor const& descriptor : descriptors_)
-    {
-        if (descriptor.root_parameter_index == root_parameter_index)
-        {
-            return descriptor.gpu_descriptor.IsValid();
-        }
-    }
-
-    return false;
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE D3D12DescriptorSet::GetRootTable(uint32_t root_parameter_index) const
-{
-    for (BoundDescriptor const& descriptor : descriptors_)
-    {
-        if (descriptor.root_parameter_index == root_parameter_index)
-        {
-            assert(descriptor.gpu_descriptor.IsValid() &&
-                "D3D12DescriptorSet::GetRootTable: root table descriptor is not bound");
-            return descriptor_manager_.GetGPU(descriptor.gpu_descriptor);
-        }
-    }
-
-    assert(false && "D3D12DescriptorSet::GetRootTable: root parameter index was not found");
-    return {};
-}
-
 void D3D12DescriptorSet::Clear()
 {
-    for (BoundDescriptor& descriptor : descriptors_)
-    {
-        descriptor_manager_.Free(descriptor.gpu_descriptor);
-        descriptor.gpu_descriptor = {};
-    }
-
     descriptors_.clear();
 }
 
@@ -192,9 +151,7 @@ void D3D12DescriptorSet::BindDescriptor(D3D12Binding const& binding, D3D12Descri
 
     BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(binding);
 
-    descriptor_manager_.Free(descriptor.gpu_descriptor);
     descriptor.cpu_descriptor = cpu_descriptor;
-    descriptor.gpu_descriptor = descriptor_manager_.CopyToGPUCBVSRVUAV(cpu_descriptor);
 }
 
 } // namespace gpu

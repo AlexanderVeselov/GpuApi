@@ -12,6 +12,7 @@ class D3D12Pipeline : virtual public Pipeline
 {
 public:
     D3D12Pipeline(D3D12Device& device);
+    DescriptorSetPtr CreateDescriptorSet() override;
     ID3D12PipelineState* GetPipelineState() const { return pipeline_state_.Get(); }
     ID3D12RootSignature* GetRootSignature() const { return layout_.GetRootSignature(); }
     D3D12PipelineLayout const& GetLayout() const { return layout_; }

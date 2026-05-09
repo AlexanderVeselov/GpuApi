@@ -1,5 +1,6 @@
 #include "d3d12_command_buffer.hpp"
 #include "d3d12_buffer.hpp"
+#include "d3d12_descriptor_set.hpp"
 #include "d3d12_device.hpp"
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
@@ -7,6 +8,7 @@
 #include "d3d12_queue.hpp"
 
 #include <cassert>
+#include <stdexcept>
 
 namespace gpu
 {
@@ -41,6 +43,24 @@ bool IsDepthFormat(ImageFormat format)
 {
     return format == ImageFormat::kD32_Float || format == ImageFormat::kR32_Typeless;
 }
+
+D3D12Descriptor CopyDescriptorToGPU(
+    D3D12DescriptorManager& descriptor_manager,
+    D3D12Descriptor descriptor)
+{
+    assert(descriptor.IsValid() && "CopyDescriptorToGPU: source descriptor is invalid");
+
+    switch (descriptor.heap)
+    {
+    case D3D12DescriptorHeapId::CPU_CBV_SRV_UAV:
+        return descriptor_manager.CopyToGPUCBVSRVUAV(descriptor);
+    case D3D12DescriptorHeapId::CPU_SAMPLER:
+        return descriptor_manager.CopyToGPUSampler(descriptor);
+    default:
+        assert(false && "CopyDescriptorToGPU: source descriptor heap is not shader-visible-copyable");
+        return {};
+    }
+}
 }
 
 D3D12CommandBuffer::D3D12CommandBuffer(
@@ -60,6 +80,11 @@ D3D12CommandBuffer::D3D12CommandBuffer(
         command_allocator_.Get(),
         nullptr,
         IID_PPV_ARGS(&cmd_list_)));
+}
+
+D3D12CommandBuffer::~D3D12CommandBuffer()
+{
+    FreeCommittedDescriptors();
 }
 
 void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride)
@@ -88,10 +113,10 @@ void D3D12CommandBuffer::SetIndexBuffer(BufferPtr buffer)
     cmd_list_->IASetIndexBuffer(&view);
 }
 
-void D3D12CommandBuffer::BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline)
+void D3D12CommandBuffer::BindPipeline(GraphicsPipelinePtr const& pipeline)
 {
     D3D12GraphicsPipeline* d3d12_pipeline = static_cast<D3D12GraphicsPipeline*>(pipeline.get());
-    assert(d3d12_pipeline && "D3D12CommandBuffer::BindGraphicsPipeline: pipeline is not a D3D12GraphicsPipeline");
+    assert(d3d12_pipeline && "D3D12CommandBuffer::BindPipeline: pipeline is not a D3D12GraphicsPipeline");
 
     current_graphics_pipeline_ = d3d12_pipeline;
     cmd_list_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -99,20 +124,39 @@ void D3D12CommandBuffer::BindGraphicsPipeline(GraphicsPipelinePtr const& pipelin
     cmd_list_->SetGraphicsRootSignature(d3d12_pipeline->GetRootSignature());
 }
 
+void D3D12CommandBuffer::BindPipeline(ComputePipelinePtr const& pipeline)
+{
+    D3D12ComputePipeline* d3d12_pipeline = static_cast<D3D12ComputePipeline*>(pipeline.get());
+    assert(d3d12_pipeline && "D3D12CommandBuffer::BindPipeline: pipeline is not a D3D12ComputePipeline");
+
+    current_compute_pipeline_ = d3d12_pipeline;
+    cmd_list_->SetPipelineState(d3d12_pipeline->GetPipelineState());
+    cmd_list_->SetComputeRootSignature(d3d12_pipeline->GetRootSignature());
+}
+
+void D3D12CommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_set)
+{
+    D3D12DescriptorSet* d3d12_descriptor_set =
+        dynamic_cast<D3D12DescriptorSet*>(descriptor_set.get());
+    if (!d3d12_descriptor_set)
+    {
+        throw std::runtime_error(
+            "D3D12CommandBuffer::BindDescriptorSet: descriptor set was not created by the D3D12 backend");
+    }
+
+    current_descriptor_set_ = d3d12_descriptor_set;
+}
+
 void D3D12CommandBuffer::Dispatch(
-    ComputePipelinePtr const& pipeline,
     std::uint32_t num_groups_x,
     std::uint32_t num_groups_y,
     std::uint32_t num_groups_z)
 {
     assert(num_groups_x > 0 && num_groups_y > 0 && num_groups_z > 0 &&
         "D3D12CommandBuffer::Dispatch: dispatch group counts must be greater than zero");
+    assert(current_compute_pipeline_ &&
+        "D3D12CommandBuffer::Dispatch: compute pipeline must be bound before dispatch");
 
-    D3D12ComputePipeline* d3d12_pipeline = static_cast<D3D12ComputePipeline*>(pipeline.get());
-    assert(d3d12_pipeline && "D3D12CommandBuffer::Dispatch: pipeline is not a D3D12ComputePipeline");
-
-    cmd_list_->SetPipelineState(d3d12_pipeline->GetPipelineState());
-    cmd_list_->SetComputeRootSignature(d3d12_pipeline->GetRootSignature());
     BindDescriptorsCompute();
     cmd_list_->Dispatch(num_groups_x, num_groups_y, num_groups_z);
 }
@@ -306,16 +350,70 @@ void D3D12CommandBuffer::BindDescriptorsGraphics()
         descriptor_manager.GetGPUSamplerHeap()
     };
     cmd_list_->SetDescriptorHeaps(2, heaps);
+
+    if (!current_descriptor_set_)
+    {
+        return;
+    }
+
+    assert(&current_descriptor_set_->GetLayout() == &current_graphics_pipeline_->GetLayout() &&
+        "D3D12CommandBuffer::BindDescriptorsGraphics: descriptor set layout must match the current graphics pipeline layout");
+
+    for (D3D12DescriptorSet::BoundDescriptor const& descriptor :
+        current_descriptor_set_->GetBoundDescriptors())
+    {
+        D3D12Descriptor gpu_descriptor = CopyDescriptorToGPU(descriptor_manager, descriptor.cpu_descriptor);
+        committed_descriptors_.push_back(gpu_descriptor);
+
+        cmd_list_->SetGraphicsRootDescriptorTable(
+            descriptor.root_parameter_index,
+            descriptor_manager.GetGPU(gpu_descriptor));
+    }
 }
 
 void D3D12CommandBuffer::BindDescriptorsCompute()
 {
+    if (!current_compute_pipeline_)
+    {
+        return;
+    }
+
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     ID3D12DescriptorHeap* heaps[] = {
         descriptor_manager.GetGPUCBVSRVUAVHeap(),
         descriptor_manager.GetGPUSamplerHeap()
     };
     cmd_list_->SetDescriptorHeaps(2, heaps);
+
+    if (!current_descriptor_set_)
+    {
+        return;
+    }
+
+    assert(&current_descriptor_set_->GetLayout() == &current_compute_pipeline_->GetLayout() &&
+        "D3D12CommandBuffer::BindDescriptorsCompute: descriptor set layout must match the current compute pipeline layout");
+
+    for (D3D12DescriptorSet::BoundDescriptor const& descriptor :
+        current_descriptor_set_->GetBoundDescriptors())
+    {
+        D3D12Descriptor gpu_descriptor = CopyDescriptorToGPU(descriptor_manager, descriptor.cpu_descriptor);
+        committed_descriptors_.push_back(gpu_descriptor);
+
+        cmd_list_->SetComputeRootDescriptorTable(
+            descriptor.root_parameter_index,
+            descriptor_manager.GetGPU(gpu_descriptor));
+    }
+}
+
+void D3D12CommandBuffer::FreeCommittedDescriptors()
+{
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
+    for (D3D12Descriptor descriptor : committed_descriptors_)
+    {
+        descriptor_manager.Free(descriptor);
+    }
+
+    committed_descriptors_.clear();
 }
 
 } // namespace gpu

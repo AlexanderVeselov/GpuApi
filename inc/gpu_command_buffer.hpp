@@ -12,14 +12,16 @@ public:
     virtual void SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride) = 0;
     virtual void SetIndexBuffer(BufferPtr buffer) = 0;
 
-    virtual void Dispatch(ComputePipelinePtr const& pipeline, std::uint32_t num_groups_x,
+    virtual void Dispatch(std::uint32_t num_groups_x,
         std::uint32_t num_groups_y, std::uint32_t num_groups_z) = 0;
     virtual void Draw(uint32_t vertex_count, uint32_t instance_count = 1,
         uint32_t first_vertex = 0, uint32_t first_instance = 0) = 0;
     virtual void DrawIndexed(uint32_t index_count, uint32_t instance_count = 1,
         uint32_t first_index = 0, int32_t vertex_offset = 0, uint32_t first_instance = 0) = 0;
 
-    virtual void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) = 0;
+    virtual void BindPipeline(GraphicsPipelinePtr const& pipeline) = 0;
+    virtual void BindPipeline(ComputePipelinePtr const& pipeline) = 0;
+    virtual void BindDescriptorSet(DescriptorSetPtr const& descriptor_set) = 0;
 
     virtual void SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment) = 0;
     virtual void SetRenderTargets(std::vector<ImagePtr> const& color_attachments,

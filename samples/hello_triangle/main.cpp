@@ -99,7 +99,7 @@ int main()
             gpu::ImagePtr swapchain_image = swapchain->GetCurrentImage();
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kPresent, gpu::ImageLayout::kRenderTarget);
             cmd_buffer->ClearImage(swapchain_image, 0.5f, 0.5f, 1.0f, 1.0f);
-            cmd_buffer->BindGraphicsPipeline(pipeline);
+            cmd_buffer->BindPipeline(pipeline);
             cmd_buffer->SetViewport(swapchain_image->GetWidth(), swapchain_image->GetHeight());
             cmd_buffer->SetScissorRect(swapchain_image->GetWidth(), swapchain_image->GetHeight());
             cmd_buffer->SetRenderTarget(swapchain_image, nullptr);

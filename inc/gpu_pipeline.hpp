@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gpu_descriptor_set.hpp"
 #include "gpu_types.hpp"
 
 namespace gpu
@@ -8,6 +9,7 @@ namespace gpu
 class Pipeline
 {
 public:
+    virtual DescriptorSetPtr CreateDescriptorSet() = 0;
     virtual void Reload() = 0;
     virtual ~Pipeline() = default;
 

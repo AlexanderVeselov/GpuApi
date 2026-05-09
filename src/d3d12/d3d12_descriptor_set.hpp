@@ -17,7 +17,16 @@ class D3D12Image;
 class D3D12DescriptorSet : public DescriptorSet
 {
 public:
-    D3D12DescriptorSet(D3D12DescriptorManager& descriptor_manager, D3D12PipelineLayout const& layout);
+    struct BoundDescriptor
+    {
+        uint32_t binding = 0;
+        uint32_t space = 0;
+        uint32_t root_parameter_index = 0;
+
+        D3D12Descriptor cpu_descriptor;
+    };
+
+    explicit D3D12DescriptorSet(D3D12PipelineLayout const& layout);
     ~D3D12DescriptorSet();
 
     D3D12DescriptorSet(D3D12DescriptorSet const&) = delete;
@@ -34,28 +43,17 @@ public:
     void BindImage(D3D12Image& image, std::uint32_t binding, std::uint32_t space);
     void BindImage(D3D12Image& image, ImageView const& view, std::uint32_t binding, std::uint32_t space);
 
-    bool HasRootTable(uint32_t root_parameter_index) const;
-    D3D12_GPU_DESCRIPTOR_HANDLE GetRootTable(uint32_t root_parameter_index) const;
+    D3D12PipelineLayout const& GetLayout() const { return layout_; }
+    std::vector<BoundDescriptor> const& GetBoundDescriptors() const { return descriptors_; }
 
     void Clear() override;
 
 private:
-    struct BoundDescriptor
-    {
-        uint32_t binding = 0;
-        uint32_t space = 0;
-        uint32_t root_parameter_index = 0;
-
-        D3D12Descriptor cpu_descriptor;
-        D3D12Descriptor gpu_descriptor;
-    };
-
     D3D12Binding const& FindBinding(uint32_t binding, uint32_t space) const;
     BoundDescriptor& FindOrCreateBoundDescriptor(D3D12Binding const& binding);
     void BindDescriptor(D3D12Binding const& binding, D3D12Descriptor cpu_descriptor);
 
 private:
-    D3D12DescriptorManager& descriptor_manager_;
     D3D12PipelineLayout const& layout_;
     std::vector<BoundDescriptor> descriptors_;
 };

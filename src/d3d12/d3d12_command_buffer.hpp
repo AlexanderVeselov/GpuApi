@@ -2,10 +2,13 @@
 
 #include "gpu_command_buffer.hpp"
 #include "d3d12_common.hpp"
+#include "d3d12_descriptor_manager.hpp"
 
 namespace gpu
 {
 class D3D12Device;
+class D3D12DescriptorSet;
+class D3D12ComputePipeline;
 class D3D12Queue;
 class D3D12GraphicsPipeline;
 
@@ -16,14 +19,17 @@ public:
         D3D12Device& device,
         D3D12Queue& queue,
         D3D12_COMMAND_LIST_TYPE command_list_type);
+    ~D3D12CommandBuffer();
 
     ID3D12GraphicsCommandList* GetCommandList() const { return cmd_list_.Get(); }
 
     void SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride) override;
     void SetIndexBuffer(BufferPtr buffer) override;
 
-    void BindGraphicsPipeline(GraphicsPipelinePtr const& pipeline) override;
-    void Dispatch(ComputePipelinePtr const& pipeline, std::uint32_t num_groups_x,
+    void BindPipeline(GraphicsPipelinePtr const& pipeline) override;
+    void BindPipeline(ComputePipelinePtr const& pipeline) override;
+    void BindDescriptorSet(DescriptorSetPtr const& descriptor_set) override;
+    void Dispatch(std::uint32_t num_groups_x,
         std::uint32_t num_groups_y, std::uint32_t num_groups_z) override;
     void Draw(uint32_t vertex_count, uint32_t instance_count = 1,
         uint32_t first_vertex = 0, uint32_t first_instance = 0) override;
@@ -50,6 +56,7 @@ public:
 private:
     void BindDescriptorsGraphics();
     void BindDescriptorsCompute();
+    void FreeCommittedDescriptors();
 
 private:
     D3D12Device& device_;
@@ -58,6 +65,9 @@ private:
     ComPtr<ID3D12CommandAllocator> command_allocator_;
     ComPtr<ID3D12GraphicsCommandList> cmd_list_;
     D3D12GraphicsPipeline* current_graphics_pipeline_ = nullptr;
+    D3D12ComputePipeline* current_compute_pipeline_ = nullptr;
+    D3D12DescriptorSet* current_descriptor_set_ = nullptr;
+    std::vector<D3D12Descriptor> committed_descriptors_;
 };
 
 } // namespace gpu

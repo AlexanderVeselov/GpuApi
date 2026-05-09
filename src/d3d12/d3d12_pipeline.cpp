@@ -1,5 +1,6 @@
 #include "d3d12_api.hpp"
 #include "d3d12_pipeline.hpp"
+#include "d3d12_descriptor_set.hpp"
 #include "d3d12_device.hpp"
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
@@ -106,6 +107,11 @@ D3D12Pipeline::D3D12Pipeline(D3D12Device& device)
     : device_(device)
     , layout_(device)
 {
+}
+
+DescriptorSetPtr D3D12Pipeline::CreateDescriptorSet()
+{
+    return std::make_unique<D3D12DescriptorSet>(layout_);
 }
 
 D3D12GraphicsPipeline::D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc)
