@@ -1,27 +1,37 @@
 #pragma once
 
-#include "videoapi/vulkan_shared_object.hpp"
-#include "videoapi/vulkan_device.hpp"
+#include "gpu_swapchain.hpp"
+
 #include <vulkan/vulkan.h>
-#include <vector>
 
-class VulkanImage;
+namespace gpu
+{
+class VulkanDevice;
 
-class VulkanSwapchain 
+class VulkanSwapchain final : public Swapchain
 {
 public:
-    VulkanSwapchain(VulkanDevice & device, uint32_t width, uint32_t height);
-    size_t GetImagesCount() const { return swapchain_images_.size(); }
-    std::shared_ptr<VulkanImage> GetImage(size_t index) const { return swapchain_images_[index]; }
-    uint32_t GetCurrentImageIndex() const { return current_image_index_; }
-    void Present();
+    VulkanSwapchain(
+        VulkanDevice& device,
+        void* window_native_handle,
+        uint32_t width,
+        uint32_t height,
+        uint32_t image_count);
+    ~VulkanSwapchain() override;
+
+    void Present() override;
 
 private:
-    VulkanDevice & device_;
-    VulkanScopedObject<VkSwapchainKHR, vkCreateSwapchainKHR, vkDestroySwapchainKHR> swapchain_;
-    std::vector<std::shared_ptr<VulkanImage>> swapchain_images_;
-    VkFormat swapchain_image_format_;
-    uint32_t current_image_index_;
-    VkQueue present_queue_;
+    void CreateSurface(void* window_native_handle);
+    void CreateSwapchain(uint32_t width, uint32_t height, uint32_t image_count);
+    void AcquireNextImage();
 
+private:
+    VulkanDevice& device_;
+    VkSurfaceKHR surface_ = VK_NULL_HANDLE;
+    VkSwapchainKHR swapchain_ = VK_NULL_HANDLE;
+    VkQueue present_queue_ = VK_NULL_HANDLE;
+    uint32_t present_queue_family_index_ = UINT32_MAX;
 };
+
+} // namespace gpu

@@ -1,19 +1,33 @@
 #pragma once
 
-#include "vulkan_shared_object.hpp"
-#include "vulkan_device.hpp"
+#include "gpu_buffer.hpp"
 
-class VulkanBuffer
+#include <vulkan/vulkan.h>
+
+namespace gpu
+{
+class VulkanDevice;
+
+class VulkanBuffer final : public Buffer
 {
 public:
-    VulkanBuffer(VulkanDevice & device, VkDeviceSize size, VkBufferUsageFlags usage);
-    void Write(void const* data);
+    VulkanBuffer(VulkanDevice& device, uint64_t size, uint32_t stride, BufferFlags flags);
+    ~VulkanBuffer() override;
+
     VkBuffer GetBuffer() const { return buffer_; }
+    uint32_t GetStride() const { return stride_; }
+    BufferFlags GetFlags() const { return flags_; }
+
+    void* Map() override;
+    void Unmap() override;
 
 private:
-    VulkanDevice & device_;
-    VkDeviceSize buffer_size_;
-    VulkanScopedObject<VkBuffer, vkCreateBuffer, vkDestroyBuffer> buffer_;
-    VulkanScopedObject<VkDeviceMemory, nullptr, vkFreeMemory> memory_;
-
+    VulkanDevice& device_;
+    VkBuffer buffer_ = VK_NULL_HANDLE;
+    VkDeviceMemory memory_ = VK_NULL_HANDLE;
+    BufferFlags flags_ = BufferFlags::kNone;
+    uint32_t stride_ = 0;
+    bool mapped_ = false;
 };
+
+} // namespace gpu

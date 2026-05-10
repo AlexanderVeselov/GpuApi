@@ -1,5 +1,6 @@
 #include "gpu_api.hpp"
 #include "../d3d12/d3d12_api.hpp"
+#include "../vulkan/vulkan_api.hpp"
 
 #include <cassert>
 #include <stdexcept>
@@ -12,6 +13,8 @@ Api* Api::Create(ApiType api_type)
     {
     case ApiType::kD3D12:
         return new D3D12Api();
+    case ApiType::kVulkan:
+        return new VulkanApi();
     default:
         assert(!"Not implemented!");
         throw std::runtime_error("Failted to create Gpu API: API type is not supported");

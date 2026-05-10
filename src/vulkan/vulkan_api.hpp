@@ -1,31 +1,27 @@
 #pragma once
 
 #include "gpu_api.hpp"
+
 #include <vulkan/vulkan.h>
-#include <vector>
-#include <functional>
 
 namespace gpu
 {
-class VulkanApi : public Api
+class VulkanApi final : public Api
 {
 public:
-    VulkanApi(std::vector<char const*> const& enabled_extensions, bool enable_validation);
-    ~VulkanApi();
+    VulkanApi();
+    ~VulkanApi() override;
 
-    VulkanSharedObject<VkInstance> GetInstance() const;
-    // Create device with presentation support
-    std::shared_ptr<VulkanDevice> CreateDevice(std::vector<char const*> const& enabled_extensions, uint32_t physical_device_index, std::function<VkSurfaceKHR(VkInstance)> surface_creation_callback);
+    DevicePtr CreateDevice() override;
 
-private:
-    void CreateInstance(std::vector<char const*> enabled_extensions);
-    void CreateDebugMessenger();
+    VkInstance GetInstance() const { return instance_; }
 
 private:
-    bool validation_enabled_;
-    VulkanSharedObject<VkInstance> instance_;
-    VkDebugUtilsMessengerEXT debug_messenger_ = nullptr;
+    void CreateInstance();
+    VkPhysicalDevice ChoosePhysicalDevice() const;
 
+private:
+    VkInstance instance_ = VK_NULL_HANDLE;
 };
 
 } // namespace gpu

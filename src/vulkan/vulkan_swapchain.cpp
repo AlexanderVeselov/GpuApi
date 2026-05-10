@@ -1,183 +1,292 @@
-#include "vulkan_exception.hpp"
 #include "vulkan_swapchain.hpp"
-#include "vulkan_device.hpp"
-#include "vulkan_image.hpp"
-#include <algorithm>
 
+#include "vulkan_api.hpp"
+#include "vulkan_device.hpp"
+#include "vulkan_exception.hpp"
+#include "vulkan_image.hpp"
+
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
+namespace gpu
+{
 static VkSurfaceFormatKHR FindSurfaceFormat(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
 {
-    std::vector<VkSurfaceFormatKHR> available_formats;
+    uint32_t format_count = 0;
+    VkResult status =
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
+    VK_THROW_IF_FAILED(status, "Failed to get Vulkan surface formats");
+    THROW_IF(format_count == 0, "No Vulkan surface formats are available");
 
-    uint32_t format_count;
-    VkResult status = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
-    VK_THROW_IF_FAILED(status, "Failed to get physical device surface formats!");
+    std::vector<VkSurfaceFormatKHR> available_formats(format_count);
+    status = vkGetPhysicalDeviceSurfaceFormatsKHR(
+        physical_device,
+        surface,
+        &format_count,
+        available_formats.data());
+    VK_THROW_IF_FAILED(status, "Failed to get Vulkan surface formats");
 
-    available_formats.resize(format_count);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, available_formats.data());
-
-    THROW_IF(available_formats.empty(), "No available surface formats!");
-
-    if (available_formats.size() == 1 && available_formats[0].format == VK_FORMAT_UNDEFINED)
+    for (VkSurfaceFormatKHR const& format : available_formats)
     {
-        return { VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-    }
-
-    for (const auto& available_format : available_formats)
-    {
-        if (available_format.format == VK_FORMAT_B8G8R8A8_SRGB
-            && available_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        if (format.format == VK_FORMAT_B8G8R8A8_UNORM
+            && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
         {
-            return available_format;
+            return format;
         }
     }
 
     return available_formats[0];
-
 }
 
-VkPresentModeKHR FindPresentMode(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
+static VkPresentModeKHR FindPresentMode(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
 {
-    std::vector<VkPresentModeKHR> available_present_modes;
-    uint32_t presentation_mode_count;
-    VkResult status = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &presentation_mode_count, nullptr);
-    VK_THROW_IF_FAILED(status, "Failed to get physical device presentation modes!");
+    uint32_t present_mode_count = 0;
+    VkResult status = vkGetPhysicalDeviceSurfacePresentModesKHR(
+        physical_device,
+        surface,
+        &present_mode_count,
+        nullptr);
+    VK_THROW_IF_FAILED(status, "Failed to get Vulkan present modes");
+    THROW_IF(present_mode_count == 0, "No Vulkan present modes are available");
 
-    available_present_modes.resize(presentation_mode_count);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &presentation_mode_count, available_present_modes.data());
+    std::vector<VkPresentModeKHR> present_modes(present_mode_count);
+    status = vkGetPhysicalDeviceSurfacePresentModesKHR(
+        physical_device,
+        surface,
+        &present_mode_count,
+        present_modes.data());
+    VK_THROW_IF_FAILED(status, "Failed to get Vulkan present modes");
 
-    THROW_IF(available_present_modes.empty(), "No available presentation modes!");
-
-    VkPresentModeKHR best_mode = VK_PRESENT_MODE_FIFO_KHR;
-
-    for (const auto& available_present_mode : available_present_modes)
+    for (VkPresentModeKHR mode : present_modes)
     {
-        if (available_present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
+        if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
         {
-            return available_present_mode;
+            return mode;
         }
-        else if (available_present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR)
-        {
-            best_mode = available_present_mode;
-        }
-
     }
 
-    return best_mode;
+    return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VulkanSwapchain::VulkanSwapchain(VulkanDevice & device, uint32_t width, uint32_t height)
-    : device_(device)
+static uint32_t Clamp(uint32_t value, uint32_t min_value, uint32_t max_value)
 {
-    VkSurfaceCapabilitiesKHR surface_capabilities;
-
-    VkSurfaceKHR surface = device_.GetSurface();
-
-    VkResult status = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device_.GetPhysicalDevice(),
-        surface, &surface_capabilities);
-    VK_THROW_IF_FAILED(status, "Failed to get surface capabilities!");
-
-    uint32_t image_count = surface_capabilities.minImageCount + 1;
-
-    if (surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount)
+    if (value < min_value)
     {
-        image_count = surface_capabilities.maxImageCount;
+        return min_value;
     }
 
-    VkSwapchainCreateInfoKHR swapchain_create_info = {};
-    swapchain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapchain_create_info.surface = surface;
-    swapchain_create_info.minImageCount = image_count;
-
-    VkSurfaceFormatKHR surface_format = FindSurfaceFormat(device_.GetPhysicalDevice(), surface);
-    swapchain_create_info.imageFormat = surface_format.format;
-    swapchain_create_info.imageColorSpace = surface_format.colorSpace;
-
-    VkExtent2D image_extent;
-
-    if (surface_capabilities.currentExtent.width != 0xFFFFFFFF)
+    if (value > max_value)
     {
-        image_extent = surface_capabilities.currentExtent;
+        return max_value;
+    }
+
+    return value;
+}
+
+VulkanSwapchain::VulkanSwapchain(
+    VulkanDevice& device,
+    void* window_native_handle,
+    uint32_t width,
+    uint32_t height,
+    uint32_t image_count)
+    : Swapchain(ImageFormat::kUnknown)
+    , device_(device)
+{
+    CreateSurface(window_native_handle);
+    CreateSwapchain(width, height, image_count);
+    AcquireNextImage();
+}
+
+VulkanSwapchain::~VulkanSwapchain()
+{
+    VkDevice logical_device = device_.GetDevice();
+
+    if (swapchain_ != VK_NULL_HANDLE)
+    {
+        vkDestroySwapchainKHR(logical_device, swapchain_, nullptr);
+    }
+
+    if (surface_ != VK_NULL_HANDLE)
+    {
+        vkDestroySurfaceKHR(device_.GetApi().GetInstance(), surface_, nullptr);
+    }
+}
+
+void VulkanSwapchain::CreateSurface(void* window_native_handle)
+{
+    HWND hwnd = static_cast<HWND>(window_native_handle);
+    HINSTANCE hinstance = GetModuleHandle(nullptr);
+
+    VkWin32SurfaceCreateInfoKHR surface_create_info{};
+    surface_create_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    surface_create_info.hinstance = hinstance;
+    surface_create_info.hwnd = hwnd;
+
+    VkResult status = vkCreateWin32SurfaceKHR(
+        device_.GetApi().GetInstance(),
+        &surface_create_info,
+        nullptr,
+        &surface_);
+    VK_THROW_IF_FAILED(status, "Failed to create Vulkan Win32 surface");
+
+    uint32_t queue_family_count = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(
+        device_.GetPhysicalDevice(),
+        &queue_family_count,
+        nullptr);
+
+    for (uint32_t i = 0; i < queue_family_count; ++i)
+    {
+        VkBool32 present_supported = VK_FALSE;
+        status = vkGetPhysicalDeviceSurfaceSupportKHR(
+            device_.GetPhysicalDevice(),
+            i,
+            surface_,
+            &present_supported);
+        VK_THROW_IF_FAILED(status, "Failed to query Vulkan presentation support");
+
+        if (present_supported)
+        {
+            present_queue_family_index_ = i;
+            break;
+        }
+    }
+
+    THROW_IF(present_queue_family_index_ == UINT32_MAX, "No Vulkan present queue family");
+    vkGetDeviceQueue(device_.GetDevice(), present_queue_family_index_, 0, &present_queue_);
+}
+
+void VulkanSwapchain::CreateSwapchain(uint32_t width, uint32_t height, uint32_t requested_image_count)
+{
+    VkSurfaceCapabilitiesKHR surface_capabilities{};
+    VkResult status = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        device_.GetPhysicalDevice(),
+        surface_,
+        &surface_capabilities);
+    VK_THROW_IF_FAILED(status, "Failed to get Vulkan surface capabilities");
+
+    uint32_t image_count = requested_image_count;
+    if (image_count < surface_capabilities.minImageCount)
+    {
+        image_count = surface_capabilities.minImageCount;
+    }
+    if (surface_capabilities.maxImageCount > 0)
+    {
+        if (image_count > surface_capabilities.maxImageCount)
+        {
+            image_count = surface_capabilities.maxImageCount;
+        }
+    }
+
+    VkSurfaceFormatKHR surface_format = FindSurfaceFormat(device_.GetPhysicalDevice(), surface_);
+    image_format_ = FromVkFormat(surface_format.format);
+
+    VkExtent2D extent{};
+    if (surface_capabilities.currentExtent.width != UINT32_MAX)
+    {
+        extent = surface_capabilities.currentExtent;
     }
     else
     {
-        image_extent = { width, height };
-
-        image_extent.width = std::max(surface_capabilities.minImageExtent.width,
-            std::min(surface_capabilities.maxImageExtent.width, image_extent.width));
-        image_extent.height = std::max(surface_capabilities.minImageExtent.height,
-            std::min(surface_capabilities.maxImageExtent.height, image_extent.height));
-
+        extent.width = Clamp(
+            width,
+            surface_capabilities.minImageExtent.width,
+            surface_capabilities.maxImageExtent.width);
+        extent.height = Clamp(
+            height,
+            surface_capabilities.minImageExtent.height,
+            surface_capabilities.maxImageExtent.height);
     }
 
-    swapchain_create_info.imageExtent = image_extent;
-    swapchain_create_info.imageArrayLayers = 1;
-    swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    VkSwapchainCreateInfoKHR create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    create_info.surface = surface_;
+    create_info.minImageCount = image_count;
+    create_info.imageFormat = surface_format.format;
+    create_info.imageColorSpace = surface_format.colorSpace;
+    create_info.imageExtent = extent;
+    create_info.imageArrayLayers = 1;
+    create_info.imageUsage =
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+        | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+        | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+        | VK_IMAGE_USAGE_STORAGE_BIT;
 
-    uint32_t graphics_family_index = device_.GetGraphicsQueueFamilyIndex();
-    uint32_t present_family_index = device_.GetPresentQueueFamilyIndex();
-
-    uint32_t queue_family_indices[] =
-    {
-        graphics_family_index,
-        present_family_index
+    uint32_t queue_family_indices[] = {
+        device_.GetGraphicsQueueFamilyIndex(),
+        present_queue_family_index_,
     };
 
-    if (graphics_family_index == present_family_index)
+    if (queue_family_indices[0] == queue_family_indices[1])
     {
-        swapchain_create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
     else
     {
-        swapchain_create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        swapchain_create_info.queueFamilyIndexCount = 2;
-        swapchain_create_info.pQueueFamilyIndices = queue_family_indices;
+        create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        create_info.queueFamilyIndexCount = 2;
+        create_info.pQueueFamilyIndices = queue_family_indices;
     }
 
-    swapchain_create_info.preTransform = surface_capabilities.currentTransform;
-    swapchain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapchain_create_info.presentMode = FindPresentMode(device_.GetPhysicalDevice(), surface);
-    swapchain_create_info.clipped = VK_TRUE;
+    create_info.preTransform = surface_capabilities.currentTransform;
+    create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    create_info.presentMode = FindPresentMode(device_.GetPhysicalDevice(), surface_);
+    create_info.clipped = VK_TRUE;
 
-    swapchain_create_info.oldSwapchain = nullptr;
+    status = vkCreateSwapchainKHR(device_.GetDevice(), &create_info, nullptr, &swapchain_);
+    VK_THROW_IF_FAILED(status, "Failed to create Vulkan swapchain");
 
-    VkDevice logical_device = device_.GetDevice();
-    status = swapchain_.Create(logical_device, swapchain_create_info);
-    VK_THROW_IF_FAILED(status, "Failed to create swap chain!");
+    uint32_t actual_image_count = 0;
+    status = vkGetSwapchainImagesKHR(device_.GetDevice(), swapchain_, &actual_image_count, nullptr);
+    VK_THROW_IF_FAILED(status, "Failed to get Vulkan swapchain images");
 
-    status = vkGetSwapchainImagesKHR(logical_device, swapchain_, &image_count, nullptr);
-    VK_THROW_IF_FAILED(status, "Failed to get swap chain images!");
-    THROW_IF(image_count == 0, "No swap chain images!");
+    std::vector<VkImage> images(actual_image_count);
+    status = vkGetSwapchainImagesKHR(
+        device_.GetDevice(),
+        swapchain_,
+        &actual_image_count,
+        images.data());
+    VK_THROW_IF_FAILED(status, "Failed to get Vulkan swapchain images");
 
-    std::vector<VkImage> swapchain_images(image_count);
-    vkGetSwapchainImagesKHR(logical_device, swapchain_, &image_count, swapchain_images.data());
-
-    for (size_t i = 0; i < swapchain_images.size(); i++)
+    for (VkImage image : images)
     {
-        std::shared_ptr<VulkanImage> image = device_.CreateImage(swapchain_images[i], surface_format.format);
-        swapchain_images_.push_back(image);
+        swapchain_images_.push_back(std::make_shared<VulkanImage>(
+            device_,
+            image,
+            extent.width,
+            extent.height,
+            surface_format.format,
+            1,
+            1,
+            ImageFlags::kRenderTarget | ImageFlags::kStorage));
     }
+}
 
-    status = vkAcquireNextImageKHR(logical_device, swapchain_, std::numeric_limits<uint64_t>::max(), VK_NULL_HANDLE, VK_NULL_HANDLE, &current_image_index_);
-    VK_THROW_IF_FAILED(status, "Failed to acquire next image!");
-
-    vkGetDeviceQueue(logical_device, device_.GetPresentQueueFamilyIndex(), 0, &present_queue_);
+void VulkanSwapchain::AcquireNextImage()
+{
+    VkResult status = vkAcquireNextImageKHR(
+        device_.GetDevice(),
+        swapchain_,
+        UINT64_MAX,
+        VK_NULL_HANDLE,
+        VK_NULL_HANDLE,
+        &current_image_index_);
+    VK_THROW_IF_FAILED(status, "Failed to acquire next Vulkan swapchain image");
 }
 
 void VulkanSwapchain::Present()
 {
-    VkPresentInfoKHR present_info = {};
+    VkPresentInfoKHR present_info{};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     present_info.swapchainCount = 1;
-
-    VkSwapchainKHR swapchain = swapchain_;
-    present_info.pSwapchains = &swapchain;
-
+    present_info.pSwapchains = &swapchain_;
     present_info.pImageIndices = &current_image_index_;
 
     VkResult status = vkQueuePresentKHR(present_queue_, &present_info);
-    VK_THROW_IF_FAILED(status, "Failed to present image!");
+    VK_THROW_IF_FAILED(status, "Failed to present Vulkan swapchain image");
 
-    status = vkAcquireNextImageKHR(device_.GetDevice(), swapchain_, std::numeric_limits<uint64_t>::max(), VK_NULL_HANDLE, VK_NULL_HANDLE, &current_image_index_);
-    VK_THROW_IF_FAILED(status, "Failed to acquire next image!");
-
+    AcquireNextImage();
 }
+
+} // namespace gpu

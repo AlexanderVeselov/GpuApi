@@ -1,29 +1,82 @@
 #pragma once
 
-#include "vulkan_device.hpp"
+#include "gpu_command_buffer.hpp"
+
 #include <vulkan/vulkan.h>
 
-class VulkanGraphicsPipeline;
-class VulkanBuffer;
+namespace gpu
+{
+class VulkanDevice;
 
-class VulkanCommandBuffer
+class VulkanCommandBuffer final : public CommandBuffer
 {
 public:
-    VulkanCommandBuffer(VulkanDevice & device, VkCommandPool command_pool);
-    void Begin();
-    void BeginGraphics(std::shared_ptr<VulkanGraphicsPipeline> pipeline);
-    void EndGraphics();
-    void Draw(uint32_t vertex_count, uint32_t first_vertex = 0, uint32_t instance_count = 1, uint32_t first_instance = 0);
-    void End();
-    void BindVertexBuffer(std::shared_ptr<VulkanBuffer> buffer);
+    VulkanCommandBuffer(VulkanDevice& device, VkCommandPool command_pool);
+    ~VulkanCommandBuffer() override;
+
     VkCommandBuffer GetCommandBuffer() const { return command_buffer_; }
-    
+    void Close();
+
+    void SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride) override;
+    void SetIndexBuffer(BufferPtr buffer) override;
+
+    void Dispatch(
+        std::uint32_t num_groups_x,
+        std::uint32_t num_groups_y,
+        std::uint32_t num_groups_z) override;
+
+    void Draw(
+        uint32_t vertex_count,
+        uint32_t instance_count,
+        uint32_t first_vertex,
+        uint32_t first_instance) override;
+
+    void DrawIndexed(
+        uint32_t index_count,
+        uint32_t instance_count,
+        uint32_t first_index,
+        int32_t vertex_offset,
+        uint32_t first_instance) override;
+
+    void BindPipeline(GraphicsPipelinePtr const& pipeline) override;
+    void BindPipeline(ComputePipelinePtr const& pipeline) override;
+    void BindDescriptorSet(DescriptorSetPtr const& descriptor_set) override;
+
+    void SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment) override;
+    void SetRenderTargets(
+        std::vector<ImagePtr> const& color_attachments,
+        ImagePtr depth_attachment) override;
+
+    void SetViewport(const Viewport& viewport) override;
+    void SetScissor(const Rect& rect) override;
+
+    void ClearImage(ImagePtr image, float r, float g, float b, float a) override;
+
+    void TransitionBarrier(
+        ImagePtr image,
+        ImageLayout layout_before,
+        ImageLayout layout_after) override;
+
+    void StorageBarrier(ImagePtr image) override;
+
+    void CopyBuffer(
+        Buffer* src,
+        uint64_t src_offset,
+        Buffer* dst,
+        uint64_t dst_offset,
+        uint64_t size) override;
+
+    void CopyBufferToImage(Image* dst, Buffer* src) override;
+    void CopyImage(Image* dst, Image* src) override;
+
 private:
-    VulkanDevice & device_;
+    void Begin();
 
-    VkCommandPool command_pool_;
-    VkCommandBuffer command_buffer_;
-
-    std::shared_ptr<VulkanGraphicsPipeline> current_pipeline_;
-
+private:
+    VulkanDevice& device_;
+    VkCommandPool command_pool_ = VK_NULL_HANDLE;
+    VkCommandBuffer command_buffer_ = VK_NULL_HANDLE;
+    bool closed_ = false;
 };
+
+} // namespace gpu

@@ -1,70 +1,69 @@
 #pragma once
 
-#include "vulkan_shared_object.hpp"
+#include "gpu_device.hpp"
+
 #include "vulkan_memory_manager.hpp"
+
 #include <vulkan/vulkan.h>
-#include <vector>
 
+#include <memory>
+
+namespace gpu
+{
 class VulkanApi;
-class VulkanSwapchain;
-class VulkanShader;
-class VulkanGraphicsPipelineState;
-class VulkanGraphicsPipeline;
-class VulkanCommandBuffer;
-class VulkanBuffer;
-class VulkanImage;
-class VulkanMemoryManager;
 
-class VulkanDevice
+class VulkanDevice final : public Device
 {
 public:
-    VulkanDevice(VulkanApi & video_api, VkPhysicalDevice physical_device, std::vector<char const*> const& enabled_layer_names, std::vector<char const*> const& enabled_extension_names, VulkanSharedObject<VkSurfaceKHR> surface);
+    VulkanDevice(VulkanApi& api, VkPhysicalDevice physical_device);
+    ~VulkanDevice() override;
 
-    uint32_t GetGraphicsQueueFamilyIndex() const;
-    uint32_t GetComputeQueueFamilyIndex() const;
-    uint32_t GetTransferQueueFamilyIndex() const;
-    uint32_t GetPresentQueueFamilyIndex() const;
+    BufferPtr CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags) override;
+    ImagePtr CreateImage(
+        uint32_t width,
+        uint32_t height,
+        ImageFormat format,
+        uint32_t mip_count,
+        uint32_t array_size,
+        ImageFlags flags) override;
 
-    VkPhysicalDevice GetPhysicalDevice() const;
-    VkDevice GetDevice() const;
-    VkSurfaceKHR GetSurface() const;
-    VkDescriptorPool GetDescriptorPool() const { return descriptor_pool_; }
+    Queue& GetQueue(QueueType queue_type) override;
 
-    std::shared_ptr<VulkanSwapchain> CreateSwapchain(uint32_t width, uint32_t height);
-    std::shared_ptr<VulkanShader> CreateVertexShader(std::string const& filename);
-    std::shared_ptr<VulkanShader> CreatePixelShader(std::string const& filename);
-    std::shared_ptr<VulkanGraphicsPipeline> CreateGraphicsPipeline(VulkanGraphicsPipelineState const& pipeline_state);
-    std::shared_ptr<VulkanCommandBuffer> CreateGraphicsCommandBuffer();
-    std::shared_ptr<VulkanBuffer> CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage);
-    std::shared_ptr<VulkanImage> CreateImage(VkImage image, VkFormat format);
-    
-    void SubmitGraphicsCommandBuffer(std::shared_ptr<VulkanCommandBuffer> command_buffer);
-    void GraphicsWaitIdle();
+    GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) override;
+    ComputePipelinePtr CreateComputePipeline(char const* cs_filename) override;
 
-    VulkanMemoryManager & GetMemoryManager() { return memory_manager_; }
+    SwapchainPtr CreateSwapchain(
+        void* window_native_handle,
+        std::uint32_t width,
+        std::uint32_t height,
+        std::uint32_t image_count) override;
+
+    VulkanApi& GetApi() const { return api_; }
+    VkPhysicalDevice GetPhysicalDevice() const { return physical_device_; }
+    VkDevice GetDevice() const { return device_; }
+    VulkanMemoryManager& GetMemoryManager() { return memory_manager_; }
+
+    uint32_t GetGraphicsQueueFamilyIndex() const { return graphics_queue_family_index_; }
+    uint32_t GetComputeQueueFamilyIndex() const { return compute_queue_family_index_; }
+    uint32_t GetTransferQueueFamilyIndex() const { return transfer_queue_family_index_; }
 
 private:
-    VulkanApi & video_api_;
+    void FindQueueFamilyIndices();
+    void CreateLogicalDevice();
+
+private:
+    VulkanApi& api_;
+    VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
+    VkDevice device_ = VK_NULL_HANDLE;
     VulkanMemoryManager memory_manager_;
 
-    void FindQueueFamilyIndices();
-    void CreateLogicalDevice(std::vector<char const*> const& enabled_layer_names, std::vector<char const*> const& enabled_extension_names);
-    void CreateCommandPools();
-    void CreateDescriptorPool();
+    uint32_t graphics_queue_family_index_ = UINT32_MAX;
+    uint32_t compute_queue_family_index_ = UINT32_MAX;
+    uint32_t transfer_queue_family_index_ = UINT32_MAX;
 
-    VkPhysicalDevice physical_device_;
-    VulkanSharedObject<VkDevice> logical_device_;
-    VulkanSharedObject<VkSurfaceKHR> surface_;
-
-    uint32_t graphics_queue_family_index_;
-    uint32_t compute_queue_family_index_;
-    uint32_t transfer_queue_family_index_;
-    uint32_t present_queue_family_index_;
-
-    VulkanSharedObject<VkCommandPool> graphics_command_pool_;
-    VulkanSharedObject<VkCommandPool> compute_command_pool_;
-    VulkanSharedObject<VkCommandPool> transfer_command_pool_;
-
-    VulkanScopedObject<VkDescriptorPool, vkCreateDescriptorPool, vkDestroyDescriptorPool> descriptor_pool_;
-
+    std::unique_ptr<Queue> graphics_queue_;
+    std::unique_ptr<Queue> compute_queue_;
+    std::unique_ptr<Queue> transfer_queue_;
 };
+
+} // namespace gpu
