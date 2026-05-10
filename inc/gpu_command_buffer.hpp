@@ -29,14 +29,6 @@ public:
 
     virtual void SetViewport(const Viewport& viewport) = 0;
     virtual void SetScissor(const Rect& rect) = 0;
-    void SetViewport(std::uint32_t width, std::uint32_t height)
-    {
-        SetViewport(Viewport{ 0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f });
-    }
-    void SetScissorRect(std::uint32_t width, std::uint32_t height)
-    {
-        SetScissor(Rect{ 0, 0, static_cast<int32_t>(width), static_cast<int32_t>(height) });
-    }
 
     virtual void ClearImage(ImagePtr image, float r, float g, float b, float a) = 0;
 
@@ -47,8 +39,6 @@ public:
 
     virtual void CopyBufferToImage(Image* dst, Buffer* src) = 0;
     virtual void CopyImage(Image* dst, Image* src) = 0;
-
-    virtual void End() = 0;
 };
 
 } // namespace gpu

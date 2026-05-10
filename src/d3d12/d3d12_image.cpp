@@ -54,41 +54,28 @@ bool IsDepthFormat(ImageFormat format)
 {
     return format == ImageFormat::kD32_Float || format == ImageFormat::kR32_Typeless;
 }
-}
 
-D3D12Image::D3D12Image(D3D12Device& device, uint32_t width, uint32_t height, ImageFormat format)
-    : D3D12Image(
-        device,
-        width,
-        height,
-        format,
-        1,
-        1,
-        IsDepthFormat(format)
-            ? D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL
-            : D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-        D3D12_RESOURCE_STATE_COMMON)
+D3D12_RESOURCE_FLAGS ToD3D12ResourceFlags(ImageFlags flags)
 {
+    D3D12_RESOURCE_FLAGS d3d12_flags = D3D12_RESOURCE_FLAG_NONE;
+
+    if (HasFlag(flags, ImageFlags::kRenderTarget))
+    {
+        d3d12_flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+    }
+
+    if (HasFlag(flags, ImageFlags::kDepthStencil))
+    {
+        d3d12_flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    }
+
+    if (HasFlag(flags, ImageFlags::kStorage))
+    {
+        d3d12_flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    }
+
+    return d3d12_flags;
 }
-
-D3D12Image::D3D12Image(
-    D3D12Device& device,
-    ID3D12Resource* resource,
-    uint32_t width,
-    uint32_t height,
-    ImageFormat format)
-    : Image(width, height, format)
-    , device_(device)
-    , resource_(resource)
-    , flags_(D3D12_RESOURCE_FLAG_NONE)
-    , current_state_(D3D12_RESOURCE_STATE_PRESENT)
-{
-    assert(resource_ && "D3D12Image: wrapped resource must not be null");
-
-    D3D12_RESOURCE_DESC desc = resource_->GetDesc();
-    mip_count_ = desc.MipLevels;
-    array_size_ = desc.DepthOrArraySize;
-    flags_ = desc.Flags;
 }
 
 D3D12Image::D3D12Image(
@@ -98,16 +85,17 @@ D3D12Image::D3D12Image(
     ImageFormat format,
     uint32_t mip_count,
     uint32_t array_size,
-    D3D12_RESOURCE_FLAGS flags,
-    D3D12_RESOURCE_STATES initial_state)
-    : Image(width, height, format)
+    ImageFlags flags)
+    : Image(width, height, format, mip_count, array_size, flags)
     , device_(device)
-    , mip_count_(mip_count)
-    , array_size_(array_size)
-    , flags_(flags)
-    , current_state_(initial_state)
 {
+    assert(mip_count_ > 0 && "D3D12Image: mip count must be greater than zero");
+    assert(array_size_ > 0 && "D3D12Image: array size must be greater than zero");
+    assert((!IsDepthFormat(format) || HasFlag(flags_, ImageFlags::kDepthStencil)) &&
+        "D3D12Image: depth image must be created with ImageFlags::kDepthStencil");
+
     auto d3d12_device = device.GetD3D12Device();
+    D3D12_RESOURCE_FLAGS resource_flags = ToD3D12ResourceFlags(flags_);
 
     D3D12_HEAP_PROPERTIES heap_properties = {};
     heap_properties.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -120,20 +108,20 @@ D3D12Image::D3D12Image(
         format,
         mip_count_,
         array_size_,
-        flags_);
+        resource_flags);
 
     DXGI_FORMAT dxgi_format = ImageToDXGIFormat(format);
     D3D12_CLEAR_VALUE clear_value = {};
     D3D12_CLEAR_VALUE* clear_value_ptr = nullptr;
 
-    if (flags_ & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
+    if (HasFlag(flags_, ImageFlags::kDepthStencil))
     {
         clear_value.Format = GetDSVFormat(dxgi_format);
         clear_value.DepthStencil.Depth = 1.0f;
         clear_value.DepthStencil.Stencil = 0;
         clear_value_ptr = &clear_value;
     }
-    else if (flags_ & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+    else if (HasFlag(flags_, ImageFlags::kRenderTarget))
     {
         clear_value.Format = GetRTVFormat(dxgi_format);
         clear_value.Color[0] = 0.0f;
@@ -147,9 +135,27 @@ D3D12Image::D3D12Image(
         &heap_properties,
         D3D12_HEAP_FLAG_NONE,
         &resource_desc,
-        initial_state,
+        D3D12_RESOURCE_STATE_COMMON,
         clear_value_ptr,
         IID_PPV_ARGS(&resource_)));
+}
+
+D3D12Image::D3D12Image(
+    D3D12Device& device,
+    ID3D12Resource* resource,
+    uint32_t width,
+    uint32_t height,
+    ImageFormat format,
+    uint32_t mip_count,
+    uint32_t array_size,
+    ImageFlags flags)
+    : Image(width, height, format, mip_count, array_size, flags)
+    , device_(device)
+    , resource_(resource)
+{
+    assert(resource_ && "D3D12Image: wrapped resource must not be null");
+    assert(mip_count_ > 0 && "D3D12Image: mip count must be greater than zero");
+    assert(array_size_ > 0 && "D3D12Image: array size must be greater than zero");
 }
 
 D3D12Image::~D3D12Image()
@@ -172,7 +178,7 @@ D3D12Image::~D3D12Image()
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetRTVHandle()
 {
-    assert((flags_ & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) &&
+    assert(HasFlag(flags_, ImageFlags::kRenderTarget) &&
         "D3D12Image::GetRTVHandle: image was not created with render-target support");
 
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
@@ -206,7 +212,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetRTVHandle()
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetDSVHandle()
 {
-    assert((flags_ & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) &&
+    assert(HasFlag(flags_, ImageFlags::kDepthStencil) &&
         "D3D12Image::GetDSVHandle: image was not created with depth-stencil support");
 
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
@@ -264,6 +270,8 @@ D3D12Descriptor const& D3D12Image::GetUAV(ImageView const& view)
 
 D3D12Descriptor D3D12Image::CreateSRV(ImageView const& view)
 {
+    assert(HasFlag(flags_, ImageFlags::kShaderResource) &&
+        "D3D12Image::CreateSRV: image was not created with shader-resource support");
     assert(view.mip < mip_count_ && "D3D12Image::CreateSRV: base mip is out of range");
     assert(view.mip_count > 0 && "D3D12Image::CreateSRV: mip count must be greater than zero");
     assert(view.mip + view.mip_count <= mip_count_ && "D3D12Image::CreateSRV: mip range exceeds image mip count");
@@ -302,8 +310,8 @@ D3D12Descriptor D3D12Image::CreateSRV(ImageView const& view)
 
 D3D12Descriptor D3D12Image::CreateUAV(ImageView const& view)
 {
-    assert((flags_ & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) &&
-        "D3D12Image::CreateUAV: image was not created with unordered-access support");
+    assert(HasFlag(flags_, ImageFlags::kStorage) &&
+        "D3D12Image::CreateUAV: image was not created with storage/UAV support");
     assert(view.mip < mip_count_ && "D3D12Image::CreateUAV: mip is out of range");
     assert(view.mip_count == 1 && "D3D12Image::CreateUAV: UAV supports exactly one mip per view");
 

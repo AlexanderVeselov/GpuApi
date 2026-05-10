@@ -49,6 +49,7 @@ void D3D12Queue::Submit(CommandBufferPtr cmd_buffer)
     CollectCompletedSubmissions();
 
     D3D12CommandBuffer* d3d12_cmd_buffer = static_cast<D3D12CommandBuffer*>(cmd_buffer.get());
+    d3d12_cmd_buffer->Close();
 
     ID3D12CommandList* cmd_lists[] = { d3d12_cmd_buffer->GetCommandList() };
     queue_->ExecuteCommandLists(1u, cmd_lists);

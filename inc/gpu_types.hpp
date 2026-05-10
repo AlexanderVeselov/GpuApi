@@ -29,7 +29,6 @@ class Swapchain;
 using DevicePtr             = Ptr<Device>;
 using CommandBufferPtr      = Ptr<CommandBuffer>;
 using DescriptorSetPtr      = Ptr<DescriptorSet>;
-//using PipelinePtr           = Ptr<Pipeline>;
 using GraphicsPipelinePtr   = Ptr<GraphicsPipeline>;
 using ComputePipelinePtr    = Ptr<ComputePipeline>;
 using SwapchainPtr          = Ptr<Swapchain>;

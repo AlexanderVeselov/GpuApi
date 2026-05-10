@@ -67,7 +67,10 @@ int main()
         gpu::SwapchainPtr swapchain = device->CreateSwapchain(window_native_handle,
             window_width, window_height, 3);
         gpu::ImagePtr output_image = device->CreateImage(window_width, window_height,
-            swapchain->GetFormat());
+            swapchain->GetFormat(),
+            1,
+            1,
+            gpu::ImageFlags::kStorage | gpu::ImageFlags::kShaderResource);
 
         gpu::ComputePipelinePtr pipeline = device->CreateComputePipeline("shader.cs");
         gpu::DescriptorSetPtr descriptor_set = pipeline->CreateDescriptorSet();
@@ -96,8 +99,6 @@ int main()
             cmd_buffer->CopyImage(swapchain_image.get(), output_image.get());
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kCopyDst,
                 gpu::ImageLayout::kPresent);
-            cmd_buffer->End();
-
             queue.Submit(std::move(cmd_buffer));
             swapchain->Present();
             glfwSwapBuffers(window);

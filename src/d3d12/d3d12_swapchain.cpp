@@ -41,8 +41,15 @@ D3D12Swapchain::D3D12Swapchain(D3D12Device& device, void* window_native_handle,
     {
         ID3D12Resource* image_resource;
         swapchain_->GetBuffer(i, IID_PPV_ARGS(&image_resource));
-        swapchain_images_[i] = std::make_shared<D3D12Image>(device, image_resource,
-            width, height, ImageFormat::kRGBA8_UNorm);
+        swapchain_images_[i] = std::make_shared<D3D12Image>(
+            device,
+            image_resource,
+            width,
+            height,
+            ImageFormat::kRGBA8_UNorm,
+            1,
+            1,
+            ImageFlags::kRenderTarget);
 
         std::wstring resource_name(L"Swapchain image ");
         resource_name += std::to_wstring(i);

@@ -7,6 +7,36 @@
 
 namespace gpu
 {
+enum class ImageFlags : uint32_t
+{
+    kNone = 0,
+    kRenderTarget = 1 << 0,
+    kDepthStencil = 1 << 1,
+    kShaderResource = 1 << 2,
+    kStorage = 1 << 3
+};
+
+inline ImageFlags operator|(ImageFlags lhs, ImageFlags rhs)
+{
+    return static_cast<ImageFlags>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
+}
+
+inline ImageFlags operator&(ImageFlags lhs, ImageFlags rhs)
+{
+    return static_cast<ImageFlags>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
+}
+
+inline ImageFlags& operator|=(ImageFlags& lhs, ImageFlags rhs)
+{
+    lhs = lhs | rhs;
+    return lhs;
+}
+
+inline bool HasFlag(ImageFlags flags, ImageFlags flag)
+{
+    return static_cast<uint32_t>(flags & flag) != 0;
+}
+
 struct ImageView
 {
     uint32_t mip = 0;
@@ -29,19 +59,36 @@ struct ImageViewHash
 class Image
 {
 public:
-    Image(std::uint32_t width, std::uint32_t height, ImageFormat format)
-        : width_(width), height_(height), format_(format)
+    Image(
+        uint32_t width,
+        uint32_t height,
+        ImageFormat format,
+        uint32_t mip_count,
+        uint32_t array_size,
+        ImageFlags flags)
+        : width_(width)
+        , height_(height)
+        , format_(format)
+        , mip_count_(mip_count)
+        , array_size_(array_size)
+        , flags_(flags)
     {}
     virtual ~Image() = default;
 
-    std::uint32_t GetWidth() const { return width_; }
-    std::uint32_t GetHeight() const { return height_; }
+    uint32_t GetWidth() const { return width_; }
+    uint32_t GetHeight() const { return height_; }
     ImageFormat GetFormat() const { return format_; }
+    uint32_t GetMipCount() const { return mip_count_; }
+    uint32_t GetArraySize() const { return array_size_; }
+    ImageFlags GetFlags() const { return flags_; }
 
 protected:
-    std::uint32_t width_;
-    std::uint32_t height_;
+    uint32_t width_;
+    uint32_t height_;
     ImageFormat format_;
+    uint32_t mip_count_;
+    uint32_t array_size_;
+    ImageFlags flags_;
 
 };
 } // namespace gpu

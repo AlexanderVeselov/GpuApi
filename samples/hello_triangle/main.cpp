@@ -111,14 +111,16 @@ int main()
             cmd_buffer->ClearImage(swapchain_image, 0.5f, 0.5f, 1.0f, 1.0f);
             cmd_buffer->BindPipeline(pipeline);
             cmd_buffer->BindDescriptorSet(descriptor_set);
-            cmd_buffer->SetViewport(swapchain_image->GetWidth(), swapchain_image->GetHeight());
-            cmd_buffer->SetScissorRect(swapchain_image->GetWidth(), swapchain_image->GetHeight());
+            cmd_buffer->SetViewport(gpu::Viewport{ 0.0f, 0.0f,
+                (float)swapchain_image->GetWidth(),
+                (float)swapchain_image->GetHeight(), 0.0f, 1.0f });
+            cmd_buffer->SetScissor(gpu::Rect{ 0, 0,
+                (int32_t)swapchain_image->GetWidth(),
+                (int32_t)swapchain_image->GetHeight() });
             cmd_buffer->SetRenderTarget(swapchain_image, nullptr);
             cmd_buffer->SetVertexBuffer(vertex_buffer, sizeof(Vertex));
             cmd_buffer->Draw(3);
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kRenderTarget, gpu::ImageLayout::kPresent);
-
-            cmd_buffer->End();
 
             graphics_queue.Submit(std::move(cmd_buffer));
             swapchain->Present();

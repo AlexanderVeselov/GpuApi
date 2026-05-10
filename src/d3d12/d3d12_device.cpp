@@ -39,9 +39,22 @@ BufferPtr D3D12Device::CreateBuffer(std::size_t size, std::uint32_t stride, Buff
     return std::make_shared<D3D12Buffer>(*this, size, stride, flags);
 }
 
-ImagePtr D3D12Device::CreateImage(std::uint32_t width, std::uint32_t height, ImageFormat format)
+ImagePtr D3D12Device::CreateImage(
+    uint32_t width,
+    uint32_t height,
+    ImageFormat format,
+    uint32_t mip_count,
+    uint32_t array_size,
+    ImageFlags flags)
 {
-    return std::make_shared<D3D12Image>(*this, width, height, format);
+    return std::make_shared<D3D12Image>(
+        *this,
+        width,
+        height,
+        format,
+        mip_count,
+        array_size,
+        flags);
 }
 
 GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc)

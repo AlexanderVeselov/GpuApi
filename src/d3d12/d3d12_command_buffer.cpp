@@ -258,9 +258,7 @@ void D3D12CommandBuffer::TransitionBarrier(ImagePtr image, ImageLayout layout_be
     barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     barrier.Transition.StateBefore = LayoutToD3D12ResourceState(layout_before, is_depth);
     barrier.Transition.StateAfter = LayoutToD3D12ResourceState(layout_after, is_depth);
-
     cmd_list_->ResourceBarrier(1, &barrier);
-    d3d12_image->SetCurrentState(barrier.Transition.StateAfter);
 }
 
 void D3D12CommandBuffer::StorageBarrier(ImagePtr image)
@@ -345,9 +343,15 @@ void D3D12CommandBuffer::CopyImage(Image* dst, Image* src)
     cmd_list_->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
 }
 
-void D3D12CommandBuffer::End()
+void D3D12CommandBuffer::Close()
 {
+    if (closed_)
+    {
+        return;
+    }
+
     ThrowIfFailed(cmd_list_->Close());
+    closed_ = true;
 }
 
 void D3D12CommandBuffer::BindDescriptorsGraphics()

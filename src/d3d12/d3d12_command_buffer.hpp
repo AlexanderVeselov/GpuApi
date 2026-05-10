@@ -49,7 +49,7 @@ public:
     void CopyBufferToImage(Image* dst, Buffer* src) override;
     void CopyImage(Image* dst, Image* src) override;
 
-    void End() override;
+    void Close();
 
 private:
     void BindDescriptorsGraphics();
@@ -62,6 +62,7 @@ private:
     D3D12_COMMAND_LIST_TYPE command_list_type_;
     ComPtr<ID3D12CommandAllocator> command_allocator_;
     ComPtr<ID3D12GraphicsCommandList> cmd_list_;
+    bool closed_ = false;
     D3D12GraphicsPipeline* current_graphics_pipeline_ = nullptr;
     D3D12ComputePipeline* current_compute_pipeline_ = nullptr;
     D3D12DescriptorSet* current_descriptor_set_ = nullptr;
