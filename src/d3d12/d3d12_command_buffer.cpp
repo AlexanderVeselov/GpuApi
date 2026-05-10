@@ -87,7 +87,7 @@ D3D12CommandBuffer::~D3D12CommandBuffer()
     FreeCommittedDescriptors();
 }
 
-void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride)
+void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer, size_t vertex_stride)
 {
     D3D12Buffer* d3d12_buffer = static_cast<D3D12Buffer*>(buffer.get());
     assert(d3d12_buffer && "D3D12CommandBuffer::SetVertexBuffer: buffer is not a D3D12Buffer");
@@ -147,8 +147,8 @@ void D3D12CommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_se
     current_descriptor_set_ = d3d12_descriptor_set;
 }
 
-void D3D12CommandBuffer::Dispatch(std::uint32_t num_groups_x, std::uint32_t num_groups_y,
-    std::uint32_t num_groups_z)
+void D3D12CommandBuffer::Dispatch(uint32_t num_groups_x, uint32_t num_groups_y,
+    uint32_t num_groups_z)
 {
     assert(num_groups_x > 0 && num_groups_y > 0 && num_groups_z > 0 &&
         "D3D12CommandBuffer::Dispatch: dispatch group counts must be greater than zero");
@@ -184,7 +184,7 @@ void D3D12CommandBuffer::SetRenderTargets(std::vector<ImagePtr> const& color_att
         "D3D12CommandBuffer::SetRenderTargets: too many color attachments");
 
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtv_handles(color_attachments.size());
-    for (std::size_t i = 0; i < color_attachments.size(); ++i)
+    for (size_t i = 0; i < color_attachments.size(); ++i)
     {
         D3D12Image* d3d12_image = static_cast<D3D12Image*>(color_attachments[i].get());
         assert(d3d12_image && "D3D12CommandBuffer::SetRenderTargets: color attachment is not a D3D12Image");

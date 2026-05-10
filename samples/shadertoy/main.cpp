@@ -23,7 +23,7 @@
 
 namespace
 {
-GLFWwindow* CreateWindow(std::uint32_t width, std::uint32_t height)
+GLFWwindow* CreateWindow(uint32_t width, uint32_t height)
 {
     if (glfwInit() == GLFW_FALSE)
     {
@@ -44,7 +44,7 @@ GLFWwindow* CreateWindow(std::uint32_t width, std::uint32_t height)
     return window;
 }
 
-std::uint32_t DivideAndRoundUp(std::uint32_t value, std::uint32_t divisor)
+uint32_t DivideAndRoundUp(uint32_t value, uint32_t divisor)
 {
     return (value + divisor - 1) / divisor;
 }
@@ -54,8 +54,8 @@ int main()
 {
     try
     {
-        std::uint32_t window_width = 1280;
-        std::uint32_t window_height = 720;
+        uint32_t window_width = 1280;
+        uint32_t window_height = 720;
 
         GLFWwindow* window = CreateWindow(window_width, window_height);
         void* window_native_handle = glfwGetWin32Window(window);

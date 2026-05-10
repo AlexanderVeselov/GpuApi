@@ -13,7 +13,7 @@ using Microsoft::WRL::ComPtr;
 
 namespace gpu
 {
-constexpr std::uint32_t kNullDescriptor = ~0u;
+constexpr uint32_t kNullDescriptor = ~0u;
 
 inline DXGI_FORMAT ImageToDXGIFormat(ImageFormat format)
 {

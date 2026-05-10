@@ -4,18 +4,18 @@
 #include "vulkan_buffer.hpp"
 #include <cassert>
 
-static std::unordered_map<std::uint32_t, VulkanShader::DescriptorSet> MergeDescriptorSets(
+static std::unordered_map<uint32_t, VulkanShader::DescriptorSet> MergeDescriptorSets(
     std::vector<std::shared_ptr<VulkanShader>> const& shader_list)
 {
     if (shader_list.empty())
     {
         // Return empty map
-        return std::unordered_map<std::uint32_t, VulkanShader::DescriptorSet>();
+        return std::unordered_map<uint32_t, VulkanShader::DescriptorSet>();
     }
 
     auto result = shader_list.front()->GetDescriptorSets();
 
-    for (std::size_t shader_idx = 1; shader_idx < shader_list.size(); ++shader_idx)
+    for (size_t shader_idx = 1; shader_idx < shader_list.size(); ++shader_idx)
     {
         auto const& shader_descriptor_sets = shader_list[shader_idx]->GetDescriptorSets();
 
@@ -83,11 +83,11 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanDevice & device, VulkanGrap
     vertex_input_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
     auto const& vertex_binding_descriptions = pipeline_state.vertex_shader_->GetVertexInputBindingDescriptions();
-    vertex_input_state.vertexBindingDescriptionCount = static_cast<std::uint32_t>(vertex_binding_descriptions.size());
+    vertex_input_state.vertexBindingDescriptionCount = static_cast<uint32_t>(vertex_binding_descriptions.size());
     vertex_input_state.pVertexBindingDescriptions = vertex_binding_descriptions.data();
 
     auto const& vertex_attribute_descriptions = pipeline_state.vertex_shader_->GetVertexInputAttributeDescriptions();
-    vertex_input_state.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(vertex_attribute_descriptions.size());
+    vertex_input_state.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertex_attribute_descriptions.size());
     vertex_input_state.pVertexAttributeDescriptions = vertex_attribute_descriptions.data();
 
     VkPipelineInputAssemblyStateCreateInfo input_assembly_state = {};
@@ -141,7 +141,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanDevice & device, VulkanGrap
 
     std::vector<VkDescriptorSetLayout> descriptor_set_layouts(descriptor_sets_.size());
 
-    std::size_t ds_index = 0;
+    size_t ds_index = 0;
     for (auto & ds : descriptor_sets_)
     {
         // TODO: Add empty descriptor sets support
@@ -160,7 +160,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanDevice & device, VulkanGrap
         }
 
         layout_create_info.pBindings = bindings.data();
-        layout_create_info.bindingCount = static_cast<std::uint32_t>(bindings.size());
+        layout_create_info.bindingCount = static_cast<uint32_t>(bindings.size());
 
         VkResult status = descriptor_set.layout.Create(device_.GetDevice(), layout_create_info);
         VK_THROW_IF_FAILED(status, "Failed to create descriptor set layout!");
@@ -181,7 +181,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanDevice & device, VulkanGrap
 
     VkPipelineLayoutCreateInfo pipeline_layout_create_info = {};
     pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_create_info.setLayoutCount = static_cast<std::uint32_t>(descriptor_set_layouts.size());
+    pipeline_layout_create_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
     pipeline_layout_create_info.pSetLayouts = descriptor_set_layouts.data();
 
     VkDevice logical_device = device_.GetDevice();
@@ -248,7 +248,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanDevice & device, VulkanGrap
     VK_THROW_IF_FAILED(status, "Failed to create graphics pipeline!");
 
     std::vector<VkImageView> attachments;
-    for (std::uint32_t i = 0; i < pipeline_state_.color_attachments_.size(); ++i)
+    for (uint32_t i = 0; i < pipeline_state_.color_attachments_.size(); ++i)
     {
         if (pipeline_state_.color_attachments_[i])
         {
@@ -259,7 +259,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanDevice & device, VulkanGrap
     VkFramebufferCreateInfo framebuffer_create_info = {};
     framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     framebuffer_create_info.renderPass = render_pass_;
-    framebuffer_create_info.attachmentCount = static_cast<std::uint32_t>(attachments.size());
+    framebuffer_create_info.attachmentCount = static_cast<uint32_t>(attachments.size());
     framebuffer_create_info.pAttachments = attachments.data();
     framebuffer_create_info.width = extent_.width;
     framebuffer_create_info.height = extent_.height;
@@ -270,7 +270,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanDevice & device, VulkanGrap
 
 }
 
-void VulkanGraphicsPipeline::SetArg(std::uint32_t set, std::uint32_t binding, std::shared_ptr<VulkanBuffer> buffer)
+void VulkanGraphicsPipeline::SetArg(uint32_t set, uint32_t binding, std::shared_ptr<VulkanBuffer> buffer)
 {
     auto set_it = descriptor_sets_.find(set);
 
@@ -329,6 +329,6 @@ void VulkanGraphicsPipeline::CommitArgs()
         }
     }
 
-    vkUpdateDescriptorSets(device_.GetDevice(), static_cast<std::uint32_t>(descriptor_writes.size()), descriptor_writes.data(), 0, nullptr);
+    vkUpdateDescriptorSets(device_.GetDevice(), static_cast<uint32_t>(descriptor_writes.size()), descriptor_writes.data(), 0, nullptr);
 
 }

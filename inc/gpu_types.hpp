@@ -1,14 +1,17 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace gpu
 {
+/// Unique ownership pointer used for API objects that cannot be shared safely.
 template <class T>
 using Ptr = std::unique_ptr<T>;
 
+/// Shared ownership pointer used for GPU resources referenced by command buffers.
 template <class T>
 using SharedPtr = std::shared_ptr<T>;
 
@@ -25,25 +28,25 @@ class ComputePipeline;
 class Queue;
 class Swapchain;
 
-// Unique resources
-using DevicePtr             = Ptr<Device>;
-using CommandBufferPtr      = Ptr<CommandBuffer>;
-using DescriptorSetPtr      = Ptr<DescriptorSet>;
-using GraphicsPipelinePtr   = Ptr<GraphicsPipeline>;
-using ComputePipelinePtr    = Ptr<ComputePipeline>;
-using SwapchainPtr          = Ptr<Swapchain>;
+using DevicePtr = Ptr<Device>;
+using CommandBufferPtr = Ptr<CommandBuffer>;
+using DescriptorSetPtr = Ptr<DescriptorSet>;
+using GraphicsPipelinePtr = Ptr<GraphicsPipeline>;
+using ComputePipelinePtr = Ptr<ComputePipeline>;
+using SwapchainPtr = Ptr<Swapchain>;
 
-// Shared resources
-using BufferPtr             = SharedPtr<Buffer>;
-using ImagePtr              = SharedPtr<Image>;
+using BufferPtr = SharedPtr<Buffer>;
+using ImagePtr = SharedPtr<Image>;
 
+/// Queue capability class.
 enum class QueueType
 {
     kGraphics = 0,
-    kCompute  = 1,
+    kCompute = 1,
     kTransfer = 2
 };
 
+/// Explicit image layout used by command buffer barriers.
 enum class ImageLayout
 {
     kUndefined,
@@ -55,6 +58,7 @@ enum class ImageLayout
     kShaderReadWrite
 };
 
+/// Backend-independent resource format.
 enum class ImageFormat
 {
     kUnknown,
@@ -72,6 +76,7 @@ enum class ImageFormat
     kR16_Float
 };
 
+/// Depth comparison mode for graphics pipelines.
 enum class DepthFunc
 {
     kNone,
@@ -85,6 +90,7 @@ enum class DepthFunc
     kAlways
 };
 
+/// Raster viewport in floating-point pixels.
 struct Viewport
 {
     float x = 0.0f;
@@ -95,6 +101,7 @@ struct Viewport
     float max_depth = 1.0f;
 };
 
+/// Integer scissor rectangle in framebuffer pixels.
 struct Rect
 {
     int32_t x = 0;
@@ -103,6 +110,7 @@ struct Rect
     int32_t height = 0;
 };
 
+/// Immutable graphics pipeline creation parameters.
 struct GraphicsPipelineDesc
 {
     std::string vs_filename;

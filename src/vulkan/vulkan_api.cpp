@@ -9,7 +9,7 @@ namespace gpu
 static void CheckVulkanLayersSupport(std::vector<char const*> const& required_layer_names)
 {
     // Get available layer count
-    std::uint32_t layer_count;
+    uint32_t layer_count;
     vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
 
     // Retrieve available layers
@@ -81,14 +81,14 @@ void VulkanApi::CreateInstance(std::vector<char const*> enabled_extensions)
         CheckVulkanLayersSupport(g_validation_layer_names);
 
         create_info.ppEnabledLayerNames = g_validation_layer_names.data();
-        create_info.enabledLayerCount = static_cast<std::uint32_t>(g_validation_layer_names.size());
+        create_info.enabledLayerCount = static_cast<uint32_t>(g_validation_layer_names.size());
 
         // Add extension that required by validation layers message callback
         enabled_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
     create_info.ppEnabledExtensionNames = enabled_extensions.data();
-    create_info.enabledExtensionCount = static_cast<std::uint32_t>(enabled_extensions.size());
+    create_info.enabledExtensionCount = static_cast<uint32_t>(enabled_extensions.size());
 
     VkInstance instance;
     VkResult error_code = vkCreateInstance(&create_info, nullptr, &instance);
@@ -122,10 +122,10 @@ void VulkanApi::CreateDebugMessenger()
 
 }
 
-std::shared_ptr<VulkanDevice> VulkanApi::CreateDevice(std::vector<char const*> const& enabled_extensions, std::uint32_t physical_device_index, std::function<VkSurfaceKHR(VkInstance)> surface_creation_callback)
+std::shared_ptr<VulkanDevice> VulkanApi::CreateDevice(std::vector<char const*> const& enabled_extensions, uint32_t physical_device_index, std::function<VkSurfaceKHR(VkInstance)> surface_creation_callback)
 {
     // Get physical device count
-    std::uint32_t physical_device_count = 0;
+    uint32_t physical_device_count = 0;
     VkResult error_code = vkEnumeratePhysicalDevices(instance_.get(), &physical_device_count, nullptr);
     VK_THROW_IF_FAILED(error_code, "Failed to enumerate physical devices!");
 

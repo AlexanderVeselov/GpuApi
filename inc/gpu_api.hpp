@@ -4,6 +4,7 @@
 
 namespace gpu
 {
+/// Selects the backend implementation used by the RHI.
 enum class ApiType
 {
     kD3D12,
@@ -11,12 +12,17 @@ enum class ApiType
     kCount
 };
 
+/// Entry point for creating backend devices.
 class Api
 {
 public:
-    static Api* Create(ApiType api_type);
-    virtual DevicePtr CreateDevice() = 0;
+    virtual ~Api() = default;
 
+    /// Creates an API object for the selected backend. The returned object is owned by the caller.
+    static Api* Create(ApiType api_type);
+
+    /// Creates a logical GPU device for this backend.
+    virtual DevicePtr CreateDevice() = 0;
 };
 
 } // namespace gpu

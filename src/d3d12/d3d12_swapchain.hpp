@@ -12,7 +12,7 @@ class D3D12Swapchain : public Swapchain
 {
 public:
     D3D12Swapchain(D3D12Device& device, void* window_native_handle,
-        std::uint32_t width, std::uint32_t height, std::uint32_t image_count);
+        uint32_t width, uint32_t height, uint32_t image_count);
     void Present() override;
 
 private:

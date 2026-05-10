@@ -8,7 +8,7 @@ static VkSurfaceFormatKHR FindSurfaceFormat(VkPhysicalDevice physical_device, Vk
 {
     std::vector<VkSurfaceFormatKHR> available_formats;
 
-    std::uint32_t format_count;
+    uint32_t format_count;
     VkResult status = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
     VK_THROW_IF_FAILED(status, "Failed to get physical device surface formats!");
 
@@ -38,7 +38,7 @@ static VkSurfaceFormatKHR FindSurfaceFormat(VkPhysicalDevice physical_device, Vk
 VkPresentModeKHR FindPresentMode(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
 {
     std::vector<VkPresentModeKHR> available_present_modes;
-    std::uint32_t presentation_mode_count;
+    uint32_t presentation_mode_count;
     VkResult status = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &presentation_mode_count, nullptr);
     VK_THROW_IF_FAILED(status, "Failed to get physical device presentation modes!");
 
@@ -65,7 +65,7 @@ VkPresentModeKHR FindPresentMode(VkPhysicalDevice physical_device, VkSurfaceKHR 
     return best_mode;
 }
 
-VulkanSwapchain::VulkanSwapchain(VulkanDevice & device, std::uint32_t width, std::uint32_t height)
+VulkanSwapchain::VulkanSwapchain(VulkanDevice & device, uint32_t width, uint32_t height)
     : device_(device)
 {
     VkSurfaceCapabilitiesKHR surface_capabilities;
@@ -76,7 +76,7 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice & device, std::uint32_t width, std
         surface, &surface_capabilities);
     VK_THROW_IF_FAILED(status, "Failed to get surface capabilities!");
 
-    std::uint32_t image_count = surface_capabilities.minImageCount + 1;
+    uint32_t image_count = surface_capabilities.minImageCount + 1;
 
     if (surface_capabilities.maxImageCount > 0 && image_count > surface_capabilities.maxImageCount)
     {
@@ -113,10 +113,10 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice & device, std::uint32_t width, std
     swapchain_create_info.imageArrayLayers = 1;
     swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    std::uint32_t graphics_family_index = device_.GetGraphicsQueueFamilyIndex();
-    std::uint32_t present_family_index = device_.GetPresentQueueFamilyIndex();
+    uint32_t graphics_family_index = device_.GetGraphicsQueueFamilyIndex();
+    uint32_t present_family_index = device_.GetPresentQueueFamilyIndex();
 
-    std::uint32_t queue_family_indices[] =
+    uint32_t queue_family_indices[] =
     {
         graphics_family_index,
         present_family_index
@@ -151,7 +151,7 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice & device, std::uint32_t width, std
     std::vector<VkImage> swapchain_images(image_count);
     vkGetSwapchainImagesKHR(logical_device, swapchain_, &image_count, swapchain_images.data());
 
-    for (std::size_t i = 0; i < swapchain_images.size(); i++)
+    for (size_t i = 0; i < swapchain_images.size(); i++)
     {
         std::shared_ptr<VulkanImage> image = device_.CreateImage(swapchain_images[i], surface_format.format);
         swapchain_images_.push_back(image);

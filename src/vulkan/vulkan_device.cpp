@@ -14,7 +14,7 @@
 
 namespace
 {
-    const std::uint32_t kInvalidQueueFamilyIndex = ~0u;
+    const uint32_t kInvalidQueueFamilyIndex = ~0u;
 }
 
 VulkanDevice::VulkanDevice(VulkanApi & video_api,
@@ -40,7 +40,7 @@ VulkanDevice::VulkanDevice(VulkanApi & video_api,
 void VulkanDevice::FindQueueFamilyIndices()
 {
     // Get physical device queue families count
-    std::uint32_t queue_family_count = 0;
+    uint32_t queue_family_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physical_device_, &queue_family_count, nullptr);
 
     // Get queue families properties
@@ -48,7 +48,7 @@ void VulkanDevice::FindQueueFamilyIndices()
     vkGetPhysicalDeviceQueueFamilyProperties(physical_device_, &queue_family_count, queue_families.data());
 
     // Get graphics, compute and transfer queue family indices
-    for (std::uint32_t i = 0; i < queue_families.size(); ++i)
+    for (uint32_t i = 0; i < queue_families.size(); ++i)
     {
         if (graphics_queue_family_index_ == kInvalidQueueFamilyIndex && queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
@@ -90,8 +90,8 @@ void VulkanDevice::FindQueueFamilyIndices()
 
 void VulkanDevice::CreateLogicalDevice(std::vector<char const*> const& enabled_layer_names, std::vector<char const*> const& enabled_extension_names)
 {
-    std::vector<std::uint32_t> queue_family_indices;
-    std::vector<std::uint32_t> queue_counts;
+    std::vector<uint32_t> queue_family_indices;
+    std::vector<uint32_t> queue_counts;
     queue_family_indices.push_back(graphics_queue_family_index_);
     // CHECK: graphics queue count
     queue_counts.push_back(1);
@@ -122,7 +122,7 @@ void VulkanDevice::CreateLogicalDevice(std::vector<char const*> const& enabled_l
 
     std::vector<VkDeviceQueueCreateInfo> queue_create_infos(queue_family_indices.size());
     std::vector<float> queue_priorities(*std::max_element(queue_counts.begin(), queue_counts.end()), 1.0f);
-    for (std::uint32_t i = 0; i < queue_create_infos.size(); ++i)
+    for (uint32_t i = 0; i < queue_create_infos.size(); ++i)
     {
         queue_create_infos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queue_create_infos[i].pNext = nullptr;
@@ -135,13 +135,13 @@ void VulkanDevice::CreateLogicalDevice(std::vector<char const*> const& enabled_l
     VkDeviceCreateInfo device_create_info = {};
     device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-    device_create_info.queueCreateInfoCount = static_cast<std::uint32_t>(queue_create_infos.size());
+    device_create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
     device_create_info.pQueueCreateInfos = queue_create_infos.data();
 
-    device_create_info.enabledLayerCount = static_cast<std::uint32_t>(enabled_layer_names.size());
+    device_create_info.enabledLayerCount = static_cast<uint32_t>(enabled_layer_names.size());
     device_create_info.ppEnabledLayerNames = enabled_layer_names.data();
 
-    device_create_info.enabledExtensionCount = static_cast<std::uint32_t>(enabled_extension_names.size());
+    device_create_info.enabledExtensionCount = static_cast<uint32_t>(enabled_extension_names.size());
     device_create_info.ppEnabledExtensionNames = enabled_extension_names.data();
 
     VkDevice device = nullptr;
@@ -195,8 +195,8 @@ void VulkanDevice::CreateCommandPools()
 
 void VulkanDevice::CreateDescriptorPool()
 {
-    const std::uint32_t kMaxDescriptorCount = 128;
-    const std::uint32_t kMaxDescriptorSets = 128;
+    const uint32_t kMaxDescriptorCount = 128;
+    const uint32_t kMaxDescriptorSets = 128;
 
     VkDescriptorPoolSize descriptor_pool_sizes[] =
     {
@@ -214,22 +214,22 @@ void VulkanDevice::CreateDescriptorPool()
 
 }
 
-std::uint32_t VulkanDevice::GetGraphicsQueueFamilyIndex() const
+uint32_t VulkanDevice::GetGraphicsQueueFamilyIndex() const
 {
     return graphics_queue_family_index_;
 };
 
-std::uint32_t VulkanDevice::GetComputeQueueFamilyIndex() const
+uint32_t VulkanDevice::GetComputeQueueFamilyIndex() const
 {
     return compute_queue_family_index_;
 }
 
-std::uint32_t VulkanDevice::GetTransferQueueFamilyIndex() const
+uint32_t VulkanDevice::GetTransferQueueFamilyIndex() const
 {
     return transfer_queue_family_index_;
 }
 
-std::uint32_t VulkanDevice::GetPresentQueueFamilyIndex() const
+uint32_t VulkanDevice::GetPresentQueueFamilyIndex() const
 {
     return present_queue_family_index_;
 }
@@ -249,7 +249,7 @@ VkSurfaceKHR VulkanDevice::GetSurface() const
     return surface_.get();
 }
 
-std::shared_ptr<VulkanSwapchain> VulkanDevice::CreateSwapchain(std::uint32_t width, std::uint32_t height)
+std::shared_ptr<VulkanSwapchain> VulkanDevice::CreateSwapchain(uint32_t width, uint32_t height)
 {
     assert(surface_);
     return std::make_shared<VulkanSwapchain>(*this, width, height);

@@ -75,7 +75,7 @@ void GetInputElementDescs(ID3D12ShaderReflection* reflection,
     D3D12_SHADER_DESC shader_desc;
     reflection->GetDesc(&shader_desc);
 
-    for (std::uint32_t i = 0; i < shader_desc.InputParameters; ++i)
+    for (uint32_t i = 0; i < shader_desc.InputParameters; ++i)
     {
         D3D12_SIGNATURE_PARAMETER_DESC param_desc;
         reflection->GetInputParameterDesc(i, &param_desc);
@@ -179,7 +179,7 @@ void D3D12GraphicsPipeline::Reload()
 
     D3D12_INPUT_LAYOUT_DESC input_layout = {};
     input_layout.pInputElementDescs = input_element_descs.data();
-    input_layout.NumElements = (std::uint32_t)input_element_descs.size();
+    input_layout.NumElements = (uint32_t)input_element_descs.size();
 
     D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline_state_desc = {};
     pipeline_state_desc.pRootSignature = layout_.GetRootSignature();
@@ -196,7 +196,7 @@ void D3D12GraphicsPipeline::Reload()
     pipeline_state_desc.NumRenderTargets = pipeline_desc_.color_attachment_formats.size();
     assert(pipeline_state_desc.NumRenderTargets < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT);
 
-    for (std::uint32_t rt_index = 0; rt_index < pipeline_desc_.color_attachment_formats.size(); ++rt_index)
+    for (uint32_t rt_index = 0; rt_index < pipeline_desc_.color_attachment_formats.size(); ++rt_index)
     {
         auto img_format = pipeline_desc_.color_attachment_formats[rt_index];
         pipeline_state_desc.RTVFormats[rt_index] = ImageToDXGIFormat(img_format);

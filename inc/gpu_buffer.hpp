@@ -5,12 +5,17 @@
 
 namespace gpu
 {
+/// Declares how a buffer may be used by the CPU and GPU.
 enum class BufferFlags : uint32_t
 {
     kNone = 0,
+    /// Buffer can be mapped by the CPU.
     kCpuAccess = 1 << 0,
+    /// Buffer can be bound as a constant/uniform buffer.
     kConstant = 1 << 1,
+    /// Buffer can be read by shaders.
     kShaderResource = 1 << 2,
+    /// Buffer can be read and written by shaders.
     kStorage = 1 << 3
 };
 
@@ -35,17 +40,22 @@ inline bool HasFlag(BufferFlags flags, BufferFlags flag)
     return (static_cast<uint32_t>(flags & flag) != 0);
 }
 
+/// Backend-independent buffer resource.
 class Buffer
 {
 public:
-    Buffer(uint64_t size)
+    explicit Buffer(uint64_t size)
         : size_(size)
     {}
 
     virtual ~Buffer() = default;
 
     uint64_t GetSize() const { return size_; }
+
+    /// Maps the buffer for CPU access. The buffer must have BufferFlags::kCpuAccess.
     virtual void* Map() = 0;
+
+    /// Unmaps a previously mapped buffer.
     virtual void Unmap() = 0;
 
 protected:

@@ -20,14 +20,14 @@ public:
 
     ID3D12GraphicsCommandList* GetCommandList() const { return cmd_list_.Get(); }
 
-    void SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride) override;
+    void SetVertexBuffer(BufferPtr buffer, size_t vertex_stride) override;
     void SetIndexBuffer(BufferPtr buffer) override;
 
     void BindPipeline(GraphicsPipelinePtr const& pipeline) override;
     void BindPipeline(ComputePipelinePtr const& pipeline) override;
     void BindDescriptorSet(DescriptorSetPtr const& descriptor_set) override;
-    void Dispatch(std::uint32_t num_groups_x,
-        std::uint32_t num_groups_y, std::uint32_t num_groups_z) override;
+    void Dispatch(uint32_t num_groups_x,
+        uint32_t num_groups_y, uint32_t num_groups_z) override;
     void Draw(uint32_t vertex_count, uint32_t instance_count = 1,
         uint32_t first_vertex = 0, uint32_t first_instance = 0) override;
     void DrawIndexed(uint32_t index_count, uint32_t instance_count = 1,

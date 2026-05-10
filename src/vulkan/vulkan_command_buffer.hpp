@@ -13,7 +13,7 @@ public:
     void Begin();
     void BeginGraphics(std::shared_ptr<VulkanGraphicsPipeline> pipeline);
     void EndGraphics();
-    void Draw(std::uint32_t vertex_count, std::uint32_t first_vertex = 0, std::uint32_t instance_count = 1, std::uint32_t first_instance = 0);
+    void Draw(uint32_t vertex_count, uint32_t first_vertex = 0, uint32_t instance_count = 1, uint32_t first_instance = 0);
     void End();
     void BindVertexBuffer(std::shared_ptr<VulkanBuffer> buffer);
     VkCommandBuffer GetCommandBuffer() const { return command_buffer_; }

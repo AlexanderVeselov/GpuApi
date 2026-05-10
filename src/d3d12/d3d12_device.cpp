@@ -34,7 +34,7 @@ Queue& D3D12Device::GetQueue(QueueType queue_type)
     }
 }
 
-BufferPtr D3D12Device::CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags)
+BufferPtr D3D12Device::CreateBuffer(size_t size, uint32_t stride, BufferFlags flags)
 {
     return std::make_shared<D3D12Buffer>(*this, size, stride, flags);
 }
@@ -67,7 +67,7 @@ ComputePipelinePtr D3D12Device::CreateComputePipeline(char const* cs_filename)
     return std::make_unique<D3D12ComputePipeline>(*this, cs_filename);
 }
 
-SwapchainPtr D3D12Device::CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height, std::uint32_t image_count)
+SwapchainPtr D3D12Device::CreateSwapchain(void* window_native_handle, uint32_t width, uint32_t height, uint32_t image_count)
 {
     return std::make_unique<D3D12Swapchain>(*this, window_native_handle, width, height, image_count);
 }

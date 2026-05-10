@@ -15,7 +15,7 @@ public:
 
     VulkanSharedObject<VkInstance> GetInstance() const;
     // Create device with presentation support
-    std::shared_ptr<VulkanDevice> CreateDevice(std::vector<char const*> const& enabled_extensions, std::uint32_t physical_device_index, std::function<VkSurfaceKHR(VkInstance)> surface_creation_callback);
+    std::shared_ptr<VulkanDevice> CreateDevice(std::vector<char const*> const& enabled_extensions, uint32_t physical_device_index, std::function<VkSurfaceKHR(VkInstance)> surface_creation_callback);
 
 private:
     void CreateInstance(std::vector<char const*> enabled_extensions);

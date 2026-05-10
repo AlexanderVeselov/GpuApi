@@ -12,7 +12,7 @@ namespace gpu
 class D3D12Exception : public std::exception
 {
 public:
-    D3D12Exception(char const* message, HRESULT hr, std::string file, std::uint32_t line)
+    D3D12Exception(char const* message, HRESULT hr, std::string file, uint32_t line)
         : std::exception(message), hr_(hr), file_(file), line_(line) {}
 
     char const* what() const override
@@ -30,7 +30,7 @@ public:
 private:
     HRESULT hr_;
     std::string file_;
-    std::uint32_t line_;
+    uint32_t line_;
 
 };
 

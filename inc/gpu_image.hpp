@@ -7,12 +7,17 @@
 
 namespace gpu
 {
+/// Declares how an image may be used by the GPU.
 enum class ImageFlags : uint32_t
 {
     kNone = 0,
+    /// Image can be used as a color render target.
     kRenderTarget = 1 << 0,
+    /// Image can be used as a depth/stencil target.
     kDepthStencil = 1 << 1,
+    /// Image can be sampled or otherwise read by shaders.
     kShaderResource = 1 << 2,
+    /// Image can be read and written by shaders.
     kStorage = 1 << 3
 };
 
@@ -37,6 +42,7 @@ inline bool HasFlag(ImageFlags flags, ImageFlags flag)
     return static_cast<uint32_t>(flags & flag) != 0;
 }
 
+/// Subresource range used when binding an image view.
 struct ImageView
 {
     uint32_t mip = 0;
@@ -50,12 +56,14 @@ inline bool operator==(ImageView const& lhs, ImageView const& rhs)
 
 struct ImageViewHash
 {
-    std::size_t operator()(ImageView const& view) const
+    size_t operator()(ImageView const& view) const
     {
-        return (static_cast<std::size_t>(view.mip) << 32) ^ static_cast<std::size_t>(view.mip_count);
+        return (static_cast<size_t>(view.mip) << 32)
+            ^ static_cast<size_t>(view.mip_count);
     }
 };
 
+/// Backend-independent image resource.
 class Image
 {
 public:
@@ -73,6 +81,7 @@ public:
         , array_size_(array_size)
         , flags_(flags)
     {}
+
     virtual ~Image() = default;
 
     uint32_t GetWidth() const { return width_; }
@@ -89,6 +98,6 @@ protected:
     uint32_t mip_count_;
     uint32_t array_size_;
     ImageFlags flags_;
-
 };
+
 } // namespace gpu

@@ -129,7 +129,7 @@ void D3D12PipelineLayout::Clear()
     bindings_.clear();
 }
 
-bool D3D12PipelineLayout::HasBinding(std::uint32_t binding, std::uint32_t space) const
+bool D3D12PipelineLayout::HasBinding(uint32_t binding, uint32_t space) const
 {
     for (D3D12Binding const& d3d12_binding : bindings_)
     {
@@ -143,8 +143,8 @@ bool D3D12PipelineLayout::HasBinding(std::uint32_t binding, std::uint32_t space)
 }
 
 D3D12Binding const& D3D12PipelineLayout::FindBinding(
-    std::uint32_t binding,
-    std::uint32_t space) const
+    uint32_t binding,
+    uint32_t space) const
 {
     for (D3D12Binding const& d3d12_binding : bindings_)
     {
@@ -169,7 +169,7 @@ void D3D12PipelineLayout::ReflectShader(D3D12Shader const& shader)
     D3D12_SHADER_VISIBILITY visibility = GetShaderVisibility(
         static_cast<D3D12_SHADER_VERSION_TYPE>(D3D12_SHVER_GET_TYPE(shader_desc.Version)));
 
-    for (std::uint32_t i = 0; i < shader_desc.BoundResources; ++i)
+    for (uint32_t i = 0; i < shader_desc.BoundResources; ++i)
     {
         D3D12_SHADER_INPUT_BIND_DESC resource_desc = {};
         ThrowIfFailed(reflection->GetResourceBindingDesc(i, &resource_desc));
@@ -239,7 +239,7 @@ void D3D12PipelineLayout::CreateRootSignature()
 
     for (D3D12Binding& binding : bindings_)
     {
-        binding.root_parameter_index = static_cast<std::uint32_t>(root_parameters_.size());
+        binding.root_parameter_index = static_cast<uint32_t>(root_parameters_.size());
 
         D3D12_ROOT_PARAMETER root_parameter = {};
         root_parameter.ShaderVisibility = binding.visibility;

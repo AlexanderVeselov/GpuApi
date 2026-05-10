@@ -27,14 +27,14 @@ struct D3D12Binding
     };
 
     std::string name;
-    std::uint32_t binding = 0;
-    std::uint32_t space = 0;
-    std::uint32_t root_parameter_index = 0;
+    uint32_t binding = 0;
+    uint32_t space = 0;
+    uint32_t root_parameter_index = 0;
     ResourceType type = ResourceType::kBuffer;
     DescriptorType descriptor_type = DescriptorType::kDescriptorTable;
     D3D12_DESCRIPTOR_RANGE_TYPE range_type = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-    std::uint32_t descriptor_count = 1;
-    std::uint32_t num_32bit_values = 0;
+    uint32_t descriptor_count = 1;
+    uint32_t num_32bit_values = 0;
     D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL;
 };
 
@@ -50,8 +50,8 @@ public:
     ID3D12RootSignature* GetRootSignature() const { return root_signature_.Get(); }
     std::vector<D3D12Binding> const& GetBindings() const { return bindings_; }
 
-    bool HasBinding(std::uint32_t binding, std::uint32_t space) const;
-    D3D12Binding const& FindBinding(std::uint32_t binding, std::uint32_t space) const;
+    bool HasBinding(uint32_t binding, uint32_t space) const;
+    D3D12Binding const& FindBinding(uint32_t binding, uint32_t space) const;
 
 private:
     void ReflectShader(D3D12Shader const& shader);

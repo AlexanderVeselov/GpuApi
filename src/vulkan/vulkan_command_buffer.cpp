@@ -28,7 +28,7 @@ void VulkanCommandBuffer::Begin()
     VK_THROW_IF_FAILED(status, "Failed to begin command buffer!");
 }
 
-void VulkanCommandBuffer::Draw(std::uint32_t vertex_count, std::uint32_t first_vertex, std::uint32_t instance_count, std::uint32_t first_instance)
+void VulkanCommandBuffer::Draw(uint32_t vertex_count, uint32_t first_vertex, uint32_t instance_count, uint32_t first_instance)
 {
     vkCmdDraw(command_buffer_, vertex_count, instance_count, first_vertex, first_instance);
 }
@@ -68,7 +68,7 @@ void VulkanCommandBuffer::BeginGraphics(std::shared_ptr<VulkanGraphicsPipeline> 
     }
 
     vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetLayout(),
-        0, static_cast<std::uint32_t>(vk_descriptor_sets.size()), vk_descriptor_sets.data(), 0, nullptr);
+        0, static_cast<uint32_t>(vk_descriptor_sets.size()), vk_descriptor_sets.data(), 0, nullptr);
 }
 
 void VulkanCommandBuffer::EndGraphics()

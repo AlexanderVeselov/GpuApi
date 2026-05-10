@@ -7,15 +7,23 @@
 
 namespace gpu
 {
+/// CPU-side collection of resource bindings compatible with a pipeline.
 class DescriptorSet
 {
 public:
     virtual ~DescriptorSet() = default;
 
-    virtual void BindBuffer(Buffer& buffer, std::uint32_t binding, std::uint32_t space) = 0;
-    virtual void BindImage(Image& image, std::uint32_t binding, std::uint32_t space) = 0;
-    virtual void BindImage(Image& image, ImageView const& view, std::uint32_t binding, std::uint32_t space) = 0;
+    /// Binds a buffer to a shader register and register space.
+    virtual void BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space) = 0;
 
+    /// Binds the image default view to a shader register and register space.
+    virtual void BindImage(Image& image, uint32_t binding, uint32_t space) = 0;
+
+    /// Binds a specific image view to a shader register and register space.
+    virtual void BindImage(
+        Image& image, ImageView const& view, uint32_t binding, uint32_t space) = 0;
+
+    /// Removes all bindings from this descriptor set.
     virtual void Clear() = 0;
 };
 

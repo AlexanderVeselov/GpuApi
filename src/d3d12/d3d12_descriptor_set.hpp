@@ -35,13 +35,13 @@ public:
     D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept;
     D3D12DescriptorSet& operator=(D3D12DescriptorSet&& other) noexcept;
 
-    void BindBuffer(Buffer& buffer, std::uint32_t binding, std::uint32_t space) override;
-    void BindImage(Image& image, std::uint32_t binding, std::uint32_t space) override;
-    void BindImage(Image& image, ImageView const& view, std::uint32_t binding, std::uint32_t space) override;
+    void BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space) override;
+    void BindImage(Image& image, uint32_t binding, uint32_t space) override;
+    void BindImage(Image& image, ImageView const& view, uint32_t binding, uint32_t space) override;
 
-    void BindBuffer(D3D12Buffer& buffer, std::uint32_t binding, std::uint32_t space);
-    void BindImage(D3D12Image& image, std::uint32_t binding, std::uint32_t space);
-    void BindImage(D3D12Image& image, ImageView const& view, std::uint32_t binding, std::uint32_t space);
+    void BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint32_t space);
+    void BindImage(D3D12Image& image, uint32_t binding, uint32_t space);
+    void BindImage(D3D12Image& image, ImageView const& view, uint32_t binding, uint32_t space);
 
     D3D12PipelineLayout const& GetLayout() const { return layout_; }
     std::vector<BoundDescriptor> const& GetBoundDescriptors() const { return descriptors_; }

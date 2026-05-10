@@ -161,16 +161,16 @@ static VkShaderStageFlags ShaderTypeToVkShaderStageFlags(VulkanShader::ShaderTyp
     }
 }
 
-static void ReadShaderCodeFromFile(std::string const& filename, std::vector<std::uint32_t> & code)
+static void ReadShaderCodeFromFile(std::string const& filename, std::vector<uint32_t> & code)
 {
     std::ifstream input_file(filename, std::ios::in | std::ios::ate | std::ios::binary);
 
     THROW_IF(!input_file, "Failed to open shader file!");
 
     std::streampos file_size = input_file.tellg();
-    assert(file_size % sizeof(std::uint32_t) == 0);
+    assert(file_size % sizeof(uint32_t) == 0);
 
-    code.resize(file_size / sizeof(std::uint32_t));
+    code.resize(file_size / sizeof(uint32_t));
     input_file.seekg(0);
 
     input_file.read((char*)code.data(), file_size);
@@ -181,13 +181,13 @@ VulkanShader::VulkanShader(VulkanDevice & device, ShaderType shader_type, std::s
     : device_(device)
     , shader_type_(shader_type)
 {
-    std::vector<std::uint32_t> shader_code;
+    std::vector<uint32_t> shader_code;
     ReadShaderCodeFromFile(filename, shader_code);
     VkDevice logical_device = device_.GetDevice();
 
     VkShaderModuleCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    create_info.codeSize = shader_code.size() * sizeof(std::uint32_t);
+    create_info.codeSize = shader_code.size() * sizeof(uint32_t);
     create_info.pCode = shader_code.data();
 
     VkResult status = shader_module_.Create(logical_device, create_info);
@@ -207,8 +207,8 @@ VulkanShader::VulkanShader(VulkanDevice & device, ShaderType shader_type, std::s
 void VulkanShader::FillVertexInputDescriptions(spirv_cross::Compiler const& compiler, spirv_cross::ShaderResources const& resources)
 {
     vertex_input_attribute_descs_.resize(resources.stage_inputs.size());
-    std::uint32_t current_offset = 0;
-    for (std::size_t i = 0; i < resources.stage_inputs.size(); ++i)
+    uint32_t current_offset = 0;
+    for (size_t i = 0; i < resources.stage_inputs.size(); ++i)
     {
         spirv_cross::Resource const& resource = resources.stage_inputs[i];
         vertex_input_attribute_descs_[i].binding = 0;
@@ -236,14 +236,14 @@ void VulkanShader::CreateDescriptorSets(spirv_cross::Compiler const& compiler, s
 
     for (spirv_cross::Resource const& resource : resources.uniform_buffers)
     {
-        std::uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+        uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 
         if (descriptor_sets_.find(descriptor_set_idx) == descriptor_sets_.end())
         {
             descriptor_sets_.emplace(descriptor_set_idx, DescriptorSet());
         }
 
-        std::uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
+        uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
         vk_binding.binding = binding_idx;
         vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
@@ -254,14 +254,14 @@ void VulkanShader::CreateDescriptorSets(spirv_cross::Compiler const& compiler, s
 
     for (spirv_cross::Resource const& resource : resources.storage_buffers)
     {
-        std::uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+        uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 
         if (descriptor_sets_.find(descriptor_set_idx) == descriptor_sets_.end())
         {
             descriptor_sets_.emplace(descriptor_set_idx, DescriptorSet());
         }
 
-        std::uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
+        uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
         vk_binding.binding = binding_idx;
         vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
@@ -272,14 +272,14 @@ void VulkanShader::CreateDescriptorSets(spirv_cross::Compiler const& compiler, s
 
     for (spirv_cross::Resource const& resource : resources.storage_images)
     {
-        std::uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+        uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 
         if (descriptor_sets_.find(descriptor_set_idx) == descriptor_sets_.end())
         {
             descriptor_sets_.emplace(descriptor_set_idx, DescriptorSet());
         }
 
-        std::uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
+        uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
         vk_binding.binding = binding_idx;
         vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 
@@ -290,14 +290,14 @@ void VulkanShader::CreateDescriptorSets(spirv_cross::Compiler const& compiler, s
 
     for (spirv_cross::Resource const& resource : resources.sampled_images)
     {
-        std::uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+        uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 
         if (descriptor_sets_.find(descriptor_set_idx) == descriptor_sets_.end())
         {
             descriptor_sets_.emplace(descriptor_set_idx, DescriptorSet());
         }
 
-        std::uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
+        uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
         vk_binding.binding = binding_idx;
         vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
@@ -308,14 +308,14 @@ void VulkanShader::CreateDescriptorSets(spirv_cross::Compiler const& compiler, s
 
     for (spirv_cross::Resource const& resource : resources.separate_images)
     {
-        std::uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+        uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 
         if (descriptor_sets_.find(descriptor_set_idx) == descriptor_sets_.end())
         {
             descriptor_sets_.emplace(descriptor_set_idx, DescriptorSet());
         }
 
-        std::uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
+        uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
         vk_binding.binding = binding_idx;
         vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 
@@ -326,14 +326,14 @@ void VulkanShader::CreateDescriptorSets(spirv_cross::Compiler const& compiler, s
 
     for (spirv_cross::Resource const& resource : resources.separate_samplers)
     {
-        std::uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+        uint32_t descriptor_set_idx = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
 
         if (descriptor_sets_.find(descriptor_set_idx) == descriptor_sets_.end())
         {
             descriptor_sets_.emplace(descriptor_set_idx, DescriptorSet());
         }
 
-        std::uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
+        uint32_t binding_idx = compiler.get_decoration(resource.id, spv::DecorationBinding);
         vk_binding.binding = binding_idx;
         vk_binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
 

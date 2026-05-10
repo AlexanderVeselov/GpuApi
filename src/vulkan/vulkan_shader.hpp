@@ -36,7 +36,7 @@ public:
             VkDescriptorSetLayoutBinding vk_binding;
         };
 
-        std::unordered_map<std::uint32_t, Binding> bindings;
+        std::unordered_map<uint32_t, Binding> bindings;
         VulkanScopedObject<VkDescriptorSetLayout, vkCreateDescriptorSetLayout, vkDestroyDescriptorSetLayout> layout;
         VkDescriptorSet vk_descriptor_set;
     };
@@ -45,7 +45,7 @@ public:
     VkShaderModule GetShaderModule() const;
     std::vector<VkVertexInputAttributeDescription> const& GetVertexInputAttributeDescriptions() const { return vertex_input_attribute_descs_; }
     std::vector<VkVertexInputBindingDescription> const& GetVertexInputBindingDescriptions() const { return vertex_input_binding_desc_; }
-    std::unordered_map<std::uint32_t, DescriptorSet> const& GetDescriptorSets() const { return descriptor_sets_; }
+    std::unordered_map<uint32_t, DescriptorSet> const& GetDescriptorSets() const { return descriptor_sets_; }
 
 private:
     void FillVertexInputDescriptions(spirv_cross::Compiler const& compiler, spirv_cross::ShaderResources const& resources);
@@ -57,6 +57,6 @@ private:
     std::vector<VkVertexInputAttributeDescription> vertex_input_attribute_descs_;
     std::vector<VkVertexInputBindingDescription> vertex_input_binding_desc_;
 
-    std::unordered_map<std::uint32_t, DescriptorSet> descriptor_sets_;
+    std::unordered_map<uint32_t, DescriptorSet> descriptor_sets_;
 
 };

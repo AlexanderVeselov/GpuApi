@@ -72,7 +72,7 @@ D3D12Api::D3D12Api()
     ComPtr<IDXGIFactory6> dxgi_factory6;
     if (SUCCEEDED(dxgi_factory_.As(&dxgi_factory6)))
     {
-        for (std::uint32_t adapter_idx = 0;; ++adapter_idx)
+        for (uint32_t adapter_idx = 0;; ++adapter_idx)
         {
             ComPtr<IDXGIAdapter1> dxgi_adapter;
             HRESULT status = dxgi_factory6->EnumAdapterByGpuPreference(
@@ -90,7 +90,7 @@ D3D12Api::D3D12Api()
     }
     else
     {
-        for (std::uint32_t adapter_idx = 0;; ++adapter_idx)
+        for (uint32_t adapter_idx = 0;; ++adapter_idx)
         {
             ComPtr<IDXGIAdapter1> dxgi_adapter;
             HRESULT status = dxgi_factory_->EnumAdapters1(adapter_idx, &dxgi_adapter);

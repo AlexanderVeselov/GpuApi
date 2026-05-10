@@ -20,7 +20,7 @@
 #include <thread>
 #include <utility>
 
-GLFWwindow* CreateWindow(std::uint32_t width, std::uint32_t height)
+GLFWwindow* CreateWindow(uint32_t width, uint32_t height)
 {
     int init_status = glfwInit();
 
@@ -50,8 +50,8 @@ int main()
 {
     try
     {
-        std::uint32_t window_width = 1280;
-        std::uint32_t window_height = 720;
+        uint32_t window_width = 1280;
+        uint32_t window_height = 720;
 
         GLFWwindow* window = CreateWindow(window_width, window_height);
         void* window_native_handle = glfwGetWin32Window(window);
@@ -61,7 +61,7 @@ int main()
 
         auto device = api->CreateDevice();
 
-        std::uint32_t swapchain_image_count = 3u;
+        uint32_t swapchain_image_count = 3u;
         gpu::SwapchainPtr swapchain = device->CreateSwapchain(window_native_handle,
             window_width, window_height, swapchain_image_count);
 

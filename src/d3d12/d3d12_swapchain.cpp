@@ -10,7 +10,7 @@
 namespace gpu
 {
 D3D12Swapchain::D3D12Swapchain(D3D12Device& device, void* window_native_handle,
-    std::uint32_t width, std::uint32_t height, std::uint32_t image_count)
+    uint32_t width, uint32_t height, uint32_t image_count)
     : Swapchain(ImageFormat::kRGBA8_UNorm), device_(device)
 {
     auto& api = device_.GetD3D12Api();
@@ -24,7 +24,7 @@ D3D12Swapchain::D3D12Swapchain(D3D12Device& device, void* window_native_handle,
     swapchain_desc.Format = ImageToDXGIFormat(image_format_);
     swapchain_desc.SampleDesc = { 1, 0 };
     swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapchain_desc.BufferCount = static_cast<std::uint32_t>(swapchain_images_.size());
+    swapchain_desc.BufferCount = static_cast<uint32_t>(swapchain_images_.size());
     swapchain_desc.Scaling = DXGI_SCALING_STRETCH;
     swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;

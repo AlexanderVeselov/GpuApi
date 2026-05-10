@@ -16,7 +16,7 @@ public:
     D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter);
 
     // Resources
-    BufferPtr CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags) override;
+    BufferPtr CreateBuffer(size_t size, uint32_t stride, BufferFlags flags) override;
     ImagePtr CreateImage(
         uint32_t width,
         uint32_t height,
@@ -32,7 +32,7 @@ public:
     ComputePipelinePtr CreateComputePipeline(char const* cs_filename) override;
 
     SwapchainPtr CreateSwapchain(void* window_native_handle,
-        std::uint32_t width, std::uint32_t height, std::uint32_t image_count) override;
+        uint32_t width, uint32_t height, uint32_t image_count) override;
 
     ID3D12Device* GetD3D12Device() const { return d3d12_device_.Get(); }
 
