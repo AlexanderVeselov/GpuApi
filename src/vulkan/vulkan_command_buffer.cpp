@@ -4,6 +4,7 @@
 #include "vulkan_device.hpp"
 #include "vulkan_exception.hpp"
 #include "vulkan_image.hpp"
+#include "vulkan_pipeline.hpp"
 
 namespace gpu
 {
@@ -118,14 +119,26 @@ void VulkanCommandBuffer::DrawIndexed(
         first_instance);
 }
 
-void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const&)
+void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const& pipeline)
 {
-    throw std::runtime_error("Vulkan graphics pipelines are not implemented yet");
+    auto* vulkan_pipeline = dynamic_cast<VulkanGraphicsPipeline*>(pipeline.get());
+    THROW_IF(!vulkan_pipeline, "Graphics pipeline does not belong to the Vulkan backend");
+
+    vkCmdBindPipeline(
+        command_buffer_,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        vulkan_pipeline->GetPipeline());
 }
 
-void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const&)
+void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const& pipeline)
 {
-    throw std::runtime_error("Vulkan compute pipelines are not implemented yet");
+    auto* vulkan_pipeline = dynamic_cast<VulkanComputePipeline*>(pipeline.get());
+    THROW_IF(!vulkan_pipeline, "Compute pipeline does not belong to the Vulkan backend");
+
+    vkCmdBindPipeline(
+        command_buffer_,
+        VK_PIPELINE_BIND_POINT_COMPUTE,
+        vulkan_pipeline->GetPipeline());
 }
 
 void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const&)

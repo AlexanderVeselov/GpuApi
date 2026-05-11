@@ -18,6 +18,10 @@ set(VULKAN_SOURCES
     src/vulkan/vulkan_image.hpp
     src/vulkan/vulkan_memory_manager.cpp
     src/vulkan/vulkan_memory_manager.hpp
+    src/vulkan/vulkan_pipeline.cpp
+    src/vulkan/vulkan_pipeline.hpp
+    src/vulkan/vulkan_pipeline_layout.cpp
+    src/vulkan/vulkan_pipeline_layout.hpp
     src/vulkan/vulkan_queue.cpp
     src/vulkan/vulkan_queue.hpp
     src/vulkan/vulkan_shader_manager.cpp

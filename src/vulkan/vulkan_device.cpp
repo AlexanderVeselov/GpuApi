@@ -4,6 +4,7 @@
 #include "vulkan_buffer.hpp"
 #include "vulkan_exception.hpp"
 #include "vulkan_image.hpp"
+#include "vulkan_pipeline.hpp"
 #include "vulkan_queue.hpp"
 #include "vulkan_swapchain.hpp"
 
@@ -109,8 +110,18 @@ void VulkanDevice::CreateLogicalDevice()
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
 
+    VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering_features{};
+    dynamic_rendering_features.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+    dynamic_rendering_features.dynamicRendering = VK_TRUE;
+
+    VkPhysicalDeviceFeatures2 device_features{};
+    device_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    device_features.pNext = &dynamic_rendering_features;
+
     VkDeviceCreateInfo device_create_info{};
     device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    device_create_info.pNext = &device_features;
     device_create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
     device_create_info.pQueueCreateInfos = queue_create_infos.data();
     device_create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
@@ -155,14 +166,14 @@ Queue& VulkanDevice::GetQueue(QueueType queue_type)
     }
 }
 
-GraphicsPipelinePtr VulkanDevice::CreateGraphicsPipeline(GraphicsPipelineDesc const&)
+GraphicsPipelinePtr VulkanDevice::CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc)
 {
-    throw std::runtime_error("Vulkan graphics pipelines are not implemented yet");
+    return std::make_unique<VulkanGraphicsPipeline>(*this, pipeline_desc);
 }
 
-ComputePipelinePtr VulkanDevice::CreateComputePipeline(char const*)
+ComputePipelinePtr VulkanDevice::CreateComputePipeline(char const* cs_filename)
 {
-    throw std::runtime_error("Vulkan compute pipelines are not implemented yet");
+    return std::make_unique<VulkanComputePipeline>(*this, cs_filename);
 }
 
 SwapchainPtr VulkanDevice::CreateSwapchain(
