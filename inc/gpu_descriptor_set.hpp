@@ -14,14 +14,14 @@ class DescriptorSet
     virtual ~DescriptorSet() = default;
 
     /// Binds a buffer to a shader register and register space.
-    virtual void BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space) = 0;
+    virtual void BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space = 0) = 0;
 
     /// Binds the image default view to a shader register and register space.
-    virtual void BindImage(Image& image, uint32_t binding, uint32_t space) = 0;
+    virtual void BindImage(Image& image, uint32_t binding, uint32_t space = 0) = 0;
 
     /// Binds a specific image view to a shader register and register space.
     virtual void BindImage(
-        Image& image, ImageView const& view, uint32_t binding, uint32_t space) = 0;
+        Image& image, ImageView const& view, uint32_t binding, uint32_t space = 0) = 0;
 
     /// Removes all bindings from this descriptor set.
     virtual void Clear() = 0;
