@@ -23,6 +23,9 @@ class Api
 
     /// Creates a logical GPU device for this backend.
     virtual DevicePtr CreateDevice() = 0;
+
+    /// Sets the root directory used to load shaders and resolve shader includes.
+    virtual void SetShaderPath(char const* shader_path) = 0;
 };
 
 } // namespace gpu

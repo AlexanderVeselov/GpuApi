@@ -23,6 +23,7 @@ class VulkanShaderManager
   public:
     explicit VulkanShaderManager(char const* shader_path);
     ~VulkanShaderManager();
+    void SetShaderPath(char const* shader_path);
 
     VulkanShader CompileShader(char const* filename, char const* entry_point,
         char const* shader_profile,

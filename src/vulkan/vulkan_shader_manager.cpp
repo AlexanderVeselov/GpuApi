@@ -12,6 +12,7 @@
 #include <wrl.h>
 
 #include <cstring>
+#include <filesystem>
 #include <stdexcept>
 
 namespace gpu
@@ -57,11 +58,22 @@ VulkanShaderManager::~VulkanShaderManager()
     }
 }
 
+void VulkanShaderManager::SetShaderPath(char const* shader_path)
+{
+    shader_path_ = shader_path ? shader_path : "";
+}
+
 VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const* entry_point,
     char const* shader_profile, std::vector<char const*> const& definitions)
 {
     ComPtr<IDxcBlobEncoding> dxc_source = nullptr;
-    std::wstring w_filename = StringToWstring(filename);
+    std::filesystem::path shader_file = filename;
+    if (!shader_path_.empty() && shader_file.is_relative())
+    {
+        shader_file = std::filesystem::path(shader_path_) / shader_file;
+    }
+
+    std::wstring w_filename = shader_file.wstring();
     ThrowIfDxcFailed(dxc_utils_->LoadFile(w_filename.c_str(), nullptr, &dxc_source),
         "VulkanShaderManager::CompileShader: failed to load shader file");
 
@@ -82,6 +94,14 @@ VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const
     shader_args.push_back(L"-fspv-target-env=vulkan1.2");
     shader_args.push_back(L"-fvk-use-dx-layout");
     shader_args.push_back(L"-Zpr");
+
+    std::wstring w_shader_path;
+    if (!shader_path_.empty())
+    {
+        w_shader_path = std::filesystem::path(shader_path_).wstring();
+        shader_args.push_back(L"-I");
+        shader_args.push_back(w_shader_path.c_str());
+    }
 
     std::vector<std::wstring> w_definitions;
     for (char const* definition : definitions)

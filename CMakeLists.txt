@@ -110,6 +110,7 @@ add_library(GpuApi STATIC
     ${COMMON_SOURCES}
     ${SPIRV_REFLECT_SOURCES}
 )
+target_compile_features(GpuApi PUBLIC cxx_std_17)
 target_include_directories(GpuApi PUBLIC inc)
 target_include_directories(GpuApi PRIVATE ${DXC_PATH}/inc)
 target_include_directories(GpuApi PRIVATE src/third_party_compat)

@@ -99,4 +99,9 @@ DevicePtr VulkanApi::CreateDevice()
     return std::make_unique<VulkanDevice>(*this, ChoosePhysicalDevice());
 }
 
+void VulkanApi::SetShaderPath(char const* shader_path)
+{
+    shader_manager_.SetShaderPath(shader_path);
+}
+
 } // namespace gpu

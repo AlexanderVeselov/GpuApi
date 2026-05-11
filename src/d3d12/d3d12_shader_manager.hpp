@@ -23,6 +23,7 @@ class D3D12ShaderManager
 {
   public:
     D3D12ShaderManager(char const* shader_path);
+    void SetShaderPath(char const* shader_path);
     D3D12Shader CompileShader(char const* filename, char const* entry_point,
         char const* shader_profile,
         std::vector<char const*> const& definitions = std::vector<char const*>());

@@ -15,6 +15,7 @@ class D3D12Api : public Api
   public:
     D3D12Api();
     DevicePtr CreateDevice() override;
+    void SetShaderPath(char const* shader_path) override;
 
     IDXGIFactory4* GetDXGIFactory() const
     {

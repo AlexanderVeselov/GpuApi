@@ -14,6 +14,7 @@ class VulkanApi final : public Api
     ~VulkanApi() override;
 
     DevicePtr CreateDevice() override;
+    void SetShaderPath(char const* shader_path) override;
 
     VkInstance GetInstance() const
     {

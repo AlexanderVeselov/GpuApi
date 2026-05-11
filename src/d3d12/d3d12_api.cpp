@@ -126,4 +126,9 @@ DevicePtr D3D12Api::CreateDevice()
     return std::make_unique<D3D12Device>(*this, dxgi_adapters_.front().Get());
 }
 
+void D3D12Api::SetShaderPath(char const* shader_path)
+{
+    shader_manager_.SetShaderPath(shader_path);
+}
+
 } // namespace gpu
