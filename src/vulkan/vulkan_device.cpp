@@ -13,10 +13,8 @@
 
 namespace gpu
 {
-VulkanDevice::VulkanDevice(VulkanApi& api, VkPhysicalDevice physical_device)
-    : api_(api)
-    , physical_device_(physical_device)
-    , memory_manager_(*this)
+VulkanDevice::VulkanDevice(VulkanApi &api, VkPhysicalDevice physical_device)
+    : api_(api), physical_device_(physical_device), memory_manager_(*this)
 {
     FindQueueFamilyIndices();
     CreateLogicalDevice();
@@ -45,9 +43,7 @@ void VulkanDevice::FindQueueFamilyIndices()
 
     std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
     vkGetPhysicalDeviceQueueFamilyProperties(
-        physical_device_,
-        &queue_family_count,
-        queue_families.data());
+        physical_device_, &queue_family_count, queue_families.data());
 
     for (uint32_t i = 0; i < queue_family_count; ++i)
     {
@@ -85,8 +81,8 @@ void VulkanDevice::CreateLogicalDevice()
     std::vector<uint32_t> queue_family_indices;
     for (uint32_t index : raw_indices)
     {
-        if (std::find(queue_family_indices.begin(), queue_family_indices.end(), index)
-            == queue_family_indices.end())
+        if (std::find(queue_family_indices.begin(), queue_family_indices.end(), index) ==
+            queue_family_indices.end())
         {
             queue_family_indices.push_back(index);
         }
@@ -106,29 +102,23 @@ void VulkanDevice::CreateLogicalDevice()
         queue_create_infos.push_back(queue_create_info);
     }
 
-    std::vector<char const*> extensions = {
+    std::vector<char const *> extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
 
     VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering_features{};
-    dynamic_rendering_features.sType =
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+    dynamic_rendering_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
     dynamic_rendering_features.dynamicRendering = VK_TRUE;
-
-    VkPhysicalDeviceFeatures2 device_features{};
-    device_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    device_features.pNext = &dynamic_rendering_features;
 
     VkDeviceCreateInfo device_create_info{};
     device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    device_create_info.pNext = &device_features;
+    device_create_info.pNext = &dynamic_rendering_features;
     device_create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
     device_create_info.pQueueCreateInfos = queue_create_infos.data();
     device_create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     device_create_info.ppEnabledExtensionNames = extensions.data();
 
-    VkResult status =
-        vkCreateDevice(physical_device_, &device_create_info, nullptr, &device_);
+    VkResult status = vkCreateDevice(physical_device_, &device_create_info, nullptr, &device_);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan device");
 }
 
@@ -137,52 +127,43 @@ BufferPtr VulkanDevice::CreateBuffer(std::size_t size, std::uint32_t stride, Buf
     return std::make_shared<VulkanBuffer>(*this, size, stride, flags);
 }
 
-ImagePtr VulkanDevice::CreateImage(
-    uint32_t width,
-    uint32_t height,
-    ImageFormat format,
-    uint32_t mip_count,
-    uint32_t array_size,
-    ImageFlags flags)
+ImagePtr VulkanDevice::CreateImage(uint32_t width, uint32_t height, ImageFormat format,
+    uint32_t mip_count, uint32_t array_size, ImageFlags flags)
 {
     return std::make_shared<VulkanImage>(
-        *this,
-        width,
-        height,
-        format,
-        mip_count,
-        array_size,
-        flags);
+        *this, width, height, format, mip_count, array_size, flags);
 }
 
-Queue& VulkanDevice::GetQueue(QueueType queue_type)
+Queue &VulkanDevice::GetQueue(QueueType queue_type)
 {
     switch (queue_type)
     {
-    case QueueType::kGraphics: return *graphics_queue_;
-    case QueueType::kCompute: return *compute_queue_;
-    case QueueType::kTransfer: return *transfer_queue_;
-    default: throw std::runtime_error("Unsupported Vulkan queue type");
+    case QueueType::kGraphics:
+        return *graphics_queue_;
+    case QueueType::kCompute:
+        return *compute_queue_;
+    case QueueType::kTransfer:
+        return *transfer_queue_;
+    default:
+        throw std::runtime_error("Unsupported Vulkan queue type");
     }
 }
 
-GraphicsPipelinePtr VulkanDevice::CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc)
+GraphicsPipelinePtr VulkanDevice::CreateGraphicsPipeline(GraphicsPipelineDesc const &pipeline_desc)
 {
     return std::make_unique<VulkanGraphicsPipeline>(*this, pipeline_desc);
 }
 
-ComputePipelinePtr VulkanDevice::CreateComputePipeline(char const* cs_filename)
+ComputePipelinePtr VulkanDevice::CreateComputePipeline(char const *cs_filename)
 {
     return std::make_unique<VulkanComputePipeline>(*this, cs_filename);
 }
 
-SwapchainPtr VulkanDevice::CreateSwapchain(
-    void* window_native_handle,
-    std::uint32_t width,
-    std::uint32_t height,
-    std::uint32_t image_count)
+SwapchainPtr VulkanDevice::CreateSwapchain(void *window_native_handle, std::uint32_t width,
+    std::uint32_t height, std::uint32_t image_count)
 {
-    return std::make_unique<VulkanSwapchain>(*this, window_native_handle, width, height, image_count);
+    return std::make_unique<VulkanSwapchain>(
+        *this, window_native_handle, width, height, image_count);
 }
 
 } // namespace gpu

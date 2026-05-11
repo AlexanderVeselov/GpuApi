@@ -24,6 +24,8 @@ GLFWwindow* CreateWindow(uint32_t width, uint32_t height)
 {
     int init_status = glfwInit();
 
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
     if (init_status == GLFW_FALSE)
     {
         throw std::runtime_error("Failed to init GLFW!");
@@ -99,8 +101,8 @@ int main()
         *scale = 3.5f;
         scale_buffer->Unmap();
 
-        gpu::DescriptorSetPtr descriptor_set = pipeline->CreateDescriptorSet();
-        descriptor_set->BindBuffer(*scale_buffer, 0, 0);
+        //gpu::DescriptorSetPtr descriptor_set = pipeline->CreateDescriptorSet();
+        //descriptor_set->BindBuffer(*scale_buffer, 0, 0);
 
         while (!glfwWindowShouldClose(window))
         {
@@ -110,7 +112,7 @@ int main()
             cmd_buffer->TransitionBarrier(swapchain_image, gpu::ImageLayout::kPresent, gpu::ImageLayout::kRenderTarget);
             cmd_buffer->ClearImage(swapchain_image, 0.5f, 0.5f, 1.0f, 1.0f);
             cmd_buffer->BindPipeline(pipeline);
-            cmd_buffer->BindDescriptorSet(descriptor_set);
+            //cmd_buffer->BindDescriptorSet(descriptor_set);
             cmd_buffer->SetViewport(gpu::Viewport{ 0.0f, 0.0f,
                 (float)swapchain_image->GetWidth(),
                 (float)swapchain_image->GetHeight(), 0.0f, 1.0f });

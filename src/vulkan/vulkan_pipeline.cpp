@@ -16,20 +16,16 @@ namespace
 {
 class VulkanShaderModule
 {
-public:
-    VulkanShaderModule(VulkanDevice& device, std::vector<uint32_t> const& spirv)
-        : device_(device)
+  public:
+    VulkanShaderModule(VulkanDevice &device, std::vector<uint32_t> const &spirv) : device_(device)
     {
         VkShaderModuleCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         create_info.codeSize = spirv.size() * sizeof(uint32_t);
         create_info.pCode = spirv.data();
 
-        VkResult status = vkCreateShaderModule(
-            device_.GetDevice(),
-            &create_info,
-            nullptr,
-            &shader_module_);
+        VkResult status =
+            vkCreateShaderModule(device_.GetDevice(), &create_info, nullptr, &shader_module_);
         VK_THROW_IF_FAILED(status, "Failed to create Vulkan shader module");
     }
 
@@ -41,10 +37,13 @@ public:
         }
     }
 
-    VkShaderModule GetShaderModule() const { return shader_module_; }
+    VkShaderModule GetShaderModule() const
+    {
+        return shader_module_;
+    }
 
-private:
-    VulkanDevice& device_;
+  private:
+    VulkanDevice &device_;
     VkShaderModule shader_module_ = VK_NULL_HANDLE;
 };
 
@@ -52,15 +51,24 @@ VkCompareOp DepthFuncToVkCompareOp(DepthFunc depth_func)
 {
     switch (depth_func)
     {
-    case DepthFunc::kNone: return VK_COMPARE_OP_ALWAYS;
-    case DepthFunc::kNever: return VK_COMPARE_OP_NEVER;
-    case DepthFunc::kLess: return VK_COMPARE_OP_LESS;
-    case DepthFunc::kEqual: return VK_COMPARE_OP_EQUAL;
-    case DepthFunc::kLessEqual: return VK_COMPARE_OP_LESS_OR_EQUAL;
-    case DepthFunc::kGreater: return VK_COMPARE_OP_GREATER;
-    case DepthFunc::kNotEqual: return VK_COMPARE_OP_NOT_EQUAL;
-    case DepthFunc::kGreaterEqual: return VK_COMPARE_OP_GREATER_OR_EQUAL;
-    case DepthFunc::kAlways: return VK_COMPARE_OP_ALWAYS;
+    case DepthFunc::kNone:
+        return VK_COMPARE_OP_ALWAYS;
+    case DepthFunc::kNever:
+        return VK_COMPARE_OP_NEVER;
+    case DepthFunc::kLess:
+        return VK_COMPARE_OP_LESS;
+    case DepthFunc::kEqual:
+        return VK_COMPARE_OP_EQUAL;
+    case DepthFunc::kLessEqual:
+        return VK_COMPARE_OP_LESS_OR_EQUAL;
+    case DepthFunc::kGreater:
+        return VK_COMPARE_OP_GREATER;
+    case DepthFunc::kNotEqual:
+        return VK_COMPARE_OP_NOT_EQUAL;
+    case DepthFunc::kGreaterEqual:
+        return VK_COMPARE_OP_GREATER_OR_EQUAL;
+    case DepthFunc::kAlways:
+        return VK_COMPARE_OP_ALWAYS;
     default:
         assert(false && "DepthFuncToVkCompareOp: unknown depth func");
         return VK_COMPARE_OP_ALWAYS;
@@ -92,14 +100,13 @@ uint32_t FormatSize(ImageFormat format)
     }
 }
 
-void GetVertexInputDescs(
-    ShaderReflection const& reflection,
-    VkVertexInputBindingDescription& binding_desc,
-    std::vector<VkVertexInputAttributeDescription>& attribute_descs)
+void GetVertexInputDescs(ShaderReflection const &reflection,
+    VkVertexInputBindingDescription &binding_desc,
+    std::vector<VkVertexInputAttributeDescription> &attribute_descs)
 {
     uint32_t offset = 0;
 
-    for (ShaderInputParameter const& parameter : reflection.input_parameters)
+    for (ShaderInputParameter const &parameter : reflection.input_parameters)
     {
         if (parameter.is_system_value)
         {
@@ -123,8 +130,7 @@ void GetVertexInputDescs(
 }
 
 VkPipelineShaderStageCreateInfo GetShaderStageCreateInfo(
-    VkShaderStageFlagBits stage,
-    VkShaderModule shader_module)
+    VkShaderStageFlagBits stage, VkShaderModule shader_module)
 {
     VkPipelineShaderStageCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -133,12 +139,11 @@ VkPipelineShaderStageCreateInfo GetShaderStageCreateInfo(
     create_info.pName = "main";
     return create_info;
 }
-}
+} // namespace
 
-VulkanPipeline::VulkanPipeline(VulkanDevice& device)
-    : device_(device)
-    , layout_(device)
-{}
+VulkanPipeline::VulkanPipeline(VulkanDevice &device) : device_(device), layout_(device)
+{
+}
 
 VulkanPipeline::~VulkanPipeline()
 {
@@ -160,10 +165,8 @@ void VulkanPipeline::DestroyPipeline()
 }
 
 VulkanGraphicsPipeline::VulkanGraphicsPipeline(
-    VulkanDevice& device,
-    GraphicsPipelineDesc const& pipeline_desc)
-    : GraphicsPipeline(pipeline_desc)
-    , VulkanPipeline(device)
+    VulkanDevice &device, GraphicsPipelineDesc const &pipeline_desc)
+    : GraphicsPipeline(pipeline_desc), VulkanPipeline(device)
 {
     Reload();
 }
@@ -172,13 +175,13 @@ void VulkanGraphicsPipeline::Reload()
 {
     DestroyPipeline();
 
-    VulkanShaderManager& shader_manager = device_.GetApi().GetShaderManager();
-    VulkanShader vs_shader = shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(),
-        "main", "vs_6_0");
-    VulkanShader ps_shader = shader_manager.CompileShader(pipeline_desc_.ps_filename.c_str(),
-        "main", "ps_6_0");
+    VulkanShaderManager &shader_manager = device_.GetApi().GetShaderManager();
+    VulkanShader vs_shader =
+        shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(), "main", "vs_6_0");
+    VulkanShader ps_shader =
+        shader_manager.CompileShader(pipeline_desc_.ps_filename.c_str(), "main", "ps_6_0");
 
-    layout_.Build({ &vs_shader.reflection, &ps_shader.reflection });
+    layout_.Build({&vs_shader.reflection, &ps_shader.reflection});
 
     VulkanShaderModule vs_module(device_, vs_shader.spirv);
     VulkanShaderModule ps_module(device_, ps_shader.spirv);
@@ -236,21 +239,17 @@ void VulkanGraphicsPipeline::Reload()
 
     std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachments(
         pipeline_desc_.color_attachment_formats.size());
-    for (VkPipelineColorBlendAttachmentState& attachment : color_blend_attachments)
+    for (VkPipelineColorBlendAttachmentState &attachment : color_blend_attachments)
     {
         attachment.blendEnable = VK_FALSE;
-        attachment.colorWriteMask =
-            VK_COLOR_COMPONENT_R_BIT |
-            VK_COLOR_COMPONENT_G_BIT |
-            VK_COLOR_COMPONENT_B_BIT |
-            VK_COLOR_COMPONENT_A_BIT;
+        attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                    VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     }
 
     VkPipelineColorBlendStateCreateInfo color_blend_state = {};
     color_blend_state.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     color_blend_state.logicOpEnable = VK_FALSE;
-    color_blend_state.attachmentCount =
-        static_cast<uint32_t>(color_blend_attachments.size());
+    color_blend_state.attachmentCount = static_cast<uint32_t>(color_blend_attachments.size());
     color_blend_state.pAttachments =
         color_blend_attachments.empty() ? nullptr : color_blend_attachments.data();
 
@@ -277,8 +276,9 @@ void VulkanGraphicsPipeline::Reload()
         static_cast<uint32_t>(color_attachment_formats.size());
     rendering_create_info.pColorAttachmentFormats =
         color_attachment_formats.empty() ? nullptr : color_attachment_formats.data();
-    rendering_create_info.depthAttachmentFormat = pipeline_desc_.depth_enabled ?
-        ToVkFormat(pipeline_desc_.depth_attachment_format) : VK_FORMAT_UNDEFINED;
+    rendering_create_info.depthAttachmentFormat =
+        pipeline_desc_.depth_enabled ? ToVkFormat(pipeline_desc_.depth_attachment_format)
+                                     : VK_FORMAT_UNDEFINED;
     rendering_create_info.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 
     VkGraphicsPipelineCreateInfo create_info = {};
@@ -299,18 +299,12 @@ void VulkanGraphicsPipeline::Reload()
     create_info.subpass = 0;
 
     VkResult status = vkCreateGraphicsPipelines(
-        device_.GetDevice(),
-        VK_NULL_HANDLE,
-        1,
-        &create_info,
-        nullptr,
-        &pipeline_);
+        device_.GetDevice(), VK_NULL_HANDLE, 1, &create_info, nullptr, &pipeline_);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan graphics pipeline");
 }
 
-VulkanComputePipeline::VulkanComputePipeline(VulkanDevice& device, char const* cs_filename)
-    : ComputePipeline(cs_filename)
-    , VulkanPipeline(device)
+VulkanComputePipeline::VulkanComputePipeline(VulkanDevice &device, char const *cs_filename)
+    : ComputePipeline(cs_filename), VulkanPipeline(device)
 {
     Reload();
 }
@@ -319,9 +313,9 @@ void VulkanComputePipeline::Reload()
 {
     DestroyPipeline();
 
-    VulkanShader cs_shader = device_.GetApi().GetShaderManager().CompileShader(
-        cs_filename_.c_str(), "main", "cs_6_0");
-    layout_.Build({ &cs_shader.reflection });
+    VulkanShader cs_shader =
+        device_.GetApi().GetShaderManager().CompileShader(cs_filename_.c_str(), "main", "cs_6_0");
+    layout_.Build({&cs_shader.reflection});
 
     VulkanShaderModule cs_module(device_, cs_shader.spirv);
 
@@ -332,12 +326,7 @@ void VulkanComputePipeline::Reload()
     create_info.layout = layout_.GetPipelineLayout();
 
     VkResult status = vkCreateComputePipelines(
-        device_.GetDevice(),
-        VK_NULL_HANDLE,
-        1,
-        &create_info,
-        nullptr,
-        &pipeline_);
+        device_.GetDevice(), VK_NULL_HANDLE, 1, &create_info, nullptr, &pipeline_);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan compute pipeline");
 }
 

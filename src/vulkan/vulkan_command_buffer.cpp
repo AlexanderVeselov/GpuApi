@@ -8,24 +8,45 @@
 
 namespace gpu
 {
-static VkImageLayout ToVkImageLayout(ImageLayout layout)
+static bool IsDepthImage(Image const &image)
+{
+    return HasFlag(image.GetFlags(), ImageFlags::kDepthStencil) ||
+           image.GetFormat() == ImageFormat::kD32_Float ||
+           image.GetFormat() == ImageFormat::kR32_Typeless;
+}
+
+static VkImageLayout ToVkImageLayout(ImageLayout layout, bool is_depth)
 {
     switch (layout)
     {
-    case ImageLayout::kUndefined: return VK_IMAGE_LAYOUT_UNDEFINED;
-    case ImageLayout::kPresent: return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    case ImageLayout::kCopySrc: return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    case ImageLayout::kCopyDst: return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    case ImageLayout::kRenderTarget: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    case ImageLayout::kShaderRead: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    case ImageLayout::kShaderReadWrite: return VK_IMAGE_LAYOUT_GENERAL;
-    default: return VK_IMAGE_LAYOUT_UNDEFINED;
+    case ImageLayout::kUndefined:
+        return VK_IMAGE_LAYOUT_UNDEFINED;
+    case ImageLayout::kPresent:
+        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    case ImageLayout::kCopySrc:
+        return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    case ImageLayout::kCopyDst:
+        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case ImageLayout::kRenderTarget:
+        return is_depth ? VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL
+                        : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    case ImageLayout::kShaderRead:
+        return is_depth ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
+                        : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    case ImageLayout::kShaderReadWrite:
+        return VK_IMAGE_LAYOUT_GENERAL;
+    default:
+        return VK_IMAGE_LAYOUT_UNDEFINED;
     }
 }
 
-VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice& device, VkCommandPool command_pool)
-    : device_(device)
-    , command_pool_(command_pool)
+static VkImageAspectFlags GetImageAspect(Image const &image)
+{
+    return IsDepthImage(image) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+}
+
+VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice &device, VkCommandPool command_pool)
+    : device_(device), command_pool_(command_pool)
 {
     VkCommandBufferAllocateInfo allocate_info{};
     allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -65,25 +86,38 @@ void VulkanCommandBuffer::Close()
         return;
     }
 
+    EndRendering();
+
     VkResult status = vkEndCommandBuffer(command_buffer_);
     VK_THROW_IF_FAILED(status, "Failed to end Vulkan command buffer");
 
     closed_ = true;
 }
 
+void VulkanCommandBuffer::EndRendering()
+{
+    if (!rendering_active_)
+    {
+        return;
+    }
+
+    vkCmdEndRendering(command_buffer_);
+    rendering_active_ = false;
+}
+
 void VulkanCommandBuffer::SetVertexBuffer(BufferPtr buffer, std::size_t)
 {
-    auto* vulkan_buffer = dynamic_cast<VulkanBuffer*>(buffer.get());
+    auto *vulkan_buffer = dynamic_cast<VulkanBuffer *>(buffer.get());
     THROW_IF(!vulkan_buffer, "Vertex buffer does not belong to the Vulkan backend");
 
-    VkBuffer vertex_buffers[] = { vulkan_buffer->GetBuffer() };
-    VkDeviceSize offsets[] = { 0 };
+    VkBuffer vertex_buffers[] = {vulkan_buffer->GetBuffer()};
+    VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(command_buffer_, 0, 1, vertex_buffers, offsets);
 }
 
 void VulkanCommandBuffer::SetIndexBuffer(BufferPtr buffer)
 {
-    auto* vulkan_buffer = dynamic_cast<VulkanBuffer*>(buffer.get());
+    auto *vulkan_buffer = dynamic_cast<VulkanBuffer *>(buffer.get());
     THROW_IF(!vulkan_buffer, "Index buffer does not belong to the Vulkan backend");
 
     vkCmdBindIndexBuffer(command_buffer_, vulkan_buffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
@@ -91,72 +125,143 @@ void VulkanCommandBuffer::SetIndexBuffer(BufferPtr buffer)
 
 void VulkanCommandBuffer::Dispatch(std::uint32_t x, std::uint32_t y, std::uint32_t z)
 {
+    EndRendering();
+
     vkCmdDispatch(command_buffer_, x, y, z);
 }
 
 void VulkanCommandBuffer::Draw(
-    uint32_t vertex_count,
-    uint32_t instance_count,
-    uint32_t first_vertex,
-    uint32_t first_instance)
+    uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance)
 {
+    THROW_IF(!rendering_active_, "Draw requires an active Vulkan render target");
+
     vkCmdDraw(command_buffer_, vertex_count, instance_count, first_vertex, first_instance);
 }
 
-void VulkanCommandBuffer::DrawIndexed(
-    uint32_t index_count,
-    uint32_t instance_count,
-    uint32_t first_index,
-    int32_t vertex_offset,
-    uint32_t first_instance)
+void VulkanCommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count,
+    uint32_t first_index, int32_t vertex_offset, uint32_t first_instance)
 {
+    THROW_IF(!rendering_active_, "DrawIndexed requires an active Vulkan render target");
+
     vkCmdDrawIndexed(
-        command_buffer_,
-        index_count,
-        instance_count,
-        first_index,
-        vertex_offset,
-        first_instance);
+        command_buffer_, index_count, instance_count, first_index, vertex_offset, first_instance);
 }
 
-void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const& pipeline)
+void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const &pipeline)
 {
-    auto* vulkan_pipeline = dynamic_cast<VulkanGraphicsPipeline*>(pipeline.get());
+    auto *vulkan_pipeline = dynamic_cast<VulkanGraphicsPipeline *>(pipeline.get());
     THROW_IF(!vulkan_pipeline, "Graphics pipeline does not belong to the Vulkan backend");
 
     vkCmdBindPipeline(
-        command_buffer_,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        vulkan_pipeline->GetPipeline());
+        command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_pipeline->GetPipeline());
 }
 
-void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const& pipeline)
+void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const &pipeline)
 {
-    auto* vulkan_pipeline = dynamic_cast<VulkanComputePipeline*>(pipeline.get());
+    auto *vulkan_pipeline = dynamic_cast<VulkanComputePipeline *>(pipeline.get());
     THROW_IF(!vulkan_pipeline, "Compute pipeline does not belong to the Vulkan backend");
 
     vkCmdBindPipeline(
-        command_buffer_,
-        VK_PIPELINE_BIND_POINT_COMPUTE,
-        vulkan_pipeline->GetPipeline());
+        command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vulkan_pipeline->GetPipeline());
 }
 
-void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const&)
+void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const &)
 {
     throw std::runtime_error("Vulkan descriptor sets are not implemented yet");
 }
 
-void VulkanCommandBuffer::SetRenderTarget(ImagePtr, ImagePtr)
+void VulkanCommandBuffer::SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment)
 {
-    throw std::runtime_error("Vulkan render targets are not implemented yet");
+    std::vector<ImagePtr> color_attachments;
+    if (color_attachment)
+    {
+        color_attachments.push_back(color_attachment);
+    }
+
+    SetRenderTargets(color_attachments, depth_attachment);
 }
 
-void VulkanCommandBuffer::SetRenderTargets(std::vector<ImagePtr> const&, ImagePtr)
+void VulkanCommandBuffer::SetRenderTargets(
+    std::vector<ImagePtr> const &color_attachments, ImagePtr depth_attachment)
 {
-    throw std::runtime_error("Vulkan render targets are not implemented yet");
+    EndRendering();
+
+    THROW_IF(color_attachments.empty() && !depth_attachment,
+        "SetRenderTargets requires at least one attachment");
+
+    uint32_t render_width = 0;
+    uint32_t render_height = 0;
+    std::vector<VkRenderingAttachmentInfo> color_attachment_infos;
+    color_attachment_infos.reserve(color_attachments.size());
+
+    for (ImagePtr const &attachment : color_attachments)
+    {
+        auto *vulkan_image = dynamic_cast<VulkanImage *>(attachment.get());
+        THROW_IF(!vulkan_image, "Color attachment does not belong to the Vulkan backend");
+        THROW_IF(IsDepthImage(*attachment), "Color attachment must not be a depth image");
+
+        if (render_width == 0 && render_height == 0)
+        {
+            render_width = attachment->GetWidth();
+            render_height = attachment->GetHeight();
+        }
+        else
+        {
+            THROW_IF(
+                attachment->GetWidth() != render_width || attachment->GetHeight() != render_height,
+                "All Vulkan render targets must have the same size");
+        }
+
+        VkRenderingAttachmentInfo attachment_info = {};
+        attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        attachment_info.imageView = vulkan_image->GetImageView();
+        attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        color_attachment_infos.push_back(attachment_info);
+    }
+
+    VkRenderingAttachmentInfo depth_attachment_info = {};
+    if (depth_attachment)
+    {
+        auto *vulkan_depth = dynamic_cast<VulkanImage *>(depth_attachment.get());
+        THROW_IF(!vulkan_depth, "Depth attachment does not belong to the Vulkan backend");
+        THROW_IF(!IsDepthImage(*depth_attachment), "Depth attachment must be a depth image");
+
+        if (render_width == 0 && render_height == 0)
+        {
+            render_width = depth_attachment->GetWidth();
+            render_height = depth_attachment->GetHeight();
+        }
+        else
+        {
+            THROW_IF(depth_attachment->GetWidth() != render_width ||
+                         depth_attachment->GetHeight() != render_height,
+                "All Vulkan render targets must have the same size");
+        }
+
+        depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        depth_attachment_info.imageView = vulkan_depth->GetImageView();
+        depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    }
+
+    VkRenderingInfo rendering_info = {};
+    rendering_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+    rendering_info.renderArea.offset = {0, 0};
+    rendering_info.renderArea.extent = {render_width, render_height};
+    rendering_info.layerCount = 1;
+    rendering_info.colorAttachmentCount = static_cast<uint32_t>(color_attachment_infos.size());
+    rendering_info.pColorAttachments =
+        color_attachment_infos.empty() ? nullptr : color_attachment_infos.data();
+    rendering_info.pDepthAttachment = depth_attachment ? &depth_attachment_info : nullptr;
+
+    vkCmdBeginRendering(command_buffer_, &rendering_info);
+    rendering_active_ = true;
 }
 
-void VulkanCommandBuffer::SetViewport(const Viewport& viewport)
+void VulkanCommandBuffer::SetViewport(const Viewport &viewport)
 {
     VkViewport vk_viewport{};
     vk_viewport.x = viewport.x;
@@ -169,21 +274,24 @@ void VulkanCommandBuffer::SetViewport(const Viewport& viewport)
     vkCmdSetViewport(command_buffer_, 0, 1, &vk_viewport);
 }
 
-void VulkanCommandBuffer::SetScissor(const Rect& rect)
+void VulkanCommandBuffer::SetScissor(const Rect &rect)
 {
     VkRect2D vk_rect{};
-    vk_rect.offset = { rect.x, rect.y };
-    vk_rect.extent = { static_cast<uint32_t>(rect.width), static_cast<uint32_t>(rect.height) };
+    vk_rect.offset = {rect.x, rect.y};
+    vk_rect.extent = {static_cast<uint32_t>(rect.width), static_cast<uint32_t>(rect.height)};
 
     vkCmdSetScissor(command_buffer_, 0, 1, &vk_rect);
 }
 
 void VulkanCommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, float a)
 {
-    auto* vulkan_image = dynamic_cast<VulkanImage*>(image.get());
-    THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
+    EndRendering();
 
-    VkClearColorValue color = { { r, g, b, a } };
+    auto *vulkan_image = dynamic_cast<VulkanImage *>(image.get());
+    THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
+    THROW_IF(IsDepthImage(*image), "ClearImage only supports color images in the Vulkan backend");
+
+    VkClearColorValue color = {{r, g, b, a}};
     VkImageSubresourceRange range{};
     range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     range.baseMipLevel = 0;
@@ -191,52 +299,41 @@ void VulkanCommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, 
     range.baseArrayLayer = 0;
     range.layerCount = vulkan_image->GetArraySize();
 
-    vkCmdClearColorImage(
-        command_buffer_,
-        vulkan_image->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        &color,
-        1,
-        &range);
+    vkCmdClearColorImage(command_buffer_, vulkan_image->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1, &range);
 }
 
 void VulkanCommandBuffer::TransitionBarrier(
-    ImagePtr image,
-    ImageLayout layout_before,
-    ImageLayout layout_after)
+    ImagePtr image, ImageLayout layout_before, ImageLayout layout_after)
 {
-    auto* vulkan_image = dynamic_cast<VulkanImage*>(image.get());
+    EndRendering();
+
+    auto *vulkan_image = dynamic_cast<VulkanImage *>(image.get());
     THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
 
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = ToVkImageLayout(layout_before);
-    barrier.newLayout = ToVkImageLayout(layout_after);
+    bool is_depth = IsDepthImage(*image);
+    barrier.oldLayout = ToVkImageLayout(layout_before, is_depth);
+    barrier.newLayout = ToVkImageLayout(layout_after, is_depth);
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = vulkan_image->GetImage();
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.aspectMask = GetImageAspect(*image);
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = vulkan_image->GetMipCount();
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = vulkan_image->GetArraySize();
 
-    vkCmdPipelineBarrier(
-        command_buffer_,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        0,
-        0,
-        nullptr,
-        0,
-        nullptr,
-        1,
-        &barrier);
+    vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
 void VulkanCommandBuffer::StorageBarrier(ImagePtr image)
 {
-    auto* vulkan_image = dynamic_cast<VulkanImage*>(image.get());
+    EndRendering();
+
+    auto *vulkan_image = dynamic_cast<VulkanImage *>(image.get());
     THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
 
     VkImageMemoryBarrier barrier{};
@@ -246,34 +343,23 @@ void VulkanCommandBuffer::StorageBarrier(ImagePtr image)
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = vulkan_image->GetImage();
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.aspectMask = GetImageAspect(*image);
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = vulkan_image->GetMipCount();
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = vulkan_image->GetArraySize();
 
-    vkCmdPipelineBarrier(
-        command_buffer_,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        0,
-        0,
-        nullptr,
-        0,
-        nullptr,
-        1,
-        &barrier);
+    vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
 void VulkanCommandBuffer::CopyBuffer(
-    Buffer* src,
-    uint64_t src_offset,
-    Buffer* dst,
-    uint64_t dst_offset,
-    uint64_t size)
+    Buffer *src, uint64_t src_offset, Buffer *dst, uint64_t dst_offset, uint64_t size)
 {
-    auto* vulkan_src = dynamic_cast<VulkanBuffer*>(src);
-    auto* vulkan_dst = dynamic_cast<VulkanBuffer*>(dst);
+    EndRendering();
+
+    auto *vulkan_src = dynamic_cast<VulkanBuffer *>(src);
+    auto *vulkan_dst = dynamic_cast<VulkanBuffer *>(dst);
     THROW_IF(!vulkan_src || !vulkan_dst, "Buffer does not belong to the Vulkan backend");
 
     VkBufferCopy copy_region{};
@@ -281,52 +367,46 @@ void VulkanCommandBuffer::CopyBuffer(
     copy_region.dstOffset = dst_offset;
     copy_region.size = size;
 
-    vkCmdCopyBuffer(command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetBuffer(), 1, &copy_region);
+    vkCmdCopyBuffer(
+        command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetBuffer(), 1, &copy_region);
 }
 
-void VulkanCommandBuffer::CopyBufferToImage(Image* dst, Buffer* src)
+void VulkanCommandBuffer::CopyBufferToImage(Image *dst, Buffer *src)
 {
-    auto* vulkan_dst = dynamic_cast<VulkanImage*>(dst);
-    auto* vulkan_src = dynamic_cast<VulkanBuffer*>(src);
+    EndRendering();
+
+    auto *vulkan_dst = dynamic_cast<VulkanImage *>(dst);
+    auto *vulkan_src = dynamic_cast<VulkanBuffer *>(src);
     THROW_IF(!vulkan_dst || !vulkan_src, "Resource does not belong to the Vulkan backend");
 
     VkBufferImageCopy region{};
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.aspectMask = GetImageAspect(*dst);
     region.imageSubresource.mipLevel = 0;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
-    region.imageExtent = { vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1 };
+    region.imageExtent = {vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1};
 
-    vkCmdCopyBufferToImage(
-        command_buffer_,
-        vulkan_src->GetBuffer(),
-        vulkan_dst->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1,
-        &region);
+    vkCmdCopyBufferToImage(command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-void VulkanCommandBuffer::CopyImage(Image* dst, Image* src)
+void VulkanCommandBuffer::CopyImage(Image *dst, Image *src)
 {
-    auto* vulkan_dst = dynamic_cast<VulkanImage*>(dst);
-    auto* vulkan_src = dynamic_cast<VulkanImage*>(src);
+    EndRendering();
+
+    auto *vulkan_dst = dynamic_cast<VulkanImage *>(dst);
+    auto *vulkan_src = dynamic_cast<VulkanImage *>(src);
     THROW_IF(!vulkan_dst || !vulkan_src, "Image does not belong to the Vulkan backend");
 
     VkImageCopy region{};
-    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.srcSubresource.aspectMask = GetImageAspect(*src);
     region.srcSubresource.layerCount = 1;
-    region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.dstSubresource.aspectMask = GetImageAspect(*dst);
     region.dstSubresource.layerCount = 1;
-    region.extent = { vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1 };
+    region.extent = {vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1};
 
-    vkCmdCopyImage(
-        command_buffer_,
-        vulkan_src->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        vulkan_dst->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1,
-        &region);
+    vkCmdCopyImage(command_buffer_, vulkan_src->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        vulkan_dst->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 } // namespace gpu

@@ -1,13 +1,13 @@
 #include "vulkan_shader_manager.hpp"
 
-#include "vulkan_shader_reflection.hpp"
 #include "../common/utils.hpp"
+#include "vulkan_shader_reflection.hpp"
 
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
 #include <ObjIdl.h>
 #include <OleAuto.h>
 #include <Unknwn.h>
+#include <Windows.h>
 #include <dxcapi.h>
 #include <wrl.h>
 
@@ -20,26 +20,22 @@ using Microsoft::WRL::ComPtr;
 
 namespace
 {
-void ThrowIfDxcFailed(HRESULT hr, char const* message)
+void ThrowIfDxcFailed(HRESULT hr, char const *message)
 {
     if (FAILED(hr))
     {
         throw std::runtime_error(message);
     }
 }
-}
+} // namespace
 
-VulkanShaderManager::VulkanShaderManager(char const* shader_path)
-    : shader_path_(shader_path)
+VulkanShaderManager::VulkanShaderManager(char const *shader_path) : shader_path_(shader_path)
 {
-    ThrowIfDxcFailed(
-        DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxc_utils_)),
+    ThrowIfDxcFailed(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxc_utils_)),
         "VulkanShaderManager: failed to create DXC utils");
-    ThrowIfDxcFailed(
-        DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxc_compiler_)),
+    ThrowIfDxcFailed(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxc_compiler_)),
         "VulkanShaderManager: failed to create DXC compiler");
-    ThrowIfDxcFailed(
-        dxc_utils_->CreateDefaultIncludeHandler(&dxc_include_handler_),
+    ThrowIfDxcFailed(dxc_utils_->CreateDefaultIncludeHandler(&dxc_include_handler_),
         "VulkanShaderManager: failed to create DXC include handler");
 }
 
@@ -61,16 +57,12 @@ VulkanShaderManager::~VulkanShaderManager()
     }
 }
 
-VulkanShader VulkanShaderManager::CompileShader(
-    char const* filename,
-    char const* entry_point,
-    char const* shader_profile,
-    std::vector<char const*> const& definitions)
+VulkanShader VulkanShaderManager::CompileShader(char const *filename, char const *entry_point,
+    char const *shader_profile, std::vector<char const *> const &definitions)
 {
     ComPtr<IDxcBlobEncoding> dxc_source = nullptr;
     std::wstring w_filename = StringToWstring(filename);
-    ThrowIfDxcFailed(
-        dxc_utils_->LoadFile(w_filename.c_str(), nullptr, &dxc_source),
+    ThrowIfDxcFailed(dxc_utils_->LoadFile(w_filename.c_str(), nullptr, &dxc_source),
         "VulkanShaderManager::CompileShader: failed to load shader file");
 
     DxcBuffer shader_source = {};
@@ -91,7 +83,7 @@ VulkanShader VulkanShaderManager::CompileShader(
     shader_args.push_back(L"-fvk-use-dx-layout");
 
     std::vector<std::wstring> w_definitions;
-    for (char const* definition : definitions)
+    for (char const *definition : definitions)
     {
         w_definitions.push_back(StringToWstring(definition));
         shader_args.push_back(L"-D");
@@ -106,13 +98,9 @@ VulkanShader VulkanShaderManager::CompileShader(
 #endif
 
     ComPtr<IDxcResult> dxc_result;
-    ThrowIfDxcFailed(
-        dxc_compiler_->Compile(
-            &shader_source,
-            shader_args.data(),
-            static_cast<UINT32>(shader_args.size()),
-            dxc_include_handler_,
-            IID_PPV_ARGS(&dxc_result)),
+    ThrowIfDxcFailed(dxc_compiler_->Compile(&shader_source, shader_args.data(),
+                         static_cast<UINT32>(shader_args.size()), dxc_include_handler_,
+                         IID_PPV_ARGS(&dxc_result)),
         "VulkanShaderManager::CompileShader: DXC compile call failed");
 
     ComPtr<IDxcBlobUtf8> dxc_error;
@@ -122,13 +110,12 @@ VulkanShader VulkanShaderManager::CompileShader(
         std::string error_message = "Failed to compile Vulkan shader ";
         error_message += filename;
         error_message += ":\n";
-        error_message += static_cast<char const*>(dxc_error->GetBufferPointer());
+        error_message += static_cast<char const *>(dxc_error->GetBufferPointer());
         throw std::runtime_error(error_message);
     }
 
     ComPtr<IDxcBlob> dxc_object;
-    ThrowIfDxcFailed(
-        dxc_result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&dxc_object), nullptr),
+    ThrowIfDxcFailed(dxc_result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&dxc_object), nullptr),
         "VulkanShaderManager::CompileShader: failed to get SPIR-V object");
 
     if (dxc_object->GetBufferSize() % sizeof(uint32_t) != 0)

@@ -21,16 +21,13 @@ static VkSurfaceFormatKHR FindSurfaceFormat(VkPhysicalDevice physical_device, Vk
 
     std::vector<VkSurfaceFormatKHR> available_formats(format_count);
     status = vkGetPhysicalDeviceSurfaceFormatsKHR(
-        physical_device,
-        surface,
-        &format_count,
-        available_formats.data());
+        physical_device, surface, &format_count, available_formats.data());
     VK_THROW_IF_FAILED(status, "Failed to get Vulkan surface formats");
 
-    for (VkSurfaceFormatKHR const& format : available_formats)
+    for (VkSurfaceFormatKHR const &format : available_formats)
     {
-        if (format.format == VK_FORMAT_B8G8R8A8_UNORM
-            && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        if (format.format == VK_FORMAT_B8G8R8A8_UNORM &&
+            format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
         {
             return format;
         }
@@ -43,19 +40,13 @@ static VkPresentModeKHR FindPresentMode(VkPhysicalDevice physical_device, VkSurf
 {
     uint32_t present_mode_count = 0;
     VkResult status = vkGetPhysicalDeviceSurfacePresentModesKHR(
-        physical_device,
-        surface,
-        &present_mode_count,
-        nullptr);
+        physical_device, surface, &present_mode_count, nullptr);
     VK_THROW_IF_FAILED(status, "Failed to get Vulkan present modes");
     THROW_IF(present_mode_count == 0, "No Vulkan present modes are available");
 
     std::vector<VkPresentModeKHR> present_modes(present_mode_count);
     status = vkGetPhysicalDeviceSurfacePresentModesKHR(
-        physical_device,
-        surface,
-        &present_mode_count,
-        present_modes.data());
+        physical_device, surface, &present_mode_count, present_modes.data());
     VK_THROW_IF_FAILED(status, "Failed to get Vulkan present modes");
 
     for (VkPresentModeKHR mode : present_modes)
@@ -84,14 +75,9 @@ static uint32_t Clamp(uint32_t value, uint32_t min_value, uint32_t max_value)
     return value;
 }
 
-VulkanSwapchain::VulkanSwapchain(
-    VulkanDevice& device,
-    void* window_native_handle,
-    uint32_t width,
-    uint32_t height,
-    uint32_t image_count)
-    : Swapchain(ImageFormat::kUnknown)
-    , device_(device)
+VulkanSwapchain::VulkanSwapchain(VulkanDevice &device, void *window_native_handle, uint32_t width,
+    uint32_t height, uint32_t image_count)
+    : Swapchain(ImageFormat::kUnknown), device_(device)
 {
     CreateSurface(window_native_handle);
     CreateSwapchain(width, height, image_count);
@@ -113,7 +99,7 @@ VulkanSwapchain::~VulkanSwapchain()
     }
 }
 
-void VulkanSwapchain::CreateSurface(void* window_native_handle)
+void VulkanSwapchain::CreateSurface(void *window_native_handle)
 {
     HWND hwnd = static_cast<HWND>(window_native_handle);
     HINSTANCE hinstance = GetModuleHandle(nullptr);
@@ -124,26 +110,18 @@ void VulkanSwapchain::CreateSurface(void* window_native_handle)
     surface_create_info.hwnd = hwnd;
 
     VkResult status = vkCreateWin32SurfaceKHR(
-        device_.GetApi().GetInstance(),
-        &surface_create_info,
-        nullptr,
-        &surface_);
+        device_.GetApi().GetInstance(), &surface_create_info, nullptr, &surface_);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan Win32 surface");
 
     uint32_t queue_family_count = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(
-        device_.GetPhysicalDevice(),
-        &queue_family_count,
-        nullptr);
+        device_.GetPhysicalDevice(), &queue_family_count, nullptr);
 
     for (uint32_t i = 0; i < queue_family_count; ++i)
     {
         VkBool32 present_supported = VK_FALSE;
         status = vkGetPhysicalDeviceSurfaceSupportKHR(
-            device_.GetPhysicalDevice(),
-            i,
-            surface_,
-            &present_supported);
+            device_.GetPhysicalDevice(), i, surface_, &present_supported);
         VK_THROW_IF_FAILED(status, "Failed to query Vulkan presentation support");
 
         if (present_supported)
@@ -157,13 +135,12 @@ void VulkanSwapchain::CreateSurface(void* window_native_handle)
     vkGetDeviceQueue(device_.GetDevice(), present_queue_family_index_, 0, &present_queue_);
 }
 
-void VulkanSwapchain::CreateSwapchain(uint32_t width, uint32_t height, uint32_t requested_image_count)
+void VulkanSwapchain::CreateSwapchain(
+    uint32_t width, uint32_t height, uint32_t requested_image_count)
 {
     VkSurfaceCapabilitiesKHR surface_capabilities{};
     VkResult status = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-        device_.GetPhysicalDevice(),
-        surface_,
-        &surface_capabilities);
+        device_.GetPhysicalDevice(), surface_, &surface_capabilities);
     VK_THROW_IF_FAILED(status, "Failed to get Vulkan surface capabilities");
 
     uint32_t image_count = requested_image_count;
@@ -189,13 +166,9 @@ void VulkanSwapchain::CreateSwapchain(uint32_t width, uint32_t height, uint32_t 
     }
     else
     {
-        extent.width = Clamp(
-            width,
-            surface_capabilities.minImageExtent.width,
+        extent.width = Clamp(width, surface_capabilities.minImageExtent.width,
             surface_capabilities.maxImageExtent.width);
-        extent.height = Clamp(
-            height,
-            surface_capabilities.minImageExtent.height,
+        extent.height = Clamp(height, surface_capabilities.minImageExtent.height,
             surface_capabilities.maxImageExtent.height);
     }
 
@@ -207,11 +180,8 @@ void VulkanSwapchain::CreateSwapchain(uint32_t width, uint32_t height, uint32_t 
     create_info.imageColorSpace = surface_format.colorSpace;
     create_info.imageExtent = extent;
     create_info.imageArrayLayers = 1;
-    create_info.imageUsage =
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-        | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-        | VK_IMAGE_USAGE_TRANSFER_DST_BIT
-        | VK_IMAGE_USAGE_STORAGE_BIT;
+    create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
     uint32_t queue_family_indices[] = {
         device_.GetGraphicsQueueFamilyIndex(),
@@ -243,35 +213,21 @@ void VulkanSwapchain::CreateSwapchain(uint32_t width, uint32_t height, uint32_t 
 
     std::vector<VkImage> images(actual_image_count);
     status = vkGetSwapchainImagesKHR(
-        device_.GetDevice(),
-        swapchain_,
-        &actual_image_count,
-        images.data());
+        device_.GetDevice(), swapchain_, &actual_image_count, images.data());
     VK_THROW_IF_FAILED(status, "Failed to get Vulkan swapchain images");
 
     for (VkImage image : images)
     {
-        swapchain_images_.push_back(std::make_shared<VulkanImage>(
-            device_,
-            image,
-            extent.width,
-            extent.height,
-            surface_format.format,
-            1,
-            1,
-            ImageFlags::kRenderTarget | ImageFlags::kStorage));
+        swapchain_images_.push_back(
+            std::make_shared<VulkanImage>(device_, image, extent.width, extent.height,
+                surface_format.format, 1, 1, ImageFlags::kRenderTarget | ImageFlags::kStorage));
     }
 }
 
 void VulkanSwapchain::AcquireNextImage()
 {
-    VkResult status = vkAcquireNextImageKHR(
-        device_.GetDevice(),
-        swapchain_,
-        UINT64_MAX,
-        VK_NULL_HANDLE,
-        VK_NULL_HANDLE,
-        &current_image_index_);
+    VkResult status = vkAcquireNextImageKHR(device_.GetDevice(), swapchain_, UINT64_MAX,
+        VK_NULL_HANDLE, VK_NULL_HANDLE, &current_image_index_);
     VK_THROW_IF_FAILED(status, "Failed to acquire next Vulkan swapchain image");
 }
 
