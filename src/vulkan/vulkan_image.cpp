@@ -10,14 +10,23 @@ VkFormat ToVkFormat(ImageFormat format)
     switch (format)
     {
     case ImageFormat::kRGBA32_Float: return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case ImageFormat::kRGBA32_UInt: return VK_FORMAT_R32G32B32A32_UINT;
+    case ImageFormat::kRGBA32_SInt: return VK_FORMAT_R32G32B32A32_SINT;
     case ImageFormat::kRGBA16_Float: return VK_FORMAT_R16G16B16A16_SFLOAT;
     case ImageFormat::kRGBA8_SInt: return VK_FORMAT_R8G8B8A8_SINT;
     case ImageFormat::kRGBA8_UInt: return VK_FORMAT_R8G8B8A8_UINT;
     case ImageFormat::kRGBA8_UNorm: return VK_FORMAT_R8G8B8A8_UNORM;
     case ImageFormat::kRGBA8_SRGB: return VK_FORMAT_R8G8B8A8_SRGB;
+    case ImageFormat::kRGB32_Float: return VK_FORMAT_R32G32B32_SFLOAT;
+    case ImageFormat::kRGB32_UInt: return VK_FORMAT_R32G32B32_UINT;
+    case ImageFormat::kRGB32_SInt: return VK_FORMAT_R32G32B32_SINT;
     case ImageFormat::kRG32_Float: return VK_FORMAT_R32G32_SFLOAT;
+    case ImageFormat::kRG32_UInt: return VK_FORMAT_R32G32_UINT;
+    case ImageFormat::kRG32_SInt: return VK_FORMAT_R32G32_SINT;
     case ImageFormat::kRG16_Float: return VK_FORMAT_R16G16_SFLOAT;
     case ImageFormat::kR32_Float: return VK_FORMAT_R32_SFLOAT;
+    case ImageFormat::kR32_UInt: return VK_FORMAT_R32_UINT;
+    case ImageFormat::kR32_SInt: return VK_FORMAT_R32_SINT;
     case ImageFormat::kD32_Float: return VK_FORMAT_D32_SFLOAT;
     case ImageFormat::kR32_Typeless: return VK_FORMAT_R32_SFLOAT;
     case ImageFormat::kR16_Float: return VK_FORMAT_R16_SFLOAT;

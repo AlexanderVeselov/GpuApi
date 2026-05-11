@@ -1,5 +1,6 @@
 #include "d3d12_shader_manager.hpp"
 #include "d3d12_exception.hpp"
+#include "d3d12_shader_reflection.hpp"
 #include "dxcapi.h"
 #include <d3d12shader.h>
 #include "../common/utils.hpp"
@@ -85,7 +86,10 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
     reflection_buffer.Size = dxc_reflection->GetBufferSize();
     reflection_buffer.Ptr = dxc_reflection->GetBufferPointer();
 
-    dxc_utils_->CreateReflection(&reflection_buffer, IID_PPV_ARGS(&shader.reflection));
+    ComPtr<ID3D12ShaderReflection> d3d12_reflection;
+    dxc_utils_->CreateReflection(&reflection_buffer, IID_PPV_ARGS(&d3d12_reflection));
+    shader.reflection = BuildD3D12ShaderReflection(d3d12_reflection.Get());
+
     return shader;
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "d3d12_common.hpp"
+#include "../common/shader_reflection.hpp"
 
 #include <cstdint>
 #include <string>
@@ -54,7 +55,7 @@ public:
     D3D12Binding const& FindBinding(uint32_t binding, uint32_t space) const;
 
 private:
-    void ReflectShader(D3D12Shader const& shader);
+    void AddShaderReflection(ShaderReflection const& reflection);
     void AddOrMergeBinding(D3D12Binding const& binding);
     void CreateRootSignature();
 

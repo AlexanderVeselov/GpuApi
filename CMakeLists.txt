@@ -20,6 +20,10 @@ set(VULKAN_SOURCES
     src/vulkan/vulkan_memory_manager.hpp
     src/vulkan/vulkan_queue.cpp
     src/vulkan/vulkan_queue.hpp
+    src/vulkan/vulkan_shader_manager.cpp
+    src/vulkan/vulkan_shader_manager.hpp
+    src/vulkan/vulkan_shader_reflection.cpp
+    src/vulkan/vulkan_shader_reflection.hpp
     src/vulkan/vulkan_shared_object.hpp
     src/vulkan/vulkan_swapchain.cpp
     src/vulkan/vulkan_swapchain.hpp
@@ -62,6 +66,8 @@ set(D3D12_FILES
     src/d3d12/d3d12_pipeline_layout.hpp
     src/d3d12/d3d12_queue.cpp
     src/d3d12/d3d12_queue.hpp
+    src/d3d12/d3d12_shader_reflection.cpp
+    src/d3d12/d3d12_shader_reflection.hpp
     src/d3d12/d3d12_shader_manager.cpp
     src/d3d12/d3d12_shader_manager.hpp
     src/d3d12/d3d12_swapchain.cpp
@@ -71,7 +77,13 @@ set(D3D12_FILES
 set(COMMON_SOURCES
     src/common/gpu_api.cpp
     src/common/gpu_pipeline.cpp
+    src/common/shader_reflection.hpp
     src/common/utils.hpp
+)
+
+set(SPIRV_REFLECT_SOURCES
+    third_party/SPIRV-Reflect/spirv_reflect.c
+    third_party/SPIRV-Reflect/spirv_reflect.h
 )
 
 set(DXC_PATH ${CMAKE_SOURCE_DIR}/third_party/dxc_2022_12_16)
@@ -82,14 +94,20 @@ set_target_properties(dxcompiler PROPERTIES
     IMPORTED_IMPLIB ${DXC_PATH}/lib/x64/dxcompiler.lib
 )
 
-#source_group("vulkan" FILES ${VULKAN_SOURCES})
 find_package(Vulkan REQUIRED)
 source_group("vulkan" FILES ${VULKAN_SOURCES})
 source_group("d3d12" FILES ${D3D12_FILES})
-add_library(GpuApi STATIC ${INCLUDE_FILES} ${D3D12_FILES} ${VULKAN_SOURCES} ${COMMON_SOURCES})
+add_library(GpuApi STATIC
+    ${INCLUDE_FILES}
+    ${D3D12_FILES}
+    ${VULKAN_SOURCES}
+    ${COMMON_SOURCES}
+    ${SPIRV_REFLECT_SOURCES}
+)
 target_include_directories(GpuApi PUBLIC inc)
 target_include_directories(GpuApi PRIVATE ${DXC_PATH}/inc)
+target_include_directories(GpuApi PRIVATE src/third_party_compat)
+target_include_directories(GpuApi PRIVATE third_party/SPIRV-Reflect)
 target_compile_definitions(GpuApi PRIVATE VK_USE_PLATFORM_WIN32_KHR)
 target_link_libraries(GpuApi d3d12.lib dxgi.lib dxcompiler Vulkan::Vulkan)
 add_subdirectory(samples)
-#target_compile_features(VulkanLabs PUBLIC cxx_std_17)

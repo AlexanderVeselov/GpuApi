@@ -5,7 +5,6 @@
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
 #include "../common/utils.hpp"
-#include <d3d12shader.h>
 #include <dxcapi.h>
 #include <cassert>
 
@@ -41,62 +40,47 @@ D3D12_COMPARISON_FUNC DepthFuncToD3D12(DepthFunc depth_func)
     }
 }
 
-DXGI_FORMAT ShaderReflectionTypeToFormat(D3D_REGISTER_COMPONENT_TYPE component_type, BYTE mask)
+DXGI_FORMAT VertexInputFormatToDXGI(ImageFormat format)
 {
-    if (component_type == D3D_REGISTER_COMPONENT_FLOAT32)
+    switch (format)
     {
-        if (mask == 0x1) return DXGI_FORMAT_R32_FLOAT;
-        if (mask == 0x3) return DXGI_FORMAT_R32G32_FLOAT;
-        if (mask == 0x7) return DXGI_FORMAT_R32G32B32_FLOAT;
-        if (mask == 0xF) return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case ImageFormat::kR32_Float: return DXGI_FORMAT_R32_FLOAT;
+    case ImageFormat::kR32_UInt: return DXGI_FORMAT_R32_UINT;
+    case ImageFormat::kR32_SInt: return DXGI_FORMAT_R32_SINT;
+    case ImageFormat::kRG32_Float: return DXGI_FORMAT_R32G32_FLOAT;
+    case ImageFormat::kRG32_UInt: return DXGI_FORMAT_R32G32_UINT;
+    case ImageFormat::kRG32_SInt: return DXGI_FORMAT_R32G32_SINT;
+    case ImageFormat::kRGB32_Float: return DXGI_FORMAT_R32G32B32_FLOAT;
+    case ImageFormat::kRGB32_UInt: return DXGI_FORMAT_R32G32B32_UINT;
+    case ImageFormat::kRGB32_SInt: return DXGI_FORMAT_R32G32B32_SINT;
+    case ImageFormat::kRGBA32_Float: return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case ImageFormat::kRGBA32_UInt: return DXGI_FORMAT_R32G32B32A32_UINT;
+    case ImageFormat::kRGBA32_SInt: return DXGI_FORMAT_R32G32B32A32_SINT;
+    default:
+        assert(!"VertexInputFormatToDXGI(...): unsupported vertex input format");
+        return DXGI_FORMAT_UNKNOWN;
     }
-    else if (component_type == D3D_REGISTER_COMPONENT_UINT32)
-    {
-        if (mask == 0x1) return DXGI_FORMAT_R32_UINT;
-        if (mask == 0x3) return DXGI_FORMAT_R32G32_UINT;
-        if (mask == 0x7) return DXGI_FORMAT_R32G32B32_UINT;
-        if (mask == 0xF) return DXGI_FORMAT_R32G32B32A32_UINT;
-    }
-    else if (component_type == D3D_REGISTER_COMPONENT_SINT32)
-    {
-        if (mask == 0x1) return DXGI_FORMAT_R32_SINT;
-        if (mask == 0x3) return DXGI_FORMAT_R32G32_SINT;
-        if (mask == 0x7) return DXGI_FORMAT_R32G32B32_SINT;
-        if (mask == 0xF) return DXGI_FORMAT_R32G32B32A32_SINT;
-    }
-    assert(!"ShaderReflectionTypeToFormat(...): unknown format");
-    return DXGI_FORMAT_UNKNOWN;
 }
 
-void GetInputElementDescs(ID3D12ShaderReflection* reflection,
+void GetInputElementDescs(ShaderReflection const& reflection,
     std::vector<D3D12_INPUT_ELEMENT_DESC>& element_descs)
 {
-    // Get the shader's input parameter count
-    D3D12_SHADER_DESC shader_desc;
-    reflection->GetDesc(&shader_desc);
-
-    for (uint32_t i = 0; i < shader_desc.InputParameters; ++i)
+    for (ShaderInputParameter const& parameter : reflection.input_parameters)
     {
-        D3D12_SIGNATURE_PARAMETER_DESC param_desc;
-        reflection->GetInputParameterDesc(i, &param_desc);
-
-        // Skip system-generated semantics (e.g., SV_VertexID)
-        if (param_desc.SystemValueType != D3D_NAME_UNDEFINED)
+        if (parameter.is_system_value)
         {
             continue;
         }
 
-        // Create an input element description
         D3D12_INPUT_ELEMENT_DESC input_element_desc = {};
-        input_element_desc.SemanticName = param_desc.SemanticName;
-        input_element_desc.SemanticIndex = param_desc.SemanticIndex;
-        input_element_desc.Format = ShaderReflectionTypeToFormat(param_desc.ComponentType, param_desc.Mask);
+        input_element_desc.SemanticName = parameter.semantic_name.c_str();
+        input_element_desc.SemanticIndex = parameter.semantic_index;
+        input_element_desc.Format = VertexInputFormatToDXGI(parameter.format);
         input_element_desc.InputSlot = 0;
         input_element_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
         input_element_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
         input_element_desc.InstanceDataStepRate = 0;
 
-        // Add the input element description to the vector
         element_descs.push_back(input_element_desc);
     }
 }
@@ -175,7 +159,7 @@ void D3D12GraphicsPipeline::Reload()
     depth_stencil_state.BackFace = {};
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> input_element_descs;
-    GetInputElementDescs(vs_shader.reflection.Get(), input_element_descs);
+    GetInputElementDescs(vs_shader.reflection, input_element_descs);
 
     D3D12_INPUT_LAYOUT_DESC input_layout = {};
     input_layout.pInputElementDescs = input_element_descs.data();

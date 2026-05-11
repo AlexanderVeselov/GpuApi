@@ -1,6 +1,8 @@
 #pragma once
 
 #include "d3d12_common.hpp"
+#include "../common/shader_reflection.hpp"
+
 #include <vector>
 #include <string>
 
@@ -8,14 +10,13 @@ struct IDxcUtils;
 struct IDxcCompiler3;
 struct IDxcBlob;
 struct IDxcIncludeHandler;
-struct ID3D12ShaderReflection;
 
 namespace gpu
 {
 struct D3D12Shader
 {
     ComPtr<IDxcBlob> dxc_blob;
-    ComPtr<ID3D12ShaderReflection> reflection;
+    ShaderReflection reflection;
 };
 
 class D3D12ShaderManager

@@ -14,10 +14,17 @@ D3D12Device::D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter)
 {
     ThrowIfFailed(D3D12CreateDevice(dxgi_adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12_device_)));
 
+    descriptor_manager_ = std::make_unique<D3D12DescriptorManager>(*this);
+
     graphics_queue_ = std::make_unique<D3D12Queue>(*this, D3D12_COMMAND_LIST_TYPE_DIRECT);
     compute_queue_ = std::make_unique<D3D12Queue>(*this, D3D12_COMMAND_LIST_TYPE_COMPUTE);
+}
 
-    descriptor_manager_ = std::make_unique<D3D12DescriptorManager>(*this);
+D3D12Device::~D3D12Device()
+{
+    compute_queue_.reset();
+    graphics_queue_.reset();
+    descriptor_manager_.reset();
 }
 
 Queue& D3D12Device::GetQueue(QueueType queue_type)

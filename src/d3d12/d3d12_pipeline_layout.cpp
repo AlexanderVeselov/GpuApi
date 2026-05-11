@@ -3,8 +3,6 @@
 #include "d3d12_exception.hpp"
 #include "d3d12_shader_manager.hpp"
 
-#include <d3d12shader.h>
-
 #include <cassert>
 #include <stdexcept>
 #include <string>
@@ -13,66 +11,62 @@ namespace gpu
 {
 namespace
 {
-D3D12_SHADER_VISIBILITY GetShaderVisibility(D3D12_SHADER_VERSION_TYPE version_type)
+D3D12_SHADER_VISIBILITY GetShaderVisibility(uint32_t stage_mask)
 {
-    switch (version_type)
+    if ((stage_mask & (stage_mask - 1)) != 0)
     {
-    case D3D12_SHVER_PIXEL_SHADER:
-        return D3D12_SHADER_VISIBILITY_PIXEL;
-    case D3D12_SHVER_VERTEX_SHADER:
-        return D3D12_SHADER_VISIBILITY_VERTEX;
-    case D3D12_SHVER_GEOMETRY_SHADER:
-        return D3D12_SHADER_VISIBILITY_GEOMETRY;
-    case D3D12_SHVER_HULL_SHADER:
-        return D3D12_SHADER_VISIBILITY_HULL;
-    case D3D12_SHVER_DOMAIN_SHADER:
-        return D3D12_SHADER_VISIBILITY_DOMAIN;
-    case D3D12_SHVER_COMPUTE_SHADER:
         return D3D12_SHADER_VISIBILITY_ALL;
+    }
+
+    switch (static_cast<ShaderStage>(stage_mask))
+    {
+    case ShaderStage::kPixel: return D3D12_SHADER_VISIBILITY_PIXEL;
+    case ShaderStage::kVertex: return D3D12_SHADER_VISIBILITY_VERTEX;
+    case ShaderStage::kGeometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
+    case ShaderStage::kHull: return D3D12_SHADER_VISIBILITY_HULL;
+    case ShaderStage::kDomain: return D3D12_SHADER_VISIBILITY_DOMAIN;
+    case ShaderStage::kCompute: return D3D12_SHADER_VISIBILITY_ALL;
     default:
-        assert(false && "D3D12PipelineLayout: unknown shader version type");
+        assert(false && "D3D12PipelineLayout: unknown shader stage");
         return D3D12_SHADER_VISIBILITY_ALL;
     }
 }
 
-D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(D3D_SHADER_INPUT_TYPE type)
+D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(ShaderDescriptorRangeType type)
 {
     switch (type)
     {
-    case D3D_SIT_CBUFFER:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-    case D3D_SIT_TBUFFER:
-    case D3D_SIT_TEXTURE:
-    case D3D_SIT_STRUCTURED:
-    case D3D_SIT_BYTEADDRESS:
-    case D3D_SIT_RTACCELERATIONSTRUCTURE:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    case D3D_SIT_SAMPLER:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-    case D3D_SIT_UAV_RWTYPED:
-    case D3D_SIT_UAV_RWSTRUCTURED:
-    case D3D_SIT_UAV_RWBYTEADDRESS:
-    case D3D_SIT_UAV_APPEND_STRUCTURED:
-    case D3D_SIT_UAV_CONSUME_STRUCTURED:
-    case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    case ShaderDescriptorRangeType::kCBV: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+    case ShaderDescriptorRangeType::kSRV: return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    case ShaderDescriptorRangeType::kUAV: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    case ShaderDescriptorRangeType::kSampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
     default:
-        assert(false && "D3D12PipelineLayout: unsupported D3D shader input type");
+        assert(false && "D3D12PipelineLayout: unsupported shader descriptor range type");
         return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     }
 }
 
-D3D12Binding::ResourceType GetResourceType(D3D_SHADER_INPUT_TYPE type)
+D3D12Binding::ResourceType GetResourceType(ShaderResourceType type)
 {
     switch (type)
     {
-    case D3D_SIT_SAMPLER:
-        return D3D12Binding::ResourceType::kSampler;
-    case D3D_SIT_TEXTURE:
-    case D3D_SIT_UAV_RWTYPED:
-        return D3D12Binding::ResourceType::kImage;
+    case ShaderResourceType::kBuffer: return D3D12Binding::ResourceType::kBuffer;
+    case ShaderResourceType::kImage: return D3D12Binding::ResourceType::kImage;
+    case ShaderResourceType::kSampler: return D3D12Binding::ResourceType::kSampler;
+    default: return D3D12Binding::ResourceType::kBuffer;
+    }
+}
+
+D3D12Binding::DescriptorType GetDescriptorType(ShaderDescriptorType type)
+{
+    switch (type)
+    {
+    case ShaderDescriptorType::kRootConstant:
+        return D3D12Binding::DescriptorType::kRootConstant;
+    case ShaderDescriptorType::kDescriptorTable:
+        return D3D12Binding::DescriptorType::kDescriptorTable;
     default:
-        return D3D12Binding::ResourceType::kBuffer;
+        return D3D12Binding::DescriptorType::kDescriptorTable;
     }
 }
 
@@ -115,7 +109,7 @@ void D3D12PipelineLayout::Build(std::vector<D3D12Shader const*> const& shaders)
     for (D3D12Shader const* shader : shaders)
     {
         assert(shader && "D3D12PipelineLayout::Build: shader pointer is null");
-        ReflectShader(*shader);
+        AddShaderReflection(shader->reflection);
     }
 
     CreateRootSignature();
@@ -158,47 +152,20 @@ D3D12Binding const& D3D12PipelineLayout::FindBinding(
         std::to_string(binding) + ", space = " + std::to_string(space) + ") was not found");
 }
 
-void D3D12PipelineLayout::ReflectShader(D3D12Shader const& shader)
+void D3D12PipelineLayout::AddShaderReflection(ShaderReflection const& reflection)
 {
-    ID3D12ShaderReflection* reflection = shader.reflection.Get();
-    assert(reflection && "D3D12PipelineLayout::ReflectShader: shader reflection is null");
-
-    D3D12_SHADER_DESC shader_desc = {};
-    ThrowIfFailed(reflection->GetDesc(&shader_desc));
-
-    D3D12_SHADER_VISIBILITY visibility = GetShaderVisibility(
-        static_cast<D3D12_SHADER_VERSION_TYPE>(D3D12_SHVER_GET_TYPE(shader_desc.Version)));
-
-    for (uint32_t i = 0; i < shader_desc.BoundResources; ++i)
+    for (ShaderBinding const& shader_binding : reflection.bindings)
     {
-        D3D12_SHADER_INPUT_BIND_DESC resource_desc = {};
-        ThrowIfFailed(reflection->GetResourceBindingDesc(i, &resource_desc));
-
         D3D12Binding binding;
-        binding.name = resource_desc.Name ? resource_desc.Name : "";
-        binding.binding = resource_desc.BindPoint;
-        binding.space = resource_desc.Space;
-        binding.type = GetResourceType(resource_desc.Type);
-        binding.range_type = GetRangeType(resource_desc.Type);
-        binding.descriptor_count = resource_desc.BindCount;
-        binding.visibility = visibility;
-
-        if (resource_desc.Type == D3D_SIT_CBUFFER && binding.name == "$Globals")
-        {
-            ID3D12ShaderReflectionConstantBuffer* cb =
-                reflection->GetConstantBufferByName(binding.name.c_str());
-            assert(cb && "D3D12PipelineLayout::ReflectShader: $Globals constant buffer was not found");
-
-            D3D12_SHADER_BUFFER_DESC buffer_desc = {};
-            ThrowIfFailed(cb->GetDesc(&buffer_desc));
-
-            binding.descriptor_type = D3D12Binding::DescriptorType::kRootConstant;
-            binding.num_32bit_values = buffer_desc.Size / 4;
-        }
-        else
-        {
-            binding.descriptor_type = D3D12Binding::DescriptorType::kDescriptorTable;
-        }
+        binding.name = shader_binding.name;
+        binding.binding = shader_binding.binding;
+        binding.space = shader_binding.space;
+        binding.type = GetResourceType(shader_binding.resource_type);
+        binding.descriptor_type = GetDescriptorType(shader_binding.descriptor_type);
+        binding.range_type = GetRangeType(shader_binding.range_type);
+        binding.descriptor_count = shader_binding.descriptor_count;
+        binding.num_32bit_values = shader_binding.num_32bit_values;
+        binding.visibility = GetShaderVisibility(shader_binding.stage_mask);
 
         AddOrMergeBinding(binding);
     }
