@@ -149,7 +149,7 @@ Queue &VulkanDevice::GetQueue(QueueType queue_type)
     }
 }
 
-GraphicsPipelinePtr VulkanDevice::CreateGraphicsPipeline(GraphicsPipelineDesc const &pipeline_desc)
+GraphicsPipelinePtr VulkanDevice::CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc)
 {
     return std::make_unique<VulkanGraphicsPipeline>(*this, pipeline_desc);
 }

@@ -68,6 +68,7 @@ class VulkanCommandBuffer final : public CommandBuffer
     VkCommandBuffer command_buffer_ = VK_NULL_HANDLE;
     bool closed_ = false;
     bool rendering_active_ = false;
+    uint32_t current_vertex_stride_ = 0;
     VulkanGraphicsPipeline *current_graphics_pipeline_ = nullptr;
     VulkanComputePipeline *current_compute_pipeline_ = nullptr;
     VkPipelineBindPoint current_pipeline_bind_point_ = VK_PIPELINE_BIND_POINT_MAX_ENUM;

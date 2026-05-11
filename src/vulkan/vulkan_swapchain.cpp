@@ -24,7 +24,7 @@ static VkSurfaceFormatKHR FindSurfaceFormat(VkPhysicalDevice physical_device, Vk
         physical_device, surface, &format_count, available_formats.data());
     VK_THROW_IF_FAILED(status, "Failed to get Vulkan surface formats");
 
-    for (VkSurfaceFormatKHR const &format : available_formats)
+    for (VkSurfaceFormatKHR const& format : available_formats)
     {
         if (format.format == VK_FORMAT_B8G8R8A8_UNORM &&
             format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)

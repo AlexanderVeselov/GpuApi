@@ -195,6 +195,7 @@ void VulkanGraphicsPipeline::Reload()
     VkVertexInputBindingDescription vertex_binding_desc = {};
     std::vector<VkVertexInputAttributeDescription> vertex_attribute_descs;
     GetVertexInputDescs(vs_shader.reflection, vertex_binding_desc, vertex_attribute_descs);
+    vertex_stride_ = vertex_binding_desc.stride;
 
     VkPipelineVertexInputStateCreateInfo vertex_input = {};
     vertex_input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

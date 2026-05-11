@@ -60,7 +60,7 @@ int main()
         GLFWwindow *window = CreateWindow(window_width, window_height);
         void *window_native_handle = glfwGetWin32Window(window);
 
-        auto api = gpu::Api::Create(gpu::ApiType::kVulkan);
+        auto api = gpu::Api::Create(gpu::ApiType::kD3D12);
         assert(api);
 
         auto device = api->CreateDevice();
@@ -101,7 +101,7 @@ int main()
         gpu::BufferPtr scale_buffer = device->CreateBuffer(sizeof(float), sizeof(float),
             gpu::BufferFlags::kCpuAccess | gpu::BufferFlags::kConstant);
         float *scale = (float *)scale_buffer->Map();
-        *scale = 3.5f;
+        *scale = 0.5f;
         scale_buffer->Unmap();
 
         gpu::DescriptorSetPtr descriptor_set = pipeline->CreateDescriptorSet();
@@ -132,7 +132,7 @@ int main()
             glfwSwapBuffers(window);
         }
     }
-    catch (std::exception const &ex)
+    catch (std::exception const& ex)
     {
         std::cerr << "Application error: " << ex.what() << std::endl;
         return -1;

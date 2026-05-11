@@ -5,9 +5,8 @@ cbuffer ScaleConstants : register(b0)
 
 struct VS_INPUT
 {
-    float4 position : POSITION0;
+    float3 position : POSITION0;
     float3 color    : COLOR0;
-    float2 texcoord : TEXCOORD0;
 };
 
 struct VS_OUTPUT

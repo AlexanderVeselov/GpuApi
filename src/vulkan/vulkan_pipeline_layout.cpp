@@ -85,7 +85,7 @@ VkDescriptorType ToVkDescriptorType(
     }
 }
 
-std::string BindingName(VulkanBinding const &binding)
+std::string BindingName(VulkanBinding const& binding)
 {
     return "(binding = " + std::to_string(binding.binding) +
            ", set = " + std::to_string(binding.set) + ")";
@@ -97,7 +97,7 @@ VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice &device) : device_(devic
 }
 
 VulkanPipelineLayout::VulkanPipelineLayout(
-    VulkanDevice &device, std::vector<ShaderReflection const *> const &shaders)
+    VulkanDevice &device, std::vector<ShaderReflection const *> const& shaders)
     : device_(device)
 {
     Build(shaders);
@@ -108,7 +108,7 @@ VulkanPipelineLayout::~VulkanPipelineLayout()
     Clear();
 }
 
-void VulkanPipelineLayout::Build(std::vector<ShaderReflection const *> const &shaders)
+void VulkanPipelineLayout::Build(std::vector<ShaderReflection const *> const& shaders)
 {
     Clear();
 
@@ -147,7 +147,7 @@ void VulkanPipelineLayout::Clear()
 
 bool VulkanPipelineLayout::HasBinding(uint32_t binding, uint32_t set) const
 {
-    for (VulkanBinding const &vulkan_binding : bindings_)
+    for (VulkanBinding const& vulkan_binding : bindings_)
     {
         if (vulkan_binding.binding == binding && vulkan_binding.set == set)
         {
@@ -158,9 +158,9 @@ bool VulkanPipelineLayout::HasBinding(uint32_t binding, uint32_t set) const
     return false;
 }
 
-VulkanBinding const &VulkanPipelineLayout::FindBinding(uint32_t binding, uint32_t set) const
+VulkanBinding const& VulkanPipelineLayout::FindBinding(uint32_t binding, uint32_t set) const
 {
-    for (VulkanBinding const &vulkan_binding : bindings_)
+    for (VulkanBinding const& vulkan_binding : bindings_)
     {
         if (vulkan_binding.binding == binding && vulkan_binding.set == set)
         {
@@ -173,9 +173,9 @@ VulkanBinding const &VulkanPipelineLayout::FindBinding(uint32_t binding, uint32_
         std::to_string(binding) + ", set = " + std::to_string(set) + ")");
 }
 
-void VulkanPipelineLayout::AddShaderReflection(ShaderReflection const &reflection)
+void VulkanPipelineLayout::AddShaderReflection(ShaderReflection const& reflection)
 {
-    for (ShaderBinding const &shader_binding : reflection.bindings)
+    for (ShaderBinding const& shader_binding : reflection.bindings)
     {
         VulkanBinding binding;
         binding.name = shader_binding.name;
@@ -198,7 +198,7 @@ void VulkanPipelineLayout::AddShaderReflection(ShaderReflection const &reflectio
     }
 }
 
-void VulkanPipelineLayout::AddOrMergeBinding(VulkanBinding const &binding)
+void VulkanPipelineLayout::AddOrMergeBinding(VulkanBinding const& binding)
 {
     for (VulkanBinding &existing : bindings_)
     {
@@ -229,7 +229,7 @@ void VulkanPipelineLayout::CreateDescriptorSetLayouts()
 {
     uint32_t max_set = 0;
     bool has_descriptor_table = false;
-    for (VulkanBinding const &binding : bindings_)
+    for (VulkanBinding const& binding : bindings_)
     {
         if (binding.descriptor_type == ShaderDescriptorType::kDescriptorTable)
         {
@@ -252,7 +252,7 @@ void VulkanPipelineLayout::CreateDescriptorSetLayouts()
     {
         std::vector<VkDescriptorSetLayoutBinding> set_bindings;
 
-        for (VulkanBinding const &binding : bindings_)
+        for (VulkanBinding const& binding : bindings_)
         {
             if (binding.set != set ||
                 binding.descriptor_type != ShaderDescriptorType::kDescriptorTable)

@@ -100,7 +100,7 @@ int main()
             glfwSwapBuffers(window);
         }
     }
-    catch (std::exception const &ex)
+    catch (std::exception const& ex)
     {
         std::cerr << "Application error: " << ex.what() << std::endl;
         return -1;

@@ -17,7 +17,7 @@ std::string BindingName(uint32_t binding, uint32_t space)
     return "(binding = " + std::to_string(binding) + ", space = " + std::to_string(space) + ")";
 }
 
-VkImageLayout GetDescriptorImageLayout(VulkanBinding const &binding)
+VkImageLayout GetDescriptorImageLayout(VulkanBinding const& binding)
 {
     if (binding.vk_descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
     {
@@ -28,7 +28,7 @@ VkImageLayout GetDescriptorImageLayout(VulkanBinding const &binding)
 }
 } // namespace
 
-VulkanDescriptorSet::VulkanDescriptorSet(VulkanDevice &device, VulkanPipelineLayout const &layout)
+VulkanDescriptorSet::VulkanDescriptorSet(VulkanDevice &device, VulkanPipelineLayout const& layout)
     : device_(device), layout_(layout)
 {
     CreateDescriptorPool();
@@ -45,7 +45,7 @@ void VulkanDescriptorSet::BindBuffer(Buffer &buffer, uint32_t binding, uint32_t 
     auto *vulkan_buffer = dynamic_cast<VulkanBuffer *>(&buffer);
     THROW_IF(!vulkan_buffer, "Buffer does not belong to the Vulkan backend");
 
-    VulkanBinding const &vulkan_binding = FindBinding(binding, space);
+    VulkanBinding const& vulkan_binding = FindBinding(binding, space);
     if (vulkan_binding.resource_type != ShaderResourceType::kBuffer)
     {
         throw std::runtime_error("VulkanDescriptorSet::BindBuffer: pipeline binding " +
@@ -75,12 +75,12 @@ void VulkanDescriptorSet::BindImage(Image &image, uint32_t binding, uint32_t spa
 }
 
 void VulkanDescriptorSet::BindImage(
-    Image &image, ImageView const &, uint32_t binding, uint32_t space)
+    Image &image, ImageView const& , uint32_t binding, uint32_t space)
 {
     auto *vulkan_image = dynamic_cast<VulkanImage *>(&image);
     THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
 
-    VulkanBinding const &vulkan_binding = FindBinding(binding, space);
+    VulkanBinding const& vulkan_binding = FindBinding(binding, space);
     if (vulkan_binding.resource_type != ShaderResourceType::kImage)
     {
         throw std::runtime_error("VulkanDescriptorSet::BindImage: pipeline binding " +
@@ -114,9 +114,9 @@ void VulkanDescriptorSet::Clear()
     }
 }
 
-VulkanBinding const &VulkanDescriptorSet::FindBinding(uint32_t binding, uint32_t space) const
+VulkanBinding const& VulkanDescriptorSet::FindBinding(uint32_t binding, uint32_t space) const
 {
-    for (VulkanBinding const &vulkan_binding : layout_.GetBindings())
+    for (VulkanBinding const& vulkan_binding : layout_.GetBindings())
     {
         if (vulkan_binding.binding == binding && vulkan_binding.set == space)
         {
@@ -132,7 +132,7 @@ void VulkanDescriptorSet::CreateDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> pool_sizes;
 
-    for (VulkanBinding const &binding : layout_.GetBindings())
+    for (VulkanBinding const& binding : layout_.GetBindings())
     {
         if (binding.descriptor_type != ShaderDescriptorType::kDescriptorTable)
         {
@@ -178,7 +178,7 @@ void VulkanDescriptorSet::CreateDescriptorPool()
 
 void VulkanDescriptorSet::AllocateDescriptorSets()
 {
-    std::vector<VkDescriptorSetLayout> const &descriptor_set_layouts =
+    std::vector<VkDescriptorSetLayout> const& descriptor_set_layouts =
         layout_.GetDescriptorSetLayouts();
     if (descriptor_set_layouts.empty())
     {

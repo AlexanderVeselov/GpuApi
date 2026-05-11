@@ -106,10 +106,14 @@ void VulkanCommandBuffer::EndRendering()
     rendering_active_ = false;
 }
 
-void VulkanCommandBuffer::SetVertexBuffer(BufferPtr buffer, std::size_t)
+void VulkanCommandBuffer::SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride)
 {
     auto *vulkan_buffer = dynamic_cast<VulkanBuffer *>(buffer.get());
     THROW_IF(!vulkan_buffer, "Vertex buffer does not belong to the Vulkan backend");
+    current_vertex_stride_ = static_cast<uint32_t>(vertex_stride);
+    THROW_IF(current_graphics_pipeline_ && current_graphics_pipeline_->GetVertexStride() != 0 &&
+                 current_graphics_pipeline_->GetVertexStride() != current_vertex_stride_,
+        "Vertex buffer stride does not match the current Vulkan graphics pipeline input layout");
 
     VkBuffer vertex_buffers[] = {vulkan_buffer->GetBuffer()};
     VkDeviceSize offsets[] = {0};
@@ -152,6 +156,9 @@ void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const &pipeline)
 {
     auto *vulkan_pipeline = dynamic_cast<VulkanGraphicsPipeline *>(pipeline.get());
     THROW_IF(!vulkan_pipeline, "Graphics pipeline does not belong to the Vulkan backend");
+    THROW_IF(current_vertex_stride_ != 0 && vulkan_pipeline->GetVertexStride() != 0 &&
+                 vulkan_pipeline->GetVertexStride() != current_vertex_stride_,
+        "Current vertex buffer stride does not match the Vulkan graphics pipeline input layout");
 
     current_graphics_pipeline_ = vulkan_pipeline;
     current_pipeline_bind_point_ = VK_PIPELINE_BIND_POINT_GRAPHICS;
@@ -303,9 +310,9 @@ void VulkanCommandBuffer::SetViewport(const Viewport &viewport)
 {
     VkViewport vk_viewport{};
     vk_viewport.x = viewport.x;
-    vk_viewport.y = viewport.y;
+    vk_viewport.y = viewport.y + viewport.height;
     vk_viewport.width = viewport.width;
-    vk_viewport.height = viewport.height;
+    vk_viewport.height = -viewport.height;
     vk_viewport.minDepth = viewport.min_depth;
     vk_viewport.maxDepth = viewport.max_depth;
 

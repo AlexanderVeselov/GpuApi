@@ -109,7 +109,7 @@ ImageFormat ToImageFormat(SpvReflectFormat format)
     }
 }
 
-uint32_t GetDescriptorCount(SpvReflectDescriptorBinding const &binding)
+uint32_t GetDescriptorCount(SpvReflectDescriptorBinding const& binding)
 {
     uint32_t count = binding.count;
     for (uint32_t i = 0; i < binding.array.dims_count; ++i)
@@ -121,7 +121,7 @@ uint32_t GetDescriptorCount(SpvReflectDescriptorBinding const &binding)
 }
 } // namespace
 
-ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const &spirv)
+ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv)
 {
     SpvReflectShaderModule module = {};
     ThrowIfSpvReflectFailed(

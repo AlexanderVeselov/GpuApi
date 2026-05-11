@@ -60,32 +60,21 @@ D3D12_RESOURCE_DESC CreateBufferDesc(uint64_t size, BufferFlags flags)
     desc.DepthOrArraySize = 1;
     desc.MipLevels = 1;
     desc.Format = DXGI_FORMAT_UNKNOWN;
-    desc.SampleDesc = { 1, 0 };
+    desc.SampleDesc = {1, 0};
     desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     desc.Flags = ToD3D12ResourceFlags(flags);
     return desc;
 }
-}
+} // namespace
 
-D3D12Buffer::D3D12Buffer(D3D12Device& device, uint64_t size, uint32_t stride)
-    : D3D12Buffer(
-        device,
-        size,
-        stride,
-        BufferFlags::kCpuAccess)
+D3D12Buffer::D3D12Buffer(D3D12Device &device, uint64_t size, uint32_t stride)
+    : D3D12Buffer(device, size, stride, BufferFlags::kCpuAccess)
 {
 }
 
-D3D12Buffer::D3D12Buffer(
-    D3D12Device& device,
-    uint64_t size,
-    uint32_t stride,
-    BufferFlags flags)
-    : Buffer(size)
-    , device_(device)
-    , flags_(flags)
-    , current_state_(GetInitialState(flags))
-    , stride_(stride)
+D3D12Buffer::D3D12Buffer(D3D12Device &device, uint64_t size, uint32_t stride, BufferFlags flags)
+    : Buffer(size), device_(device), flags_(flags), current_state_(GetInitialState(flags)),
+      stride_(stride)
 {
     assert(size_ > 0 && "D3D12Buffer: size must be greater than zero");
     assert(stride_ > 0 && "D3D12Buffer: stride must be greater than zero");
@@ -100,18 +89,16 @@ D3D12Buffer::D3D12Buffer(
 
     D3D12_RESOURCE_DESC resource_desc = CreateBufferDesc(size_, flags_);
 
-    ThrowIfFailed(d3d12_device->CreateCommittedResource(
-        &heap_properties,
-        D3D12_HEAP_FLAG_NONE,
-        &resource_desc,
-        current_state_,
-        nullptr,
-        IID_PPV_ARGS(&resource_)));
+    ThrowIfFailed(d3d12_device->CreateCommittedResource(&heap_properties, D3D12_HEAP_FLAG_NONE,
+        &resource_desc, current_state_, nullptr, IID_PPV_ARGS(&resource_)));
 }
 
 D3D12Buffer::~D3D12Buffer()
 {
-    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
+    // TODO: do not wait for the device to be idle here, but instead track resource usage and defer descriptor freeing until it's safe
+    device_.WaitIdle();
+
+    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
 
     descriptor_manager.Free(cbv_);
     descriptor_manager.Free(srv_);
@@ -148,13 +135,14 @@ D3D12Descriptor const& D3D12Buffer::GetUAV()
     return uav_;
 }
 
-void* D3D12Buffer::Map()
+void *D3D12Buffer::Map()
 {
-    assert(HasFlag(flags_, BufferFlags::kCpuAccess) && "D3D12Buffer::Map: buffer was not created with CPU access");
+    assert(HasFlag(flags_, BufferFlags::kCpuAccess) &&
+           "D3D12Buffer::Map: buffer was not created with CPU access");
     assert(!mapped_ && "D3D12Buffer::Map: buffer is already mapped");
 
     D3D12_RANGE read_range = {};
-    void* data = nullptr;
+    void *data = nullptr;
     ThrowIfFailed(resource_->Map(0, &read_range, &data));
     mapped_ = true;
     return data;
@@ -170,27 +158,29 @@ void D3D12Buffer::Unmap()
 
 D3D12Descriptor D3D12Buffer::CreateCBV()
 {
-    assert(HasFlag(flags_, BufferFlags::kConstant) && "D3D12Buffer::CreateCBV: buffer was not created with constant-buffer support");
+    assert(HasFlag(flags_, BufferFlags::kConstant) &&
+           "D3D12Buffer::CreateCBV: buffer was not created with constant-buffer support");
 
-    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_desc = {};
     cbv_desc.BufferLocation = resource_->GetGPUVirtualAddress();
-    cbv_desc.SizeInBytes = static_cast<UINT>(AlignUp(size_, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
+    cbv_desc.SizeInBytes =
+        static_cast<UINT>(AlignUp(size_, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
 
     device_.GetD3D12Device()->CreateConstantBufferView(
-        &cbv_desc,
-        descriptor_manager.GetCPU(descriptor));
+        &cbv_desc, descriptor_manager.GetCPU(descriptor));
 
     return descriptor;
 }
 
 D3D12Descriptor D3D12Buffer::CreateSRV()
 {
-    assert(HasFlag(flags_, BufferFlags::kShaderResource) && "D3D12Buffer::CreateSRV: buffer was not created with shader-resource support");
+    assert(HasFlag(flags_, BufferFlags::kShaderResource) &&
+           "D3D12Buffer::CreateSRV: buffer was not created with shader-resource support");
 
-    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
 
     D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
@@ -203,18 +193,17 @@ D3D12Descriptor D3D12Buffer::CreateSRV()
     srv_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 
     device_.GetD3D12Device()->CreateShaderResourceView(
-        resource_.Get(),
-        &srv_desc,
-        descriptor_manager.GetCPU(descriptor));
+        resource_.Get(), &srv_desc, descriptor_manager.GetCPU(descriptor));
 
     return descriptor;
 }
 
 D3D12Descriptor D3D12Buffer::CreateUAV()
 {
-    assert(HasFlag(flags_, BufferFlags::kStorage) && "D3D12Buffer::CreateUAV: buffer was not created with storage/UAV support");
+    assert(HasFlag(flags_, BufferFlags::kStorage) &&
+           "D3D12Buffer::CreateUAV: buffer was not created with storage/UAV support");
 
-    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
@@ -227,10 +216,7 @@ D3D12Descriptor D3D12Buffer::CreateUAV()
     uav_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
 
     device_.GetD3D12Device()->CreateUnorderedAccessView(
-        resource_.Get(),
-        nullptr,
-        &uav_desc,
-        descriptor_manager.GetCPU(descriptor));
+        resource_.Get(), nullptr, &uav_desc, descriptor_manager.GetCPU(descriptor));
 
     return descriptor;
 }

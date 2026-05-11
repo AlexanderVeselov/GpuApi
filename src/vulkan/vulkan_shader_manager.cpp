@@ -58,7 +58,7 @@ VulkanShaderManager::~VulkanShaderManager()
 }
 
 VulkanShader VulkanShaderManager::CompileShader(char const *filename, char const *entry_point,
-    char const *shader_profile, std::vector<char const *> const &definitions)
+    char const *shader_profile, std::vector<char const *> const& definitions)
 {
     ComPtr<IDxcBlobEncoding> dxc_source = nullptr;
     std::wstring w_filename = StringToWstring(filename);
