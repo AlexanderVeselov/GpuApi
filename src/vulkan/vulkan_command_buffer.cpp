@@ -9,7 +9,7 @@
 
 namespace gpu
 {
-static bool IsDepthImage(Image const &image)
+static bool IsDepthImage(Image const& image)
 {
     return HasFlag(image.GetFlags(), ImageFlags::kDepthStencil) ||
            image.GetFormat() == ImageFormat::kD32_Float ||
@@ -41,12 +41,12 @@ static VkImageLayout ToVkImageLayout(ImageLayout layout, bool is_depth)
     }
 }
 
-static VkImageAspectFlags GetImageAspect(Image const &image)
+static VkImageAspectFlags GetImageAspect(Image const& image)
 {
     return IsDepthImage(image) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
-VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice &device, VkCommandPool command_pool)
+VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice& device, VkCommandPool command_pool)
     : device_(device), command_pool_(command_pool)
 {
     VkCommandBufferAllocateInfo allocate_info{};
@@ -108,7 +108,7 @@ void VulkanCommandBuffer::EndRendering()
 
 void VulkanCommandBuffer::SetVertexBuffer(BufferPtr buffer, std::size_t vertex_stride)
 {
-    auto *vulkan_buffer = dynamic_cast<VulkanBuffer *>(buffer.get());
+    auto* vulkan_buffer = dynamic_cast<VulkanBuffer*>(buffer.get());
     THROW_IF(!vulkan_buffer, "Vertex buffer does not belong to the Vulkan backend");
     current_vertex_stride_ = static_cast<uint32_t>(vertex_stride);
     THROW_IF(current_graphics_pipeline_ && current_graphics_pipeline_->GetVertexStride() != 0 &&
@@ -122,7 +122,7 @@ void VulkanCommandBuffer::SetVertexBuffer(BufferPtr buffer, std::size_t vertex_s
 
 void VulkanCommandBuffer::SetIndexBuffer(BufferPtr buffer)
 {
-    auto *vulkan_buffer = dynamic_cast<VulkanBuffer *>(buffer.get());
+    auto* vulkan_buffer = dynamic_cast<VulkanBuffer*>(buffer.get());
     THROW_IF(!vulkan_buffer, "Index buffer does not belong to the Vulkan backend");
 
     vkCmdBindIndexBuffer(command_buffer_, vulkan_buffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
@@ -152,9 +152,9 @@ void VulkanCommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_co
         command_buffer_, index_count, instance_count, first_index, vertex_offset, first_instance);
 }
 
-void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const &pipeline)
+void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const& pipeline)
 {
-    auto *vulkan_pipeline = dynamic_cast<VulkanGraphicsPipeline *>(pipeline.get());
+    auto* vulkan_pipeline = dynamic_cast<VulkanGraphicsPipeline*>(pipeline.get());
     THROW_IF(!vulkan_pipeline, "Graphics pipeline does not belong to the Vulkan backend");
     THROW_IF(current_vertex_stride_ != 0 && vulkan_pipeline->GetVertexStride() != 0 &&
                  vulkan_pipeline->GetVertexStride() != current_vertex_stride_,
@@ -166,9 +166,9 @@ void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const &pipeline)
         command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_pipeline->GetPipeline());
 }
 
-void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const &pipeline)
+void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const& pipeline)
 {
-    auto *vulkan_pipeline = dynamic_cast<VulkanComputePipeline *>(pipeline.get());
+    auto* vulkan_pipeline = dynamic_cast<VulkanComputePipeline*>(pipeline.get());
     THROW_IF(!vulkan_pipeline, "Compute pipeline does not belong to the Vulkan backend");
 
     current_compute_pipeline_ = vulkan_pipeline;
@@ -177,12 +177,12 @@ void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const &pipeline)
         command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vulkan_pipeline->GetPipeline());
 }
 
-void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const &descriptor_set)
+void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_set)
 {
-    auto *vulkan_descriptor_set = dynamic_cast<VulkanDescriptorSet *>(descriptor_set.get());
+    auto* vulkan_descriptor_set = dynamic_cast<VulkanDescriptorSet*>(descriptor_set.get());
     THROW_IF(!vulkan_descriptor_set, "Descriptor set does not belong to the Vulkan backend");
 
-    std::vector<VkDescriptorSet> const &descriptor_sets =
+    std::vector<VkDescriptorSet> const& descriptor_sets =
         vulkan_descriptor_set->GetDescriptorSets();
     if (descriptor_sets.empty())
     {
@@ -227,7 +227,7 @@ void VulkanCommandBuffer::SetRenderTarget(ImagePtr color_attachment, ImagePtr de
 }
 
 void VulkanCommandBuffer::SetRenderTargets(
-    std::vector<ImagePtr> const &color_attachments, ImagePtr depth_attachment)
+    std::vector<ImagePtr> const& color_attachments, ImagePtr depth_attachment)
 {
     EndRendering();
 
@@ -239,9 +239,9 @@ void VulkanCommandBuffer::SetRenderTargets(
     std::vector<VkRenderingAttachmentInfo> color_attachment_infos;
     color_attachment_infos.reserve(color_attachments.size());
 
-    for (ImagePtr const &attachment : color_attachments)
+    for (ImagePtr const& attachment : color_attachments)
     {
-        auto *vulkan_image = dynamic_cast<VulkanImage *>(attachment.get());
+        auto* vulkan_image = dynamic_cast<VulkanImage*>(attachment.get());
         THROW_IF(!vulkan_image, "Color attachment does not belong to the Vulkan backend");
         THROW_IF(IsDepthImage(*attachment), "Color attachment must not be a depth image");
 
@@ -269,7 +269,7 @@ void VulkanCommandBuffer::SetRenderTargets(
     VkRenderingAttachmentInfo depth_attachment_info = {};
     if (depth_attachment)
     {
-        auto *vulkan_depth = dynamic_cast<VulkanImage *>(depth_attachment.get());
+        auto* vulkan_depth = dynamic_cast<VulkanImage*>(depth_attachment.get());
         THROW_IF(!vulkan_depth, "Depth attachment does not belong to the Vulkan backend");
         THROW_IF(!IsDepthImage(*depth_attachment), "Depth attachment must be a depth image");
 
@@ -306,7 +306,7 @@ void VulkanCommandBuffer::SetRenderTargets(
     rendering_active_ = true;
 }
 
-void VulkanCommandBuffer::SetViewport(const Viewport &viewport)
+void VulkanCommandBuffer::SetViewport(const Viewport& viewport)
 {
     VkViewport vk_viewport{};
     vk_viewport.x = viewport.x;
@@ -319,7 +319,7 @@ void VulkanCommandBuffer::SetViewport(const Viewport &viewport)
     vkCmdSetViewport(command_buffer_, 0, 1, &vk_viewport);
 }
 
-void VulkanCommandBuffer::SetScissor(const Rect &rect)
+void VulkanCommandBuffer::SetScissor(const Rect& rect)
 {
     VkRect2D vk_rect{};
     vk_rect.offset = {rect.x, rect.y};
@@ -332,7 +332,7 @@ void VulkanCommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, 
 {
     EndRendering();
 
-    auto *vulkan_image = dynamic_cast<VulkanImage *>(image.get());
+    auto* vulkan_image = dynamic_cast<VulkanImage*>(image.get());
     THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
     THROW_IF(IsDepthImage(*image), "ClearImage only supports color images in the Vulkan backend");
 
@@ -348,12 +348,36 @@ void VulkanCommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, 
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1, &range);
 }
 
+void VulkanCommandBuffer::ClearDepthImage(ImagePtr image, float depth)
+{
+    EndRendering();
+
+    auto* vulkan_image = dynamic_cast<VulkanImage*>(image.get());
+    THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
+    THROW_IF(
+        !IsDepthImage(*image), "ClearDepthImage only supports depth images in the Vulkan backend");
+
+    VkClearDepthStencilValue clear_value = {};
+    clear_value.depth = depth;
+    clear_value.stencil = 0;
+
+    VkImageSubresourceRange range{};
+    range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    range.baseMipLevel = 0;
+    range.levelCount = vulkan_image->GetMipCount();
+    range.baseArrayLayer = 0;
+    range.layerCount = vulkan_image->GetArraySize();
+
+    vkCmdClearDepthStencilImage(command_buffer_, vulkan_image->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_value, 1, &range);
+}
+
 void VulkanCommandBuffer::TransitionBarrier(
     ImagePtr image, ImageLayout layout_before, ImageLayout layout_after)
 {
     EndRendering();
 
-    auto *vulkan_image = dynamic_cast<VulkanImage *>(image.get());
+    auto* vulkan_image = dynamic_cast<VulkanImage*>(image.get());
     THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
 
     VkImageMemoryBarrier barrier{};
@@ -378,7 +402,7 @@ void VulkanCommandBuffer::StorageBarrier(ImagePtr image)
 {
     EndRendering();
 
-    auto *vulkan_image = dynamic_cast<VulkanImage *>(image.get());
+    auto* vulkan_image = dynamic_cast<VulkanImage*>(image.get());
     THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
 
     VkImageMemoryBarrier barrier{};
@@ -399,12 +423,12 @@ void VulkanCommandBuffer::StorageBarrier(ImagePtr image)
 }
 
 void VulkanCommandBuffer::CopyBuffer(
-    Buffer *src, uint64_t src_offset, Buffer *dst, uint64_t dst_offset, uint64_t size)
+    Buffer* src, uint64_t src_offset, Buffer* dst, uint64_t dst_offset, uint64_t size)
 {
     EndRendering();
 
-    auto *vulkan_src = dynamic_cast<VulkanBuffer *>(src);
-    auto *vulkan_dst = dynamic_cast<VulkanBuffer *>(dst);
+    auto* vulkan_src = dynamic_cast<VulkanBuffer*>(src);
+    auto* vulkan_dst = dynamic_cast<VulkanBuffer*>(dst);
     THROW_IF(!vulkan_src || !vulkan_dst, "Buffer does not belong to the Vulkan backend");
 
     VkBufferCopy copy_region{};
@@ -416,12 +440,12 @@ void VulkanCommandBuffer::CopyBuffer(
         command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetBuffer(), 1, &copy_region);
 }
 
-void VulkanCommandBuffer::CopyBufferToImage(Image *dst, Buffer *src)
+void VulkanCommandBuffer::CopyBufferToImage(Image* dst, Buffer* src)
 {
     EndRendering();
 
-    auto *vulkan_dst = dynamic_cast<VulkanImage *>(dst);
-    auto *vulkan_src = dynamic_cast<VulkanBuffer *>(src);
+    auto* vulkan_dst = dynamic_cast<VulkanImage*>(dst);
+    auto* vulkan_src = dynamic_cast<VulkanBuffer*>(src);
     THROW_IF(!vulkan_dst || !vulkan_src, "Resource does not belong to the Vulkan backend");
 
     VkBufferImageCopy region{};
@@ -435,12 +459,12 @@ void VulkanCommandBuffer::CopyBufferToImage(Image *dst, Buffer *src)
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-void VulkanCommandBuffer::CopyImage(Image *dst, Image *src)
+void VulkanCommandBuffer::CopyImage(Image* dst, Image* src)
 {
     EndRendering();
 
-    auto *vulkan_dst = dynamic_cast<VulkanImage *>(dst);
-    auto *vulkan_src = dynamic_cast<VulkanImage *>(src);
+    auto* vulkan_dst = dynamic_cast<VulkanImage*>(dst);
+    auto* vulkan_src = dynamic_cast<VulkanImage*>(src);
     THROW_IF(!vulkan_dst || !vulkan_src, "Image does not belong to the Vulkan backend");
 
     VkImageCopy region{};

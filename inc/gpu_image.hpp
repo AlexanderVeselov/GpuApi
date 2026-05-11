@@ -58,40 +58,49 @@ struct ImageViewHash
 {
     size_t operator()(ImageView const& view) const
     {
-        return (static_cast<size_t>(view.mip) << 32)
-            ^ static_cast<size_t>(view.mip_count);
+        return (static_cast<size_t>(view.mip) << 32) ^ static_cast<size_t>(view.mip_count);
     }
 };
 
 /// Backend-independent image resource.
 class Image
 {
-public:
-    Image(
-        uint32_t width,
-        uint32_t height,
-        ImageFormat format,
-        uint32_t mip_count,
-        uint32_t array_size,
-        ImageFlags flags)
-        : width_(width)
-        , height_(height)
-        , format_(format)
-        , mip_count_(mip_count)
-        , array_size_(array_size)
-        , flags_(flags)
-    {}
+  public:
+    Image(uint32_t width, uint32_t height, ImageFormat format, uint32_t mip_count,
+        uint32_t array_size, ImageFlags flags)
+        : width_(width), height_(height), format_(format), mip_count_(mip_count),
+          array_size_(array_size), flags_(flags)
+    {
+    }
 
     virtual ~Image() = default;
 
-    uint32_t GetWidth() const { return width_; }
-    uint32_t GetHeight() const { return height_; }
-    ImageFormat GetFormat() const { return format_; }
-    uint32_t GetMipCount() const { return mip_count_; }
-    uint32_t GetArraySize() const { return array_size_; }
-    ImageFlags GetFlags() const { return flags_; }
+    uint32_t GetWidth() const
+    {
+        return width_;
+    }
+    uint32_t GetHeight() const
+    {
+        return height_;
+    }
+    ImageFormat GetFormat() const
+    {
+        return format_;
+    }
+    uint32_t GetMipCount() const
+    {
+        return mip_count_;
+    }
+    uint32_t GetArraySize() const
+    {
+        return array_size_;
+    }
+    ImageFlags GetFlags() const
+    {
+        return flags_;
+    }
 
-protected:
+  protected:
     uint32_t width_;
     uint32_t height_;
     ImageFormat format_;

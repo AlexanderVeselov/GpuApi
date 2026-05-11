@@ -9,7 +9,7 @@
 
 namespace gpu
 {
-D3D12Device::D3D12Device(D3D12Api &gpu_api, IDXGIAdapter1 *dxgi_adapter) : api_(gpu_api)
+D3D12Device::D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter) : api_(gpu_api)
 {
     ThrowIfFailed(
         D3D12CreateDevice(dxgi_adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12_device_)));
@@ -41,7 +41,7 @@ void D3D12Device::WaitIdle()
     }
 }
 
-Queue &D3D12Device::GetQueue(QueueType queue_type)
+Queue& D3D12Device::GetQueue(QueueType queue_type)
 {
     switch (queue_type)
     {
@@ -71,13 +71,13 @@ GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline(GraphicsPipelineDesc con
     return std::make_unique<D3D12GraphicsPipeline>(*this, pipeline_desc);
 }
 
-ComputePipelinePtr D3D12Device::CreateComputePipeline(char const *cs_filename)
+ComputePipelinePtr D3D12Device::CreateComputePipeline(char const* cs_filename)
 {
     return std::make_unique<D3D12ComputePipeline>(*this, cs_filename);
 }
 
 SwapchainPtr D3D12Device::CreateSwapchain(
-    void *window_native_handle, uint32_t width, uint32_t height, uint32_t image_count)
+    void* window_native_handle, uint32_t width, uint32_t height, uint32_t image_count)
 {
     return std::make_unique<D3D12Swapchain>(
         *this, window_native_handle, width, height, image_count);

@@ -7,7 +7,7 @@ namespace gpu
 /// GPU execution queue. Owns backend synchronization needed for submitted command buffers.
 class Queue
 {
-public:
+  public:
     virtual ~Queue() = default;
 
     /// Creates a command buffer that can be submitted to this queue.

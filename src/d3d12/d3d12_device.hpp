@@ -13,7 +13,7 @@ class D3D12Api;
 class D3D12Device : public Device
 {
   public:
-    D3D12Device(D3D12Api &gpu_api, IDXGIAdapter1 *dxgi_adapter);
+    D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter);
     ~D3D12Device() override;
 
     // Resources
@@ -21,33 +21,33 @@ class D3D12Device : public Device
     ImagePtr CreateImage(uint32_t width, uint32_t height, ImageFormat format, uint32_t mip_count,
         uint32_t array_size, ImageFlags flags) override;
 
-    Queue &GetQueue(QueueType queue_type) override;
+    Queue& GetQueue(QueueType queue_type) override;
 
     // Pipelines
     GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) override;
-    ComputePipelinePtr CreateComputePipeline(char const *cs_filename) override;
+    ComputePipelinePtr CreateComputePipeline(char const* cs_filename) override;
 
     SwapchainPtr CreateSwapchain(
-        void *window_native_handle, uint32_t width, uint32_t height, uint32_t image_count) override;
+        void* window_native_handle, uint32_t width, uint32_t height, uint32_t image_count) override;
 
-    ID3D12Device *GetD3D12Device() const
+    ID3D12Device* GetD3D12Device() const
     {
         return d3d12_device_.Get();
     }
 
-    D3D12Api &GetD3D12Api()
+    D3D12Api& GetD3D12Api()
     {
         return api_;
     }
 
-    D3D12DescriptorManager &GetDescriptorManager() const
+    D3D12DescriptorManager& GetDescriptorManager() const
     {
         return *descriptor_manager_;
     }
     void WaitIdle();
 
   private:
-    D3D12Api &api_;
+    D3D12Api& api_;
     ComPtr<ID3D12Device> d3d12_device_;
     std::unique_ptr<D3D12DescriptorManager> descriptor_manager_;
     std::unique_ptr<Queue> graphics_queue_;

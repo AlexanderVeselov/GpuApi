@@ -43,14 +43,17 @@ inline bool HasFlag(BufferFlags flags, BufferFlags flag)
 /// Backend-independent buffer resource.
 class Buffer
 {
-public:
-    explicit Buffer(uint64_t size)
-        : size_(size)
-    {}
+  public:
+    explicit Buffer(uint64_t size) : size_(size)
+    {
+    }
 
     virtual ~Buffer() = default;
 
-    uint64_t GetSize() const { return size_; }
+    uint64_t GetSize() const
+    {
+        return size_;
+    }
 
     /// Maps the buffer for CPU access. The buffer must have BufferFlags::kCpuAccess.
     virtual void* Map() = 0;
@@ -58,7 +61,7 @@ public:
     /// Unmaps a previously mapped buffer.
     virtual void Unmap() = 0;
 
-protected:
+  protected:
     uint64_t size_ = 0;
 };
 

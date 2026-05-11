@@ -9,28 +9,50 @@ VkFormat ToVkFormat(ImageFormat format)
 {
     switch (format)
     {
-    case ImageFormat::kRGBA32_Float: return VK_FORMAT_R32G32B32A32_SFLOAT;
-    case ImageFormat::kRGBA32_UInt: return VK_FORMAT_R32G32B32A32_UINT;
-    case ImageFormat::kRGBA32_SInt: return VK_FORMAT_R32G32B32A32_SINT;
-    case ImageFormat::kRGBA16_Float: return VK_FORMAT_R16G16B16A16_SFLOAT;
-    case ImageFormat::kRGBA8_SInt: return VK_FORMAT_R8G8B8A8_SINT;
-    case ImageFormat::kRGBA8_UInt: return VK_FORMAT_R8G8B8A8_UINT;
-    case ImageFormat::kRGBA8_UNorm: return VK_FORMAT_R8G8B8A8_UNORM;
-    case ImageFormat::kRGBA8_SRGB: return VK_FORMAT_R8G8B8A8_SRGB;
-    case ImageFormat::kRGB32_Float: return VK_FORMAT_R32G32B32_SFLOAT;
-    case ImageFormat::kRGB32_UInt: return VK_FORMAT_R32G32B32_UINT;
-    case ImageFormat::kRGB32_SInt: return VK_FORMAT_R32G32B32_SINT;
-    case ImageFormat::kRG32_Float: return VK_FORMAT_R32G32_SFLOAT;
-    case ImageFormat::kRG32_UInt: return VK_FORMAT_R32G32_UINT;
-    case ImageFormat::kRG32_SInt: return VK_FORMAT_R32G32_SINT;
-    case ImageFormat::kRG16_Float: return VK_FORMAT_R16G16_SFLOAT;
-    case ImageFormat::kR32_Float: return VK_FORMAT_R32_SFLOAT;
-    case ImageFormat::kR32_UInt: return VK_FORMAT_R32_UINT;
-    case ImageFormat::kR32_SInt: return VK_FORMAT_R32_SINT;
-    case ImageFormat::kD32_Float: return VK_FORMAT_D32_SFLOAT;
-    case ImageFormat::kR32_Typeless: return VK_FORMAT_R32_SFLOAT;
-    case ImageFormat::kR16_Float: return VK_FORMAT_R16_SFLOAT;
-    default: return VK_FORMAT_UNDEFINED;
+    case ImageFormat::kRGBA32_Float:
+        return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case ImageFormat::kRGBA32_UInt:
+        return VK_FORMAT_R32G32B32A32_UINT;
+    case ImageFormat::kRGBA32_SInt:
+        return VK_FORMAT_R32G32B32A32_SINT;
+    case ImageFormat::kRGBA16_Float:
+        return VK_FORMAT_R16G16B16A16_SFLOAT;
+    case ImageFormat::kRGBA8_SInt:
+        return VK_FORMAT_R8G8B8A8_SINT;
+    case ImageFormat::kRGBA8_UInt:
+        return VK_FORMAT_R8G8B8A8_UINT;
+    case ImageFormat::kRGBA8_UNorm:
+        return VK_FORMAT_R8G8B8A8_UNORM;
+    case ImageFormat::kRGBA8_SRGB:
+        return VK_FORMAT_R8G8B8A8_SRGB;
+    case ImageFormat::kRGB32_Float:
+        return VK_FORMAT_R32G32B32_SFLOAT;
+    case ImageFormat::kRGB32_UInt:
+        return VK_FORMAT_R32G32B32_UINT;
+    case ImageFormat::kRGB32_SInt:
+        return VK_FORMAT_R32G32B32_SINT;
+    case ImageFormat::kRG32_Float:
+        return VK_FORMAT_R32G32_SFLOAT;
+    case ImageFormat::kRG32_UInt:
+        return VK_FORMAT_R32G32_UINT;
+    case ImageFormat::kRG32_SInt:
+        return VK_FORMAT_R32G32_SINT;
+    case ImageFormat::kRG16_Float:
+        return VK_FORMAT_R16G16_SFLOAT;
+    case ImageFormat::kR32_Float:
+        return VK_FORMAT_R32_SFLOAT;
+    case ImageFormat::kR32_UInt:
+        return VK_FORMAT_R32_UINT;
+    case ImageFormat::kR32_SInt:
+        return VK_FORMAT_R32_SINT;
+    case ImageFormat::kD32_Float:
+        return VK_FORMAT_D32_SFLOAT;
+    case ImageFormat::kR32_Typeless:
+        return VK_FORMAT_R32_SFLOAT;
+    case ImageFormat::kR16_Float:
+        return VK_FORMAT_R16_SFLOAT;
+    default:
+        return VK_FORMAT_UNDEFINED;
     }
 }
 
@@ -39,10 +61,13 @@ ImageFormat FromVkFormat(VkFormat format)
     switch (format)
     {
     case VK_FORMAT_R8G8B8A8_UNORM:
-    case VK_FORMAT_B8G8R8A8_UNORM: return ImageFormat::kRGBA8_UNorm;
+    case VK_FORMAT_B8G8R8A8_UNORM:
+        return ImageFormat::kRGBA8_UNorm;
     case VK_FORMAT_R8G8B8A8_SRGB:
-    case VK_FORMAT_B8G8R8A8_SRGB: return ImageFormat::kRGBA8_SRGB;
-    default: return ImageFormat::kUnknown;
+    case VK_FORMAT_B8G8R8A8_SRGB:
+        return ImageFormat::kRGBA8_SRGB;
+    default:
+        return ImageFormat::kUnknown;
     }
 }
 
@@ -73,24 +98,16 @@ static VkImageUsageFlags ToVkImageUsage(ImageFlags flags)
     return usage;
 }
 
-VulkanImage::VulkanImage(
-    VulkanDevice& device,
-    uint32_t width,
-    uint32_t height,
-    ImageFormat format,
-    uint32_t mip_count,
-    uint32_t array_size,
-    ImageFlags flags)
-    : Image(width, height, format, mip_count, array_size, flags)
-    , device_(device)
-    , owns_image_(true)
+VulkanImage::VulkanImage(VulkanDevice& device, uint32_t width, uint32_t height, ImageFormat format,
+    uint32_t mip_count, uint32_t array_size, ImageFlags flags)
+    : Image(width, height, format, mip_count, array_size, flags), device_(device), owns_image_(true)
 {
     native_format_ = ToVkFormat(format);
 
     VkImageCreateInfo image_create_info{};
     image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     image_create_info.imageType = VK_IMAGE_TYPE_2D;
-    image_create_info.extent = { width, height, 1 };
+    image_create_info.extent = {width, height, 1};
     image_create_info.mipLevels = mip_count;
     image_create_info.arrayLayers = array_size;
     image_create_info.format = native_format_;
@@ -108,8 +125,7 @@ VulkanImage::VulkanImage(
     vkGetImageMemoryRequirements(logical_device, image_, &memory_requirements);
 
     memory_ = device_.GetMemoryManager().AllocateMemory(
-        memory_requirements,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        memory_requirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     status = vkBindImageMemory(logical_device, image_, memory_, 0);
     VK_THROW_IF_FAILED(status, "Failed to bind Vulkan image memory");
@@ -117,19 +133,10 @@ VulkanImage::VulkanImage(
     CreateImageView();
 }
 
-VulkanImage::VulkanImage(
-    VulkanDevice& device,
-    VkImage image,
-    uint32_t width,
-    uint32_t height,
-    VkFormat native_format,
-    uint32_t mip_count,
-    uint32_t array_size,
-    ImageFlags flags)
-    : Image(width, height, FromVkFormat(native_format), mip_count, array_size, flags)
-    , device_(device)
-    , image_(image)
-    , native_format_(native_format)
+VulkanImage::VulkanImage(VulkanDevice& device, VkImage image, uint32_t width, uint32_t height,
+    VkFormat native_format, uint32_t mip_count, uint32_t array_size, ImageFlags flags)
+    : Image(width, height, FromVkFormat(native_format), mip_count, array_size, flags),
+      device_(device), image_(image), native_format_(native_format)
 {
     CreateImageView();
 }

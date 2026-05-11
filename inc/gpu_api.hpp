@@ -15,7 +15,7 @@ enum class ApiType
 /// Entry point for creating backend devices.
 class Api
 {
-public:
+  public:
     virtual ~Api() = default;
 
     /// Creates an API object for the selected backend. The returned object is owned by the caller.

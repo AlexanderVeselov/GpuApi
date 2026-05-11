@@ -67,12 +67,12 @@ D3D12_RESOURCE_DESC CreateBufferDesc(uint64_t size, BufferFlags flags)
 }
 } // namespace
 
-D3D12Buffer::D3D12Buffer(D3D12Device &device, uint64_t size, uint32_t stride)
+D3D12Buffer::D3D12Buffer(D3D12Device& device, uint64_t size, uint32_t stride)
     : D3D12Buffer(device, size, stride, BufferFlags::kCpuAccess)
 {
 }
 
-D3D12Buffer::D3D12Buffer(D3D12Device &device, uint64_t size, uint32_t stride, BufferFlags flags)
+D3D12Buffer::D3D12Buffer(D3D12Device& device, uint64_t size, uint32_t stride, BufferFlags flags)
     : Buffer(size), device_(device), flags_(flags), current_state_(GetInitialState(flags)),
       stride_(stride)
 {
@@ -95,10 +95,11 @@ D3D12Buffer::D3D12Buffer(D3D12Device &device, uint64_t size, uint32_t stride, Bu
 
 D3D12Buffer::~D3D12Buffer()
 {
-    // TODO: do not wait for the device to be idle here, but instead track resource usage and defer descriptor freeing until it's safe
+    // TODO: do not wait for the device to be idle here, but instead track resource usage and defer
+    // descriptor freeing until it's safe
     device_.WaitIdle();
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
 
     descriptor_manager.Free(cbv_);
     descriptor_manager.Free(srv_);
@@ -135,14 +136,14 @@ D3D12Descriptor const& D3D12Buffer::GetUAV()
     return uav_;
 }
 
-void *D3D12Buffer::Map()
+void* D3D12Buffer::Map()
 {
     assert(HasFlag(flags_, BufferFlags::kCpuAccess) &&
            "D3D12Buffer::Map: buffer was not created with CPU access");
     assert(!mapped_ && "D3D12Buffer::Map: buffer is already mapped");
 
     D3D12_RANGE read_range = {};
-    void *data = nullptr;
+    void* data = nullptr;
     ThrowIfFailed(resource_->Map(0, &read_range, &data));
     mapped_ = true;
     return data;
@@ -161,7 +162,7 @@ D3D12Descriptor D3D12Buffer::CreateCBV()
     assert(HasFlag(flags_, BufferFlags::kConstant) &&
            "D3D12Buffer::CreateCBV: buffer was not created with constant-buffer support");
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_desc = {};
@@ -180,7 +181,7 @@ D3D12Descriptor D3D12Buffer::CreateSRV()
     assert(HasFlag(flags_, BufferFlags::kShaderResource) &&
            "D3D12Buffer::CreateSRV: buffer was not created with shader-resource support");
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
 
     D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
@@ -203,7 +204,7 @@ D3D12Descriptor D3D12Buffer::CreateUAV()
     assert(HasFlag(flags_, BufferFlags::kStorage) &&
            "D3D12Buffer::CreateUAV: buffer was not created with storage/UAV support");
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};

@@ -10,19 +10,16 @@ class VulkanDevice;
 
 class VulkanMemoryManager
 {
-public:
+  public:
     explicit VulkanMemoryManager(VulkanDevice& device);
 
     VkDeviceMemory AllocateMemory(
-        VkMemoryRequirements requirements,
-        VkMemoryPropertyFlags properties);
+        VkMemoryRequirements requirements, VkMemoryPropertyFlags properties);
 
-private:
-    uint32_t FindMemoryTypeIndex(
-        uint32_t memory_type_bits,
-        VkMemoryPropertyFlags properties) const;
+  private:
+    uint32_t FindMemoryTypeIndex(uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
 
-private:
+  private:
     VulkanDevice& device_;
 };
 

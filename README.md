@@ -24,6 +24,7 @@ src/common/              Shared API helpers and shader reflection types
 src/d3d12/               Direct3D 12 backend
 src/vulkan/              Vulkan backend
 samples/hello_triangle/  Graphics pipeline sample
+samples/rotating_cube/   Indexed graphics and depth-buffer sample
 samples/shadertoy/       Compute pipeline sample
 third_party/             Bundled DXC, GLFW binaries, and SPIRV-Reflect
 ```
@@ -48,6 +49,7 @@ cmake --build build --config Debug
 The sample targets are built with the library:
 
 - `HelloTriangle`
+- `RotatingCube`
 - `Shadertoy`
 
 The sample CMake files copy `dxcompiler.dll` and `dxil.dll` next to the built executables.
@@ -92,6 +94,8 @@ swapchain->Present();
 ## Samples
 
 `samples/hello_triangle` creates a swapchain, graphics pipeline, vertex buffer, descriptor set, and renders a triangle.
+
+`samples/rotating_cube` renders an indexed, depth-tested cube with a per-frame MVP constant buffer.
 
 `samples/shadertoy` creates a storage image, dispatches a compute shader into it, then copies the result into the swapchain image.
 

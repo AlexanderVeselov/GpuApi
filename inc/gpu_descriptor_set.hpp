@@ -10,7 +10,7 @@ namespace gpu
 /// CPU-side collection of resource bindings compatible with a pipeline.
 class DescriptorSet
 {
-public:
+  public:
     virtual ~DescriptorSet() = default;
 
     /// Binds a buffer to a shader register and register space.

@@ -2,11 +2,11 @@
 
 #include "gpu_types.hpp"
 
+#include <cassert>
+#include <cstdint>
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <wrl.h>
-#include <cstdint>
-#include <cassert>
 
 #undef CreateSemaphore
 using Microsoft::WRL::ComPtr;

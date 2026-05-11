@@ -24,17 +24,17 @@ struct D3D12Descriptor
     D3D12DescriptorHeapId heap = D3D12DescriptorHeapId::CPU_CBV_SRV_UAV;
     uint32_t index = UINT32_MAX;
 
-    bool IsValid() const { return index != UINT32_MAX; }
+    bool IsValid() const
+    {
+        return index != UINT32_MAX;
+    }
 };
 
 class D3D12DescriptorHeapAllocator
 {
-public:
-    D3D12DescriptorHeapAllocator(
-        D3D12Device& device,
-        D3D12_DESCRIPTOR_HEAP_TYPE type,
-        uint32_t capacity,
-        bool shader_visible);
+  public:
+    D3D12DescriptorHeapAllocator(D3D12Device& device, D3D12_DESCRIPTOR_HEAP_TYPE type,
+        uint32_t capacity, bool shader_visible);
 
     uint32_t Allocate();
     void Free(uint32_t index);
@@ -42,10 +42,16 @@ public:
     D3D12_CPU_DESCRIPTOR_HANDLE CPU(uint32_t index) const;
     D3D12_GPU_DESCRIPTOR_HANDLE GPU(uint32_t index) const;
 
-    bool IsShaderVisible() const { return shader_visible_; }
-    ID3D12DescriptorHeap* Heap() const { return heap_.Get(); }
+    bool IsShaderVisible() const
+    {
+        return shader_visible_;
+    }
+    ID3D12DescriptorHeap* Heap() const
+    {
+        return heap_.Get();
+    }
 
-private:
+  private:
     ComPtr<ID3D12DescriptorHeap> heap_;
 
     D3D12_CPU_DESCRIPTOR_HANDLE cpu_start_{};
@@ -64,7 +70,7 @@ private:
 
 class D3D12DescriptorManager
 {
-public:
+  public:
     explicit D3D12DescriptorManager(D3D12Device& device);
 
     D3D12Descriptor AllocateCPUCBVSRVUAV();
@@ -86,11 +92,11 @@ public:
     ID3D12DescriptorHeap* GetGPUCBVSRVUAVHeap() const;
     ID3D12DescriptorHeap* GetGPUSamplerHeap() const;
 
-private:
+  private:
     D3D12DescriptorHeapAllocator& GetAllocator(D3D12DescriptorHeapId heap);
     D3D12DescriptorHeapAllocator const& GetAllocator(D3D12DescriptorHeapId heap) const;
 
-private:
+  private:
     D3D12Device& device_;
 
     D3D12DescriptorHeapAllocator cpu_cbv_srv_uav_;
@@ -101,4 +107,4 @@ private:
     D3D12DescriptorHeapAllocator gpu_cbv_srv_uav_;
     D3D12DescriptorHeapAllocator gpu_sampler_;
 };
-}
+} // namespace gpu

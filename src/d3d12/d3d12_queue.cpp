@@ -1,15 +1,14 @@
 #include "d3d12_queue.hpp"
+#include "d3d12_command_buffer.hpp"
 #include "d3d12_device.hpp"
 #include "d3d12_exception.hpp"
-#include "d3d12_command_buffer.hpp"
 
 #include <cassert>
 
 namespace gpu
 {
 D3D12Queue::D3D12Queue(D3D12Device& device, D3D12_COMMAND_LIST_TYPE command_list_type)
-    : device_(device)
-    , command_list_type_(command_list_type)
+    : device_(device), command_list_type_(command_list_type)
 {
     auto d3d12_device = device_.GetD3D12Device();
 
@@ -51,13 +50,13 @@ void D3D12Queue::Submit(CommandBufferPtr cmd_buffer)
     D3D12CommandBuffer* d3d12_cmd_buffer = static_cast<D3D12CommandBuffer*>(cmd_buffer.get());
     d3d12_cmd_buffer->Close();
 
-    ID3D12CommandList* cmd_lists[] = { d3d12_cmd_buffer->GetCommandList() };
+    ID3D12CommandList* cmd_lists[] = {d3d12_cmd_buffer->GetCommandList()};
     queue_->ExecuteCommandLists(1u, cmd_lists);
 
     const std::uint64_t fence_value = next_fence_value_++;
     ThrowIfFailed(queue_->Signal(fence_.Get(), fence_value));
 
-    in_flight_submissions_.push_back({ fence_value, std::move(cmd_buffer) });
+    in_flight_submissions_.push_back({fence_value, std::move(cmd_buffer)});
 }
 
 void D3D12Queue::WaitIdle()
@@ -81,7 +80,7 @@ void D3D12Queue::CollectCompletedSubmissions()
 {
     const std::uint64_t completed_value = fence_->GetCompletedValue();
     while (!in_flight_submissions_.empty() &&
-        in_flight_submissions_.front().fence_value <= completed_value)
+           in_flight_submissions_.front().fence_value <= completed_value)
     {
         in_flight_submissions_.pop_front();
     }

@@ -7,7 +7,7 @@ namespace gpu
 /// Records rendering, compute, copy, and resource barrier commands for a Queue.
 class CommandBuffer
 {
-public:
+  public:
     virtual ~CommandBuffer() = default;
 
     /// Binds a vertex buffer. The stride must match the vertex format expected by the pipeline.
@@ -17,25 +17,15 @@ public:
     virtual void SetIndexBuffer(BufferPtr buffer) = 0;
 
     /// Dispatches work using the currently bound compute pipeline and descriptor set.
-    virtual void Dispatch(
-        uint32_t num_groups_x,
-        uint32_t num_groups_y,
-        uint32_t num_groups_z) = 0;
+    virtual void Dispatch(uint32_t num_groups_x, uint32_t num_groups_y, uint32_t num_groups_z) = 0;
 
     /// Draws non-indexed geometry using the currently bound graphics pipeline and descriptor set.
-    virtual void Draw(
-        uint32_t vertex_count,
-        uint32_t instance_count = 1,
-        uint32_t first_vertex = 0,
+    virtual void Draw(uint32_t vertex_count, uint32_t instance_count = 1, uint32_t first_vertex = 0,
         uint32_t first_instance = 0) = 0;
 
     /// Draws indexed geometry using the currently bound graphics pipeline and descriptor set.
-    virtual void DrawIndexed(
-        uint32_t index_count,
-        uint32_t instance_count = 1,
-        uint32_t first_index = 0,
-        int32_t vertex_offset = 0,
-        uint32_t first_instance = 0) = 0;
+    virtual void DrawIndexed(uint32_t index_count, uint32_t instance_count = 1,
+        uint32_t first_index = 0, int32_t vertex_offset = 0, uint32_t first_instance = 0) = 0;
 
     /// Binds graphics pipeline state for subsequent draw calls.
     virtual void BindPipeline(GraphicsPipelinePtr const& pipeline) = 0;
@@ -51,8 +41,7 @@ public:
 
     /// Sets multiple color attachments and an optional depth attachment.
     virtual void SetRenderTargets(
-        std::vector<ImagePtr> const& color_attachments,
-        ImagePtr depth_attachment) = 0;
+        std::vector<ImagePtr> const& color_attachments, ImagePtr depth_attachment) = 0;
 
     /// Sets the raster viewport.
     virtual void SetViewport(const Viewport& viewport) = 0;
@@ -63,22 +52,19 @@ public:
     /// Clears an image with a constant RGBA value.
     virtual void ClearImage(ImagePtr image, float r, float g, float b, float a) = 0;
 
+    /// Clears a depth image.
+    virtual void ClearDepthImage(ImagePtr image, float depth) = 0;
+
     /// Inserts an image layout transition barrier.
     virtual void TransitionBarrier(
-        ImagePtr image,
-        ImageLayout layout_before,
-        ImageLayout layout_after) = 0;
+        ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) = 0;
 
     /// Inserts an unordered-access/storage synchronization barrier for an image.
     virtual void StorageBarrier(ImagePtr image) = 0;
 
     /// Copies a byte range between buffers.
     virtual void CopyBuffer(
-        Buffer* src,
-        uint64_t src_offset,
-        Buffer* dst,
-        uint64_t dst_offset,
-        uint64_t size) = 0;
+        Buffer* src, uint64_t src_offset, Buffer* dst, uint64_t dst_offset, uint64_t size) = 0;
 
     /// Copies a linear buffer into an image.
     virtual void CopyBufferToImage(Image* dst, Buffer* src) = 0;

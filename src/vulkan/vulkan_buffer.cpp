@@ -7,7 +7,8 @@ namespace gpu
 {
 static VkBufferUsageFlags ToVkBufferUsage(BufferFlags flags)
 {
-    VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                               VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
     if (HasFlag(flags, BufferFlags::kConstant))
     {
@@ -28,10 +29,7 @@ static VkBufferUsageFlags ToVkBufferUsage(BufferFlags flags)
 }
 
 VulkanBuffer::VulkanBuffer(VulkanDevice& device, uint64_t size, uint32_t stride, BufferFlags flags)
-    : Buffer(size)
-    , device_(device)
-    , flags_(flags)
-    , stride_(stride)
+    : Buffer(size), device_(device), flags_(flags), stride_(stride)
 {
     VkBufferCreateInfo buffer_create_info{};
     buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

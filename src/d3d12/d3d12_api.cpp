@@ -1,6 +1,6 @@
 #include "d3d12_api.hpp"
-#include "d3d12_exception.hpp"
 #include "d3d12_device.hpp"
+#include "d3d12_exception.hpp"
 
 #include <dxgi1_6.h>
 
@@ -13,11 +13,8 @@ namespace
 {
 bool SupportsD3D12(IDXGIAdapter1* adapter)
 {
-    return SUCCEEDED(D3D12CreateDevice(
-        adapter,
-        D3D_FEATURE_LEVEL_11_0,
-        _uuidof(ID3D12Device),
-        nullptr));
+    return SUCCEEDED(
+        D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr));
 }
 
 bool IsHardwareAdapter(IDXGIAdapter1* adapter)
@@ -34,9 +31,7 @@ std::uint64_t GetDedicatedVideoMemory(IDXGIAdapter1* adapter)
     return static_cast<std::uint64_t>(adapter_desc.DedicatedVideoMemory);
 }
 
-void AddAdapterIfUsable(
-    std::vector<ComPtr<IDXGIAdapter1>>& adapters,
-    IDXGIAdapter1* adapter)
+void AddAdapterIfUsable(std::vector<ComPtr<IDXGIAdapter1>>& adapters, IDXGIAdapter1* adapter)
 {
     if (!adapter || !IsHardwareAdapter(adapter) || !SupportsD3D12(adapter))
     {
@@ -45,10 +40,9 @@ void AddAdapterIfUsable(
 
     adapters.emplace_back(adapter);
 }
-}
+} // namespace
 
-D3D12Api::D3D12Api()
-    : shader_manager_("")
+D3D12Api::D3D12Api() : shader_manager_("")
 {
     UINT dxgi_factory_flags = 0;
 
@@ -76,9 +70,7 @@ D3D12Api::D3D12Api()
         {
             ComPtr<IDXGIAdapter1> dxgi_adapter;
             HRESULT status = dxgi_factory6->EnumAdapterByGpuPreference(
-                adapter_idx,
-                DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
-                IID_PPV_ARGS(&dxgi_adapter));
+                adapter_idx, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&dxgi_adapter));
             if (status == DXGI_ERROR_NOT_FOUND)
             {
                 break;
@@ -103,11 +95,8 @@ D3D12Api::D3D12Api()
             AddAdapterIfUsable(dxgi_adapters_, dxgi_adapter.Get());
         }
 
-        std::sort(
-            dxgi_adapters_.begin(),
-            dxgi_adapters_.end(),
-            [](ComPtr<IDXGIAdapter1> const& lhs, ComPtr<IDXGIAdapter1> const& rhs)
-            {
+        std::sort(dxgi_adapters_.begin(), dxgi_adapters_.end(),
+            [](ComPtr<IDXGIAdapter1> const& lhs, ComPtr<IDXGIAdapter1> const& rhs) {
                 return GetDedicatedVideoMemory(lhs.Get()) > GetDedicatedVideoMemory(rhs.Get());
             });
     }

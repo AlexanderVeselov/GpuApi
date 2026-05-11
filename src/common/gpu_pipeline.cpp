@@ -10,6 +10,4 @@ namespace
 
 } // namespace
 
-
-
 } // namespace gpu

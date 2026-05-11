@@ -20,7 +20,7 @@ using Microsoft::WRL::ComPtr;
 
 namespace
 {
-void ThrowIfDxcFailed(HRESULT hr, char const *message)
+void ThrowIfDxcFailed(HRESULT hr, char const* message)
 {
     if (FAILED(hr))
     {
@@ -29,7 +29,7 @@ void ThrowIfDxcFailed(HRESULT hr, char const *message)
 }
 } // namespace
 
-VulkanShaderManager::VulkanShaderManager(char const *shader_path) : shader_path_(shader_path)
+VulkanShaderManager::VulkanShaderManager(char const* shader_path) : shader_path_(shader_path)
 {
     ThrowIfDxcFailed(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxc_utils_)),
         "VulkanShaderManager: failed to create DXC utils");
@@ -57,8 +57,8 @@ VulkanShaderManager::~VulkanShaderManager()
     }
 }
 
-VulkanShader VulkanShaderManager::CompileShader(char const *filename, char const *entry_point,
-    char const *shader_profile, std::vector<char const *> const& definitions)
+VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const* entry_point,
+    char const* shader_profile, std::vector<char const*> const& definitions)
 {
     ComPtr<IDxcBlobEncoding> dxc_source = nullptr;
     std::wstring w_filename = StringToWstring(filename);
@@ -81,9 +81,10 @@ VulkanShader VulkanShaderManager::CompileShader(char const *filename, char const
     shader_args.push_back(L"-spirv");
     shader_args.push_back(L"-fspv-target-env=vulkan1.2");
     shader_args.push_back(L"-fvk-use-dx-layout");
+    shader_args.push_back(L"-Zpr");
 
     std::vector<std::wstring> w_definitions;
-    for (char const *definition : definitions)
+    for (char const* definition : definitions)
     {
         w_definitions.push_back(StringToWstring(definition));
         shader_args.push_back(L"-D");
@@ -110,7 +111,7 @@ VulkanShader VulkanShaderManager::CompileShader(char const *filename, char const
         std::string error_message = "Failed to compile Vulkan shader ";
         error_message += filename;
         error_message += ":\n";
-        error_message += static_cast<char const *>(dxc_error->GetBufferPointer());
+        error_message += static_cast<char const*>(dxc_error->GetBufferPointer());
         throw std::runtime_error(error_message);
     }
 

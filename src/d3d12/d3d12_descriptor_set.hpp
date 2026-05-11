@@ -16,7 +16,7 @@ class D3D12Image;
 
 class D3D12DescriptorSet : public DescriptorSet
 {
-public:
+  public:
     struct BoundDescriptor
     {
         uint32_t binding = 0;
@@ -43,17 +43,23 @@ public:
     void BindImage(D3D12Image& image, uint32_t binding, uint32_t space);
     void BindImage(D3D12Image& image, ImageView const& view, uint32_t binding, uint32_t space);
 
-    D3D12PipelineLayout const& GetLayout() const { return layout_; }
-    std::vector<BoundDescriptor> const& GetBoundDescriptors() const { return descriptors_; }
+    D3D12PipelineLayout const& GetLayout() const
+    {
+        return layout_;
+    }
+    std::vector<BoundDescriptor> const& GetBoundDescriptors() const
+    {
+        return descriptors_;
+    }
 
     void Clear() override;
 
-private:
+  private:
     D3D12Binding const& FindBinding(uint32_t binding, uint32_t space) const;
     BoundDescriptor& FindOrCreateBoundDescriptor(D3D12Binding const& binding);
     void BindDescriptor(D3D12Binding const& binding, D3D12Descriptor cpu_descriptor);
 
-private:
+  private:
     D3D12PipelineLayout const& layout_;
     std::vector<BoundDescriptor> descriptors_;
 };

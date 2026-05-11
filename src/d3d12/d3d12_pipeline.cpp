@@ -101,7 +101,7 @@ uint32_t VertexInputFormatSize(ImageFormat format)
 }
 
 void GetInputElementDescs(
-    ShaderReflection const& reflection, std::vector<D3D12_INPUT_ELEMENT_DESC> &element_descs)
+    ShaderReflection const& reflection, std::vector<D3D12_INPUT_ELEMENT_DESC>& element_descs)
 {
     for (ShaderInputParameter const& parameter : reflection.input_parameters)
     {
@@ -139,7 +139,7 @@ uint32_t CalculateVertexStride(ShaderReflection const& reflection)
 
 } // namespace
 
-D3D12Pipeline::D3D12Pipeline(D3D12Device &device) : device_(device), layout_(device)
+D3D12Pipeline::D3D12Pipeline(D3D12Device& device) : device_(device), layout_(device)
 {
 }
 
@@ -149,7 +149,7 @@ DescriptorSetPtr D3D12Pipeline::CreateDescriptorSet()
 }
 
 D3D12GraphicsPipeline::D3D12GraphicsPipeline(
-    D3D12Device &device, GraphicsPipelineDesc const& pipeline_desc)
+    D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc)
     : GraphicsPipeline(pipeline_desc), D3D12Pipeline(device)
 {
     Reload();
@@ -159,7 +159,7 @@ void D3D12GraphicsPipeline::Reload()
 {
     auto d3d12_device = device_.GetD3D12Device();
 
-    D3D12ShaderManager &shader_manager = device_.GetD3D12Api().GetShaderManager();
+    D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
     D3D12Shader vs_shader =
         shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(), "main", "vs_6_0");
@@ -254,7 +254,7 @@ void D3D12GraphicsPipeline::Reload()
         &pipeline_state_desc, IID_PPV_ARGS(&pipeline_state_)));
 }
 
-D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device &device, char const *cs_filename)
+D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_filename)
     : ComputePipeline(cs_filename), D3D12Pipeline(device)
 {
     Reload();
@@ -263,7 +263,7 @@ D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device &device, char const *cs_f
 void D3D12ComputePipeline::Reload()
 {
     auto d3d12_device = device_.GetD3D12Device();
-    D3D12ShaderManager &shader_manager = device_.GetD3D12Api().GetShaderManager();
+    D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
     D3D12Shader cs_shader = shader_manager.CompileShader(cs_filename_.c_str(), "main", "cs_6_0");
     D3D12_SHADER_BYTECODE cs_bytecode = {};

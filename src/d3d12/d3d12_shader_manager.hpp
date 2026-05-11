@@ -1,10 +1,10 @@
 #pragma once
 
-#include "d3d12_common.hpp"
 #include "../common/shader_reflection.hpp"
+#include "d3d12_common.hpp"
 
-#include <vector>
 #include <string>
+#include <vector>
 
 struct IDxcUtils;
 struct IDxcCompiler3;
@@ -21,12 +21,13 @@ struct D3D12Shader
 
 class D3D12ShaderManager
 {
-public:
+  public:
     D3D12ShaderManager(char const* shader_path);
     D3D12Shader CompileShader(char const* filename, char const* entry_point,
-        char const* shader_profile, std::vector<char const*> const& definitions = std::vector<char const*>());
+        char const* shader_profile,
+        std::vector<char const*> const& definitions = std::vector<char const*>());
 
-private:
+  private:
     std::string shader_path_;
 
     IDxcUtils* dxc_utils_;

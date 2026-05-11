@@ -18,7 +18,7 @@ namespace
 class VulkanShaderModule
 {
   public:
-    VulkanShaderModule(VulkanDevice &device, std::vector<uint32_t> const &spirv) : device_(device)
+    VulkanShaderModule(VulkanDevice& device, std::vector<uint32_t> const& spirv) : device_(device)
     {
         VkShaderModuleCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -44,7 +44,7 @@ class VulkanShaderModule
     }
 
   private:
-    VulkanDevice &device_;
+    VulkanDevice& device_;
     VkShaderModule shader_module_ = VK_NULL_HANDLE;
 };
 
@@ -101,13 +101,13 @@ uint32_t FormatSize(ImageFormat format)
     }
 }
 
-void GetVertexInputDescs(ShaderReflection const &reflection,
-    VkVertexInputBindingDescription &binding_desc,
-    std::vector<VkVertexInputAttributeDescription> &attribute_descs)
+void GetVertexInputDescs(ShaderReflection const& reflection,
+    VkVertexInputBindingDescription& binding_desc,
+    std::vector<VkVertexInputAttributeDescription>& attribute_descs)
 {
     uint32_t offset = 0;
 
-    for (ShaderInputParameter const &parameter : reflection.input_parameters)
+    for (ShaderInputParameter const& parameter : reflection.input_parameters)
     {
         if (parameter.is_system_value)
         {
@@ -142,7 +142,7 @@ VkPipelineShaderStageCreateInfo GetShaderStageCreateInfo(
 }
 } // namespace
 
-VulkanPipeline::VulkanPipeline(VulkanDevice &device) : device_(device), layout_(device)
+VulkanPipeline::VulkanPipeline(VulkanDevice& device) : device_(device), layout_(device)
 {
 }
 
@@ -166,7 +166,7 @@ void VulkanPipeline::DestroyPipeline()
 }
 
 VulkanGraphicsPipeline::VulkanGraphicsPipeline(
-    VulkanDevice &device, GraphicsPipelineDesc const &pipeline_desc)
+    VulkanDevice& device, GraphicsPipelineDesc const& pipeline_desc)
     : GraphicsPipeline(pipeline_desc), VulkanPipeline(device)
 {
     Reload();
@@ -176,7 +176,7 @@ void VulkanGraphicsPipeline::Reload()
 {
     DestroyPipeline();
 
-    VulkanShaderManager &shader_manager = device_.GetApi().GetShaderManager();
+    VulkanShaderManager& shader_manager = device_.GetApi().GetShaderManager();
     VulkanShader vs_shader =
         shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(), "main", "vs_6_0");
     VulkanShader ps_shader =
@@ -241,7 +241,7 @@ void VulkanGraphicsPipeline::Reload()
 
     std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachments(
         pipeline_desc_.color_attachment_formats.size());
-    for (VkPipelineColorBlendAttachmentState &attachment : color_blend_attachments)
+    for (VkPipelineColorBlendAttachmentState& attachment : color_blend_attachments)
     {
         attachment.blendEnable = VK_FALSE;
         attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
@@ -305,7 +305,7 @@ void VulkanGraphicsPipeline::Reload()
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan graphics pipeline");
 }
 
-VulkanComputePipeline::VulkanComputePipeline(VulkanDevice &device, char const *cs_filename)
+VulkanComputePipeline::VulkanComputePipeline(VulkanDevice& device, char const* cs_filename)
     : ComputePipeline(cs_filename), VulkanPipeline(device)
 {
     Reload();

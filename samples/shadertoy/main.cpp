@@ -23,19 +23,20 @@
 
 namespace
 {
-GLFWwindow *CreateWindow(uint32_t width, uint32_t height)
+GLFWwindow* CreateWindow(uint32_t width, uint32_t height)
 {
     if (glfwInit() == GLFW_FALSE)
     {
         throw std::runtime_error("Failed to init GLFW");
     }
 
-    GLFWwindow *window = glfwCreateWindow((int)width, (int)height, "Shadertoy", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow((int)width, (int)height, "Shadertoy", nullptr, nullptr);
     if (!window)
     {
-        char const *description = nullptr;
+        char const* description = nullptr;
         glfwGetError(&description);
-        throw std::runtime_error(std::string("Failed to create GLFW window: ") + (description ? description : "unknown error"));
+        throw std::runtime_error(std::string("Failed to create GLFW window: ") +
+                                 (description ? description : "unknown error"));
     }
 
     glfwShowWindow(window);
@@ -55,8 +56,8 @@ int main()
         uint32_t window_width = 1280;
         uint32_t window_height = 720;
 
-        GLFWwindow *window = CreateWindow(window_width, window_height);
-        void *window_native_handle = glfwGetWin32Window(window);
+        GLFWwindow* window = CreateWindow(window_width, window_height);
+        void* window_native_handle = glfwGetWin32Window(window);
 
         auto api = gpu::Api::Create(gpu::ApiType::kD3D12);
         assert(api);
@@ -72,7 +73,7 @@ int main()
         gpu::DescriptorSetPtr descriptor_set = pipeline->CreateDescriptorSet();
         descriptor_set->BindImage(*output_image, 0, 0);
 
-        gpu::Queue &queue = device->GetQueue(gpu::QueueType::kGraphics);
+        gpu::Queue& queue = device->GetQueue(gpu::QueueType::kGraphics);
         gpu::ImageLayout output_layout = gpu::ImageLayout::kUndefined;
 
         while (!glfwWindowShouldClose(window))

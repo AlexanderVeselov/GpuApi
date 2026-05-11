@@ -75,7 +75,7 @@ static uint32_t Clamp(uint32_t value, uint32_t min_value, uint32_t max_value)
     return value;
 }
 
-VulkanSwapchain::VulkanSwapchain(VulkanDevice &device, void *window_native_handle, uint32_t width,
+VulkanSwapchain::VulkanSwapchain(VulkanDevice& device, void* window_native_handle, uint32_t width,
     uint32_t height, uint32_t image_count)
     : Swapchain(ImageFormat::kUnknown), device_(device)
 {
@@ -99,7 +99,7 @@ VulkanSwapchain::~VulkanSwapchain()
     }
 }
 
-void VulkanSwapchain::CreateSurface(void *window_native_handle)
+void VulkanSwapchain::CreateSurface(void* window_native_handle)
 {
     HWND hwnd = static_cast<HWND>(window_native_handle);
     HINSTANCE hinstance = GetModuleHandle(nullptr);

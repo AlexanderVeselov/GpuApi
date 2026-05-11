@@ -8,12 +8,10 @@
 namespace gpu
 {
 /// Unique ownership pointer used for API objects that cannot be shared safely.
-template <class T>
-using Ptr = std::unique_ptr<T>;
+template <class T> using Ptr = std::unique_ptr<T>;
 
 /// Shared ownership pointer used for GPU resources referenced by command buffers.
-template <class T>
-using SharedPtr = std::shared_ptr<T>;
+template <class T> using SharedPtr = std::shared_ptr<T>;
 
 class Api;
 class Device;

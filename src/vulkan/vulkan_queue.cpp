@@ -7,8 +7,7 @@
 namespace gpu
 {
 VulkanQueue::VulkanQueue(VulkanDevice& device, uint32_t queue_family_index)
-    : device_(device)
-    , queue_family_index_(queue_family_index)
+    : device_(device), queue_family_index_(queue_family_index)
 {
     vkGetDeviceQueue(device_.GetDevice(), queue_family_index_, 0, &queue_);
 

@@ -3,20 +3,16 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 
-template <class T>
-using VulkanSharedObject = std::shared_ptr<std::remove_pointer_t<T>>;
+template <class T> using VulkanSharedObject = std::shared_ptr<std::remove_pointer_t<T>>;
 
-template <class VkObject, auto create_func, auto destroy_func>
-class VulkanScopedObject
+template <class VkObject, auto create_func, auto destroy_func> class VulkanScopedObject
 {
-public:
-    VulkanScopedObject()
-        : object_(VK_NULL_HANDLE)
-        , device_(VK_NULL_HANDLE)
-    {}
+  public:
+    VulkanScopedObject() : object_(VK_NULL_HANDLE), device_(VK_NULL_HANDLE)
+    {
+    }
 
-    template <class CreateInfo>
-    VkResult Create(VkDevice device, CreateInfo const& create_info)
+    template <class CreateInfo> VkResult Create(VkDevice device, CreateInfo const& create_info)
     {
         if (object_ != VK_NULL_HANDLE)
         {
@@ -47,28 +43,25 @@ public:
         return object_;
     }
 
-    VkObject* operator& ()
+    VkObject* operator&()
     {
         return &object_;
     }
 
-private:
+  private:
     VkObject object_;
     VkDevice device_;
-
 };
 
 template <auto create_func, auto destroy_func>
 class VulkanScopedObject<VkPipeline, create_func, destroy_func>
 {
-public:
-    VulkanScopedObject()
-        : object_(VK_NULL_HANDLE)
-        , device_(VK_NULL_HANDLE)
-    {}
+  public:
+    VulkanScopedObject() : object_(VK_NULL_HANDLE), device_(VK_NULL_HANDLE)
+    {
+    }
 
-    template <class CreateInfo>
-    VkResult Reset(VkDevice device, CreateInfo const& create_info)
+    template <class CreateInfo> VkResult Reset(VkDevice device, CreateInfo const& create_info)
     {
         if (object_ != VK_NULL_HANDLE)
         {
@@ -93,8 +86,7 @@ public:
         return object_;
     }
 
-private:
+  private:
     VkPipeline object_;
     VkDevice device_;
-
 };

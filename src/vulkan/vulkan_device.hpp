@@ -14,44 +14,57 @@ class VulkanApi;
 
 class VulkanDevice final : public Device
 {
-public:
+  public:
     VulkanDevice(VulkanApi& api, VkPhysicalDevice physical_device);
     ~VulkanDevice() override;
 
     BufferPtr CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags) override;
-    ImagePtr CreateImage(
-        uint32_t width,
-        uint32_t height,
-        ImageFormat format,
-        uint32_t mip_count,
-        uint32_t array_size,
-        ImageFlags flags) override;
+    ImagePtr CreateImage(uint32_t width, uint32_t height, ImageFormat format, uint32_t mip_count,
+        uint32_t array_size, ImageFlags flags) override;
 
     Queue& GetQueue(QueueType queue_type) override;
 
     GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) override;
     ComputePipelinePtr CreateComputePipeline(char const* cs_filename) override;
 
-    SwapchainPtr CreateSwapchain(
-        void* window_native_handle,
-        std::uint32_t width,
-        std::uint32_t height,
-        std::uint32_t image_count) override;
+    SwapchainPtr CreateSwapchain(void* window_native_handle, std::uint32_t width,
+        std::uint32_t height, std::uint32_t image_count) override;
 
-    VulkanApi& GetApi() const { return api_; }
-    VkPhysicalDevice GetPhysicalDevice() const { return physical_device_; }
-    VkDevice GetDevice() const { return device_; }
-    VulkanMemoryManager& GetMemoryManager() { return memory_manager_; }
+    VulkanApi& GetApi() const
+    {
+        return api_;
+    }
+    VkPhysicalDevice GetPhysicalDevice() const
+    {
+        return physical_device_;
+    }
+    VkDevice GetDevice() const
+    {
+        return device_;
+    }
+    VulkanMemoryManager& GetMemoryManager()
+    {
+        return memory_manager_;
+    }
 
-    uint32_t GetGraphicsQueueFamilyIndex() const { return graphics_queue_family_index_; }
-    uint32_t GetComputeQueueFamilyIndex() const { return compute_queue_family_index_; }
-    uint32_t GetTransferQueueFamilyIndex() const { return transfer_queue_family_index_; }
+    uint32_t GetGraphicsQueueFamilyIndex() const
+    {
+        return graphics_queue_family_index_;
+    }
+    uint32_t GetComputeQueueFamilyIndex() const
+    {
+        return compute_queue_family_index_;
+    }
+    uint32_t GetTransferQueueFamilyIndex() const
+    {
+        return transfer_queue_family_index_;
+    }
 
-private:
+  private:
     void FindQueueFamilyIndices();
     void CreateLogicalDevice();
 
-private:
+  private:
     VulkanApi& api_;
     VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
     VkDevice device_ = VK_NULL_HANDLE;

@@ -13,7 +13,7 @@ class VulkanCommandBuffer;
 
 class VulkanQueue final : public Queue
 {
-public:
+  public:
     VulkanQueue(VulkanDevice& device, uint32_t queue_family_index);
     ~VulkanQueue() override;
 
@@ -21,10 +21,16 @@ public:
     void Submit(CommandBufferPtr cmd_buffer) override;
     void WaitIdle() override;
 
-    VkQueue GetQueue() const { return queue_; }
-    VkCommandPool GetCommandPool() const { return command_pool_; }
+    VkQueue GetQueue() const
+    {
+        return queue_;
+    }
+    VkCommandPool GetCommandPool() const
+    {
+        return command_pool_;
+    }
 
-private:
+  private:
     VulkanDevice& device_;
     uint32_t queue_family_index_ = 0;
     VkQueue queue_ = VK_NULL_HANDLE;

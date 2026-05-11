@@ -11,9 +11,11 @@ namespace gpu
 {
 class D3D12Exception : public std::exception
 {
-public:
+  public:
     D3D12Exception(char const* message, HRESULT hr, std::string file, uint32_t line)
-        : std::exception(message), hr_(hr), file_(file), line_(line) {}
+        : std::exception(message), hr_(hr), file_(file), line_(line)
+    {
+    }
 
     char const* what() const override
     {
@@ -23,18 +25,24 @@ public:
 
         std::string error_info = std::exception::what();
         error_info += " (HRESULT = " + std::to_string(hr_) + ", \"" + hr_string + "\"" +
-            ", file: " + file_ + ", line: " + std::to_string(line_) + ")";
+                      ", file: " + file_ + ", line: " + std::to_string(line_) + ")";
         return error_info.c_str();
     }
 
-private:
+  private:
     HRESULT hr_;
     std::string file_;
     uint32_t line_;
-
 };
 
 } // namespace gpu
 
-#define ThrowIfFailed(x) \
-    { HRESULT hr = (x); if (FAILED(hr)) { std::string msg = "Failed to execute " + std::string(#x); throw D3D12Exception(msg.c_str(), hr, __FILE__, __LINE__); } }
+#define ThrowIfFailed(x)                                                                           \
+    {                                                                                              \
+        HRESULT hr = (x);                                                                          \
+        if (FAILED(hr))                                                                            \
+        {                                                                                          \
+            std::string msg = "Failed to execute " + std::string(#x);                              \
+            throw D3D12Exception(msg.c_str(), hr, __FILE__, __LINE__);                             \
+        }                                                                                          \
+    }

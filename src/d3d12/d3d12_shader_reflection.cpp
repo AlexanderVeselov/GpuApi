@@ -13,12 +13,18 @@ ShaderStage GetShaderStage(D3D12_SHADER_VERSION_TYPE version_type)
 {
     switch (version_type)
     {
-    case D3D12_SHVER_PIXEL_SHADER: return ShaderStage::kPixel;
-    case D3D12_SHVER_VERTEX_SHADER: return ShaderStage::kVertex;
-    case D3D12_SHVER_GEOMETRY_SHADER: return ShaderStage::kGeometry;
-    case D3D12_SHVER_HULL_SHADER: return ShaderStage::kHull;
-    case D3D12_SHVER_DOMAIN_SHADER: return ShaderStage::kDomain;
-    case D3D12_SHVER_COMPUTE_SHADER: return ShaderStage::kCompute;
+    case D3D12_SHVER_PIXEL_SHADER:
+        return ShaderStage::kPixel;
+    case D3D12_SHVER_VERTEX_SHADER:
+        return ShaderStage::kVertex;
+    case D3D12_SHVER_GEOMETRY_SHADER:
+        return ShaderStage::kGeometry;
+    case D3D12_SHVER_HULL_SHADER:
+        return ShaderStage::kHull;
+    case D3D12_SHVER_DOMAIN_SHADER:
+        return ShaderStage::kDomain;
+    case D3D12_SHVER_COMPUTE_SHADER:
+        return ShaderStage::kCompute;
     default:
         assert(false && "BuildD3D12ShaderReflection: unknown shader stage");
         return ShaderStage::kVertex;
@@ -29,14 +35,16 @@ ShaderDescriptorRangeType GetRangeType(D3D_SHADER_INPUT_TYPE type)
 {
     switch (type)
     {
-    case D3D_SIT_CBUFFER: return ShaderDescriptorRangeType::kCBV;
+    case D3D_SIT_CBUFFER:
+        return ShaderDescriptorRangeType::kCBV;
     case D3D_SIT_TBUFFER:
     case D3D_SIT_TEXTURE:
     case D3D_SIT_STRUCTURED:
     case D3D_SIT_BYTEADDRESS:
     case D3D_SIT_RTACCELERATIONSTRUCTURE:
         return ShaderDescriptorRangeType::kSRV;
-    case D3D_SIT_SAMPLER: return ShaderDescriptorRangeType::kSampler;
+    case D3D_SIT_SAMPLER:
+        return ShaderDescriptorRangeType::kSampler;
     case D3D_SIT_UAV_RWTYPED:
     case D3D_SIT_UAV_RWSTRUCTURED:
     case D3D_SIT_UAV_RWBYTEADDRESS:
@@ -54,7 +62,8 @@ ShaderResourceType GetResourceType(D3D_SHADER_INPUT_TYPE type)
 {
     switch (type)
     {
-    case D3D_SIT_SAMPLER: return ShaderResourceType::kSampler;
+    case D3D_SIT_SAMPLER:
+        return ShaderResourceType::kSampler;
     case D3D_SIT_TEXTURE:
     case D3D_SIT_UAV_RWTYPED:
         return ShaderResourceType::kImage;
@@ -67,31 +76,43 @@ ImageFormat GetInputFormat(D3D_REGISTER_COMPONENT_TYPE component_type, uint8_t c
 {
     if (component_type == D3D_REGISTER_COMPONENT_FLOAT32)
     {
-        if (component_mask == 0x1) return ImageFormat::kR32_Float;
-        if (component_mask == 0x3) return ImageFormat::kRG32_Float;
-        if (component_mask == 0x7) return ImageFormat::kRGB32_Float;
-        if (component_mask == 0xF) return ImageFormat::kRGBA32_Float;
+        if (component_mask == 0x1)
+            return ImageFormat::kR32_Float;
+        if (component_mask == 0x3)
+            return ImageFormat::kRG32_Float;
+        if (component_mask == 0x7)
+            return ImageFormat::kRGB32_Float;
+        if (component_mask == 0xF)
+            return ImageFormat::kRGBA32_Float;
     }
 
     if (component_type == D3D_REGISTER_COMPONENT_UINT32)
     {
-        if (component_mask == 0x1) return ImageFormat::kR32_UInt;
-        if (component_mask == 0x3) return ImageFormat::kRG32_UInt;
-        if (component_mask == 0x7) return ImageFormat::kRGB32_UInt;
-        if (component_mask == 0xF) return ImageFormat::kRGBA32_UInt;
+        if (component_mask == 0x1)
+            return ImageFormat::kR32_UInt;
+        if (component_mask == 0x3)
+            return ImageFormat::kRG32_UInt;
+        if (component_mask == 0x7)
+            return ImageFormat::kRGB32_UInt;
+        if (component_mask == 0xF)
+            return ImageFormat::kRGBA32_UInt;
     }
 
     if (component_type == D3D_REGISTER_COMPONENT_SINT32)
     {
-        if (component_mask == 0x1) return ImageFormat::kR32_SInt;
-        if (component_mask == 0x3) return ImageFormat::kRG32_SInt;
-        if (component_mask == 0x7) return ImageFormat::kRGB32_SInt;
-        if (component_mask == 0xF) return ImageFormat::kRGBA32_SInt;
+        if (component_mask == 0x1)
+            return ImageFormat::kR32_SInt;
+        if (component_mask == 0x3)
+            return ImageFormat::kRG32_SInt;
+        if (component_mask == 0x7)
+            return ImageFormat::kRGB32_SInt;
+        if (component_mask == 0xF)
+            return ImageFormat::kRGBA32_SInt;
     }
 
     return ImageFormat::kUnknown;
 }
-}
+} // namespace
 
 ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection)
 {
@@ -149,8 +170,7 @@ ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection)
         reflection->GetInputParameterDesc(i, &parameter_desc);
 
         ShaderInputParameter parameter;
-        parameter.semantic_name =
-            parameter_desc.SemanticName ? parameter_desc.SemanticName : "";
+        parameter.semantic_name = parameter_desc.SemanticName ? parameter_desc.SemanticName : "";
         parameter.semantic_index = parameter_desc.SemanticIndex;
         parameter.format = GetInputFormat(parameter_desc.ComponentType, parameter_desc.Mask);
         parameter.is_system_value = parameter_desc.SystemValueType != D3D_NAME_UNDEFINED;

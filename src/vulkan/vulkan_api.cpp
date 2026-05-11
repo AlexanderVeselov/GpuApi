@@ -7,8 +7,7 @@
 
 namespace gpu
 {
-VulkanApi::VulkanApi()
-    : shader_manager_("")
+VulkanApi::VulkanApi() : shader_manager_("")
 {
     CreateInstance();
 }

@@ -15,7 +15,7 @@ std::string BindingName(uint32_t binding, uint32_t space)
 {
     return "(binding = " + std::to_string(binding) + ", space = " + std::to_string(space) + ")";
 }
-}
+} // namespace
 
 template <class TResource, class TBase>
 TResource& CastResource(TBase& resource, char const* function_name)
@@ -23,15 +23,14 @@ TResource& CastResource(TBase& resource, char const* function_name)
     TResource* d3d12_resource = dynamic_cast<TResource*>(&resource);
     if (!d3d12_resource)
     {
-        throw std::runtime_error(std::string(function_name) +
-            ": resource was not created by the D3D12 backend");
+        throw std::runtime_error(
+            std::string(function_name) + ": resource was not created by the D3D12 backend");
     }
 
     return *d3d12_resource;
 }
 
-D3D12DescriptorSet::D3D12DescriptorSet(D3D12PipelineLayout const& layout)
-    : layout_(layout)
+D3D12DescriptorSet::D3D12DescriptorSet(D3D12PipelineLayout const& layout) : layout_(layout)
 {
 }
 
@@ -40,14 +39,14 @@ D3D12DescriptorSet::~D3D12DescriptorSet()
 }
 
 D3D12DescriptorSet::D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept
-    : layout_(other.layout_)
-    , descriptors_(std::move(other.descriptors_))
+    : layout_(other.layout_), descriptors_(std::move(other.descriptors_))
 {
 }
 
 D3D12DescriptorSet& D3D12DescriptorSet::operator=(D3D12DescriptorSet&& other) noexcept
 {
-    assert(&layout_ == &other.layout_ && "D3D12DescriptorSet::operator=: descriptor sets must use the same pipeline layout");
+    assert(&layout_ == &other.layout_ &&
+           "D3D12DescriptorSet::operator=: descriptor sets must use the same pipeline layout");
 
     if (this != &other)
     {
@@ -69,12 +68,10 @@ void D3D12DescriptorSet::BindImage(Image& image, uint32_t binding, uint32_t spac
 }
 
 void D3D12DescriptorSet::BindImage(
-    Image& image,
-    ImageView const& view,
-    uint32_t binding,
-    uint32_t space)
+    Image& image, ImageView const& view, uint32_t binding, uint32_t space)
 {
-    BindImage(CastResource<D3D12Image>(image, "D3D12DescriptorSet::BindImage"), view, binding, space);
+    BindImage(
+        CastResource<D3D12Image>(image, "D3D12DescriptorSet::BindImage"), view, binding, space);
 }
 
 void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint32_t space)
@@ -83,7 +80,7 @@ void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint3
     if (d3d12_binding.type != D3D12Binding::ResourceType::kBuffer)
     {
         throw std::runtime_error("D3D12DescriptorSet::BindBuffer: pipeline binding " +
-            BindingName(binding, space) + " is not a buffer binding");
+                                 BindingName(binding, space) + " is not a buffer binding");
     }
 
     BindDescriptor(d3d12_binding, buffer.GetCBV());
@@ -94,13 +91,14 @@ void D3D12DescriptorSet::BindImage(D3D12Image& image, uint32_t binding, uint32_t
     BindImage(image, ImageView{}, binding, space);
 }
 
-void D3D12DescriptorSet::BindImage(D3D12Image& image, ImageView const& view, uint32_t binding, uint32_t space)
+void D3D12DescriptorSet::BindImage(
+    D3D12Image& image, ImageView const& view, uint32_t binding, uint32_t space)
 {
     D3D12Binding const& d3d12_binding = FindBinding(binding, space);
     if (d3d12_binding.type != D3D12Binding::ResourceType::kImage)
     {
         throw std::runtime_error("D3D12DescriptorSet::BindImage: pipeline binding " +
-            BindingName(binding, space) + " is not an image binding");
+                                 BindingName(binding, space) + " is not an image binding");
     }
 
     if (d3d12_binding.range_type == D3D12_DESCRIPTOR_RANGE_TYPE_UAV)
@@ -129,10 +127,11 @@ D3D12Binding const& D3D12DescriptorSet::FindBinding(uint32_t binding, uint32_t s
     }
 
     throw std::runtime_error("D3D12DescriptorSet: pipeline layout binding " +
-        BindingName(binding, space) + " was not found");
+                             BindingName(binding, space) + " was not found");
 }
 
-D3D12DescriptorSet::BoundDescriptor& D3D12DescriptorSet::FindOrCreateBoundDescriptor(D3D12Binding const& binding)
+D3D12DescriptorSet::BoundDescriptor& D3D12DescriptorSet::FindOrCreateBoundDescriptor(
+    D3D12Binding const& binding)
 {
     for (BoundDescriptor& descriptor : descriptors_)
     {
@@ -152,9 +151,10 @@ D3D12DescriptorSet::BoundDescriptor& D3D12DescriptorSet::FindOrCreateBoundDescri
 
 void D3D12DescriptorSet::BindDescriptor(D3D12Binding const& binding, D3D12Descriptor cpu_descriptor)
 {
-    assert(cpu_descriptor.IsValid() && "D3D12DescriptorSet::BindDescriptor: CPU descriptor is invalid");
+    assert(cpu_descriptor.IsValid() &&
+           "D3D12DescriptorSet::BindDescriptor: CPU descriptor is invalid");
     assert(binding.descriptor_type == D3D12Binding::DescriptorType::kDescriptorTable &&
-        "D3D12DescriptorSet::BindDescriptor: only descriptor-table bindings are supported");
+           "D3D12DescriptorSet::BindDescriptor: only descriptor-table bindings are supported");
 
     BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(binding);
 

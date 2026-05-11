@@ -1,8 +1,8 @@
 #pragma once
 
-#include "gpu_api.hpp"
 #include "d3d12_common.hpp"
 #include "d3d12_shader_manager.hpp"
+#include "gpu_api.hpp"
 
 #include <vector>
 
@@ -12,14 +12,20 @@ using Microsoft::WRL::ComPtr;
 
 class D3D12Api : public Api
 {
-public:
+  public:
     D3D12Api();
     DevicePtr CreateDevice() override;
 
-    IDXGIFactory4* GetDXGIFactory() const { return dxgi_factory_.Get(); }
-    D3D12ShaderManager& GetShaderManager() { return shader_manager_; }
+    IDXGIFactory4* GetDXGIFactory() const
+    {
+        return dxgi_factory_.Get();
+    }
+    D3D12ShaderManager& GetShaderManager()
+    {
+        return shader_manager_;
+    }
 
-private:
+  private:
     ComPtr<IDXGIFactory4> dxgi_factory_;
     std::vector<ComPtr<IDXGIAdapter1>> dxgi_adapters_;
     D3D12ShaderManager shader_manager_;

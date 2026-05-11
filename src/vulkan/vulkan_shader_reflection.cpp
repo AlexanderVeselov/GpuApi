@@ -9,7 +9,7 @@ namespace gpu
 {
 namespace
 {
-void ThrowIfSpvReflectFailed(SpvReflectResult result, char const *message)
+void ThrowIfSpvReflectFailed(SpvReflectResult result, char const* message)
 {
     if (result != SPV_REFLECT_RESULT_SUCCESS)
     {
@@ -136,12 +136,12 @@ ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv)
     ThrowIfSpvReflectFailed(spvReflectEnumerateDescriptorBindings(&module, &binding_count, nullptr),
         "BuildVulkanShaderReflection: failed to enumerate descriptor binding count");
 
-    std::vector<SpvReflectDescriptorBinding *> bindings(binding_count);
+    std::vector<SpvReflectDescriptorBinding*> bindings(binding_count);
     ThrowIfSpvReflectFailed(
         spvReflectEnumerateDescriptorBindings(&module, &binding_count, bindings.data()),
         "BuildVulkanShaderReflection: failed to enumerate descriptor bindings");
 
-    for (SpvReflectDescriptorBinding const *spv_binding : bindings)
+    for (SpvReflectDescriptorBinding const* spv_binding : bindings)
     {
         ShaderBinding binding;
         binding.name = spv_binding->name ? spv_binding->name : "";
@@ -159,11 +159,11 @@ ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv)
     ThrowIfSpvReflectFailed(spvReflectEnumerateInputVariables(&module, &input_count, nullptr),
         "BuildVulkanShaderReflection: failed to enumerate input variable count");
 
-    std::vector<SpvReflectInterfaceVariable *> inputs(input_count);
+    std::vector<SpvReflectInterfaceVariable*> inputs(input_count);
     ThrowIfSpvReflectFailed(spvReflectEnumerateInputVariables(&module, &input_count, inputs.data()),
         "BuildVulkanShaderReflection: failed to enumerate input variables");
 
-    for (SpvReflectInterfaceVariable const *spv_input : inputs)
+    for (SpvReflectInterfaceVariable const* spv_input : inputs)
     {
         if (spv_input->built_in != -1)
         {

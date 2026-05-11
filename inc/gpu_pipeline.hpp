@@ -8,7 +8,7 @@ namespace gpu
 /// Base class for graphics and compute pipelines.
 class Pipeline
 {
-public:
+  public:
     virtual ~Pipeline() = default;
 
     /// Creates a descriptor set whose layout matches this pipeline.
@@ -21,28 +21,34 @@ public:
 /// Graphics pipeline state object.
 class GraphicsPipeline : virtual public Pipeline
 {
-public:
-    explicit GraphicsPipeline(GraphicsPipelineDesc const& desc)
-        : pipeline_desc_(desc)
-    {}
+  public:
+    explicit GraphicsPipeline(GraphicsPipelineDesc const& desc) : pipeline_desc_(desc)
+    {
+    }
 
-    GraphicsPipelineDesc const& GetDesc() const { return pipeline_desc_; }
+    GraphicsPipelineDesc const& GetDesc() const
+    {
+        return pipeline_desc_;
+    }
 
-protected:
+  protected:
     GraphicsPipelineDesc pipeline_desc_;
 };
 
 /// Compute pipeline state object.
 class ComputePipeline : virtual public Pipeline
 {
-public:
-    explicit ComputePipeline(char const* cs_filename)
-        : cs_filename_(cs_filename)
-    {}
+  public:
+    explicit ComputePipeline(char const* cs_filename) : cs_filename_(cs_filename)
+    {
+    }
 
-    std::string const& GetCSFilename() const { return cs_filename_; }
+    std::string const& GetCSFilename() const
+    {
+        return cs_filename_;
+    }
 
-protected:
+  protected:
     std::string cs_filename_;
 };
 

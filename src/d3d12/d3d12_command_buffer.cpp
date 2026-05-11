@@ -46,7 +46,7 @@ bool IsDepthFormat(ImageFormat format)
 }
 
 D3D12Descriptor CopyDescriptorToGPU(
-    D3D12DescriptorManager &descriptor_manager, D3D12Descriptor descriptor)
+    D3D12DescriptorManager& descriptor_manager, D3D12Descriptor descriptor)
 {
     assert(descriptor.IsValid() && "CopyDescriptorToGPU: source descriptor is invalid");
 
@@ -65,7 +65,7 @@ D3D12Descriptor CopyDescriptorToGPU(
 } // namespace
 
 D3D12CommandBuffer::D3D12CommandBuffer(
-    D3D12Device &device, D3D12Queue &queue, D3D12_COMMAND_LIST_TYPE command_list_type)
+    D3D12Device& device, D3D12Queue& queue, D3D12_COMMAND_LIST_TYPE command_list_type)
     : device_(device), queue_(queue), command_list_type_(command_list_type)
 {
     auto d3d12_device = device_.GetD3D12Device();
@@ -82,7 +82,7 @@ D3D12CommandBuffer::~D3D12CommandBuffer()
 
 void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer, size_t vertex_stride)
 {
-    D3D12Buffer *d3d12_buffer = static_cast<D3D12Buffer *>(buffer.get());
+    D3D12Buffer* d3d12_buffer = static_cast<D3D12Buffer*>(buffer.get());
     assert(d3d12_buffer && "D3D12CommandBuffer::SetVertexBuffer: buffer is not a D3D12Buffer");
     current_vertex_stride_ = static_cast<uint32_t>(vertex_stride);
     if (current_graphics_pipeline_ && current_graphics_pipeline_->GetVertexStride() != 0 &&
@@ -102,7 +102,7 @@ void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer, size_t vertex_stride)
 
 void D3D12CommandBuffer::SetIndexBuffer(BufferPtr buffer)
 {
-    D3D12Buffer *d3d12_buffer = static_cast<D3D12Buffer *>(buffer.get());
+    D3D12Buffer* d3d12_buffer = static_cast<D3D12Buffer*>(buffer.get());
     assert(d3d12_buffer && "D3D12CommandBuffer::SetIndexBuffer: buffer is not a D3D12Buffer");
 
     D3D12_INDEX_BUFFER_VIEW view = {};
@@ -114,9 +114,9 @@ void D3D12CommandBuffer::SetIndexBuffer(BufferPtr buffer)
     cmd_list_->IASetIndexBuffer(&view);
 }
 
-void D3D12CommandBuffer::BindPipeline(GraphicsPipelinePtr const &pipeline)
+void D3D12CommandBuffer::BindPipeline(GraphicsPipelinePtr const& pipeline)
 {
-    D3D12GraphicsPipeline *d3d12_pipeline = static_cast<D3D12GraphicsPipeline *>(pipeline.get());
+    D3D12GraphicsPipeline* d3d12_pipeline = static_cast<D3D12GraphicsPipeline*>(pipeline.get());
     assert(d3d12_pipeline &&
            "D3D12CommandBuffer::BindPipeline: pipeline is not a D3D12GraphicsPipeline");
     if (current_vertex_stride_ != 0 && d3d12_pipeline->GetVertexStride() != 0 &&
@@ -132,9 +132,9 @@ void D3D12CommandBuffer::BindPipeline(GraphicsPipelinePtr const &pipeline)
     cmd_list_->SetGraphicsRootSignature(d3d12_pipeline->GetRootSignature());
 }
 
-void D3D12CommandBuffer::BindPipeline(ComputePipelinePtr const &pipeline)
+void D3D12CommandBuffer::BindPipeline(ComputePipelinePtr const& pipeline)
 {
-    D3D12ComputePipeline *d3d12_pipeline = static_cast<D3D12ComputePipeline *>(pipeline.get());
+    D3D12ComputePipeline* d3d12_pipeline = static_cast<D3D12ComputePipeline*>(pipeline.get());
     assert(d3d12_pipeline &&
            "D3D12CommandBuffer::BindPipeline: pipeline is not a D3D12ComputePipeline");
 
@@ -143,10 +143,10 @@ void D3D12CommandBuffer::BindPipeline(ComputePipelinePtr const &pipeline)
     cmd_list_->SetComputeRootSignature(d3d12_pipeline->GetRootSignature());
 }
 
-void D3D12CommandBuffer::BindDescriptorSet(DescriptorSetPtr const &descriptor_set)
+void D3D12CommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_set)
 {
-    D3D12DescriptorSet *d3d12_descriptor_set =
-        dynamic_cast<D3D12DescriptorSet *>(descriptor_set.get());
+    D3D12DescriptorSet* d3d12_descriptor_set =
+        dynamic_cast<D3D12DescriptorSet*>(descriptor_set.get());
     if (!d3d12_descriptor_set)
     {
         throw std::runtime_error("D3D12CommandBuffer::BindDescriptorSet: descriptor set was not "
@@ -189,7 +189,7 @@ void D3D12CommandBuffer::SetRenderTarget(ImagePtr color_attachment, ImagePtr dep
 }
 
 void D3D12CommandBuffer::SetRenderTargets(
-    std::vector<ImagePtr> const &color_attachments, ImagePtr depth_attachment)
+    std::vector<ImagePtr> const& color_attachments, ImagePtr depth_attachment)
 {
     assert(color_attachments.size() <= D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT &&
            "D3D12CommandBuffer::SetRenderTargets: too many color attachments");
@@ -197,7 +197,7 @@ void D3D12CommandBuffer::SetRenderTargets(
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtv_handles(color_attachments.size());
     for (size_t i = 0; i < color_attachments.size(); ++i)
     {
-        D3D12Image *d3d12_image = static_cast<D3D12Image *>(color_attachments[i].get());
+        D3D12Image* d3d12_image = static_cast<D3D12Image*>(color_attachments[i].get());
         assert(d3d12_image &&
                "D3D12CommandBuffer::SetRenderTargets: color attachment is not a D3D12Image");
         rtv_handles[i] = d3d12_image->GetRTVHandle();
@@ -206,7 +206,7 @@ void D3D12CommandBuffer::SetRenderTargets(
     D3D12_CPU_DESCRIPTOR_HANDLE dsv_handle = {};
     if (depth_attachment)
     {
-        D3D12Image *d3d12_image = static_cast<D3D12Image *>(depth_attachment.get());
+        D3D12Image* d3d12_image = static_cast<D3D12Image*>(depth_attachment.get());
         assert(d3d12_image &&
                "D3D12CommandBuffer::SetRenderTargets: depth attachment is not a D3D12Image");
         dsv_handle = d3d12_image->GetDSVHandle();
@@ -217,7 +217,7 @@ void D3D12CommandBuffer::SetRenderTargets(
         depth_attachment ? &dsv_handle : nullptr);
 }
 
-void D3D12CommandBuffer::SetViewport(const Viewport &viewport)
+void D3D12CommandBuffer::SetViewport(const Viewport& viewport)
 {
     D3D12_VIEWPORT d3d12_viewport = {};
     d3d12_viewport.TopLeftX = viewport.x;
@@ -230,7 +230,7 @@ void D3D12CommandBuffer::SetViewport(const Viewport &viewport)
     cmd_list_->RSSetViewports(1, &d3d12_viewport);
 }
 
-void D3D12CommandBuffer::SetScissor(const Rect &rect)
+void D3D12CommandBuffer::SetScissor(const Rect& rect)
 {
     D3D12_RECT d3d12_rect = {};
     d3d12_rect.left = rect.x;
@@ -243,7 +243,7 @@ void D3D12CommandBuffer::SetScissor(const Rect &rect)
 
 void D3D12CommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, float a)
 {
-    D3D12Image *d3d12_image = static_cast<D3D12Image *>(image.get());
+    D3D12Image* d3d12_image = static_cast<D3D12Image*>(image.get());
     assert(d3d12_image && "D3D12CommandBuffer::ClearImage: image is not a D3D12Image");
 
     D3D12_RECT rect = {
@@ -252,10 +252,21 @@ void D3D12CommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, f
     cmd_list_->ClearRenderTargetView(d3d12_image->GetRTVHandle(), color, 1, &rect);
 }
 
+void D3D12CommandBuffer::ClearDepthImage(ImagePtr image, float depth)
+{
+    D3D12Image* d3d12_image = static_cast<D3D12Image*>(image.get());
+    assert(d3d12_image && "D3D12CommandBuffer::ClearDepthImage: image is not a D3D12Image");
+
+    D3D12_RECT rect = {
+        0, 0, static_cast<LONG>(image->GetWidth()), static_cast<LONG>(image->GetHeight())};
+    cmd_list_->ClearDepthStencilView(
+        d3d12_image->GetDSVHandle(), D3D12_CLEAR_FLAG_DEPTH, depth, 0, 1, &rect);
+}
+
 void D3D12CommandBuffer::TransitionBarrier(
     ImagePtr image, ImageLayout layout_before, ImageLayout layout_after)
 {
-    D3D12Image *d3d12_image = static_cast<D3D12Image *>(image.get());
+    D3D12Image* d3d12_image = static_cast<D3D12Image*>(image.get());
     assert(d3d12_image && "D3D12CommandBuffer::TransitionBarrier: image is not a D3D12Image");
 
     const bool is_depth = IsDepthFormat(image->GetFormat());
@@ -271,7 +282,7 @@ void D3D12CommandBuffer::TransitionBarrier(
 
 void D3D12CommandBuffer::StorageBarrier(ImagePtr image)
 {
-    D3D12Image *d3d12_image = static_cast<D3D12Image *>(image.get());
+    D3D12Image* d3d12_image = static_cast<D3D12Image*>(image.get());
     assert(d3d12_image && "D3D12CommandBuffer::StorageBarrier: image is not a D3D12Image");
 
     D3D12_RESOURCE_BARRIER barrier = {};
@@ -282,20 +293,20 @@ void D3D12CommandBuffer::StorageBarrier(ImagePtr image)
 }
 
 void D3D12CommandBuffer::CopyBuffer(
-    Buffer *src, uint64_t src_offset, Buffer *dst, uint64_t dst_offset, uint64_t size)
+    Buffer* src, uint64_t src_offset, Buffer* dst, uint64_t dst_offset, uint64_t size)
 {
-    D3D12Buffer *d3d12_src = static_cast<D3D12Buffer *>(src);
-    D3D12Buffer *d3d12_dst = static_cast<D3D12Buffer *>(dst);
+    D3D12Buffer* d3d12_src = static_cast<D3D12Buffer*>(src);
+    D3D12Buffer* d3d12_dst = static_cast<D3D12Buffer*>(dst);
     assert(d3d12_src && d3d12_dst && "D3D12CommandBuffer::CopyBuffer: src/dst must be D3D12Buffer");
 
     cmd_list_->CopyBufferRegion(
         d3d12_dst->GetResource(), dst_offset, d3d12_src->GetResource(), src_offset, size);
 }
 
-void D3D12CommandBuffer::CopyBufferToImage(Image *dst, Buffer *src)
+void D3D12CommandBuffer::CopyBufferToImage(Image* dst, Buffer* src)
 {
-    D3D12Image *d3d12_dst = static_cast<D3D12Image *>(dst);
-    D3D12Buffer *d3d12_src = static_cast<D3D12Buffer *>(src);
+    D3D12Image* d3d12_dst = static_cast<D3D12Image*>(dst);
+    D3D12Buffer* d3d12_src = static_cast<D3D12Buffer*>(src);
     assert(d3d12_dst && d3d12_src &&
            "D3D12CommandBuffer::CopyBufferToImage: dst must be D3D12Image and src must be "
            "D3D12Buffer");
@@ -321,10 +332,10 @@ void D3D12CommandBuffer::CopyBufferToImage(Image *dst, Buffer *src)
     cmd_list_->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
 }
 
-void D3D12CommandBuffer::CopyImage(Image *dst, Image *src)
+void D3D12CommandBuffer::CopyImage(Image* dst, Image* src)
 {
-    D3D12Image *d3d12_dst = static_cast<D3D12Image *>(dst);
-    D3D12Image *d3d12_src = static_cast<D3D12Image *>(src);
+    D3D12Image* d3d12_dst = static_cast<D3D12Image*>(dst);
+    D3D12Image* d3d12_src = static_cast<D3D12Image*>(src);
     assert(d3d12_dst && d3d12_src && "D3D12CommandBuffer::CopyImage: dst/src must be D3D12Image");
     assert(dst->GetWidth() == src->GetWidth() &&
            "D3D12CommandBuffer::CopyImage: source and destination widths must match");
@@ -364,8 +375,8 @@ void D3D12CommandBuffer::BindDescriptorsGraphics()
         return;
     }
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
-    ID3D12DescriptorHeap *heaps[] = {
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
+    ID3D12DescriptorHeap* heaps[] = {
         descriptor_manager.GetGPUCBVSRVUAVHeap(), descriptor_manager.GetGPUSamplerHeap()};
     cmd_list_->SetDescriptorHeaps(2, heaps);
 
@@ -378,7 +389,7 @@ void D3D12CommandBuffer::BindDescriptorsGraphics()
            "D3D12CommandBuffer::BindDescriptorsGraphics: descriptor set layout must match the "
            "current graphics pipeline layout");
 
-    for (D3D12DescriptorSet::BoundDescriptor const &descriptor :
+    for (D3D12DescriptorSet::BoundDescriptor const& descriptor :
         current_descriptor_set_->GetBoundDescriptors())
     {
         D3D12Descriptor gpu_descriptor =
@@ -397,8 +408,8 @@ void D3D12CommandBuffer::BindDescriptorsCompute()
         return;
     }
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
-    ID3D12DescriptorHeap *heaps[] = {
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
+    ID3D12DescriptorHeap* heaps[] = {
         descriptor_manager.GetGPUCBVSRVUAVHeap(), descriptor_manager.GetGPUSamplerHeap()};
     cmd_list_->SetDescriptorHeaps(2, heaps);
 
@@ -411,7 +422,7 @@ void D3D12CommandBuffer::BindDescriptorsCompute()
            "D3D12CommandBuffer::BindDescriptorsCompute: descriptor set layout must match the "
            "current compute pipeline layout");
 
-    for (D3D12DescriptorSet::BoundDescriptor const &descriptor :
+    for (D3D12DescriptorSet::BoundDescriptor const& descriptor :
         current_descriptor_set_->GetBoundDescriptors())
     {
         D3D12Descriptor gpu_descriptor =
@@ -425,7 +436,7 @@ void D3D12CommandBuffer::BindDescriptorsCompute()
 
 void D3D12CommandBuffer::FreeCommittedDescriptors()
 {
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     for (D3D12Descriptor descriptor : committed_descriptors_)
     {
         descriptor_manager.Free(descriptor);

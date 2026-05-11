@@ -1,16 +1,15 @@
 #include "d3d12_shader_manager.hpp"
+#include "../common/utils.hpp"
 #include "d3d12_exception.hpp"
 #include "d3d12_shader_reflection.hpp"
 #include "dxcapi.h"
 #include <d3d12shader.h>
-#include "../common/utils.hpp"
 
 #include <vector>
 
 namespace gpu
 {
-D3D12ShaderManager::D3D12ShaderManager(char const* shader_path)
-    : shader_path_(shader_path)
+D3D12ShaderManager::D3D12ShaderManager(char const* shader_path) : shader_path_(shader_path)
 {
     ThrowIfFailed(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxc_utils_)));
     ThrowIfFailed(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxc_compiler_)));
@@ -39,6 +38,7 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
     std::wstring w_shader_profile = StringToWstring(shader_profile);
     shader_args.push_back(L"-T");
     shader_args.push_back(w_shader_profile.c_str());
+    shader_args.push_back(L"-Zpr");
 
     // Add definitions
     std::vector<std::wstring> w_definitions;
@@ -59,8 +59,8 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
 
     // Compile shader
     ComPtr<IDxcResult> dxc_result;
-    ThrowIfFailed(dxc_compiler_->Compile(&shader_source, shader_args.data(), (UINT32)shader_args.size(),
-        dxc_include_handler_, IID_PPV_ARGS(&dxc_result)));
+    ThrowIfFailed(dxc_compiler_->Compile(&shader_source, shader_args.data(),
+        (UINT32)shader_args.size(), dxc_include_handler_, IID_PPV_ARGS(&dxc_result)));
 
     // Check compilation result
     ComPtr<IDxcBlobUtf8> dxc_error;
@@ -79,7 +79,8 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
 
     // Get shader reflection
     ComPtr<IDxcBlob> dxc_reflection;
-    ThrowIfFailed(dxc_result->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&dxc_reflection), nullptr));
+    ThrowIfFailed(
+        dxc_result->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&dxc_reflection), nullptr));
 
     // Create D3D12 reflection
     DxcBuffer reflection_buffer = {};

@@ -28,7 +28,7 @@ VkImageLayout GetDescriptorImageLayout(VulkanBinding const& binding)
 }
 } // namespace
 
-VulkanDescriptorSet::VulkanDescriptorSet(VulkanDevice &device, VulkanPipelineLayout const& layout)
+VulkanDescriptorSet::VulkanDescriptorSet(VulkanDevice& device, VulkanPipelineLayout const& layout)
     : device_(device), layout_(layout)
 {
     CreateDescriptorPool();
@@ -40,9 +40,9 @@ VulkanDescriptorSet::~VulkanDescriptorSet()
     Clear();
 }
 
-void VulkanDescriptorSet::BindBuffer(Buffer &buffer, uint32_t binding, uint32_t space)
+void VulkanDescriptorSet::BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space)
 {
-    auto *vulkan_buffer = dynamic_cast<VulkanBuffer *>(&buffer);
+    auto* vulkan_buffer = dynamic_cast<VulkanBuffer*>(&buffer);
     THROW_IF(!vulkan_buffer, "Buffer does not belong to the Vulkan backend");
 
     VulkanBinding const& vulkan_binding = FindBinding(binding, space);
@@ -69,15 +69,15 @@ void VulkanDescriptorSet::BindBuffer(Buffer &buffer, uint32_t binding, uint32_t 
     vkUpdateDescriptorSets(device_.GetDevice(), 1, &write, 0, nullptr);
 }
 
-void VulkanDescriptorSet::BindImage(Image &image, uint32_t binding, uint32_t space)
+void VulkanDescriptorSet::BindImage(Image& image, uint32_t binding, uint32_t space)
 {
     BindImage(image, ImageView{}, binding, space);
 }
 
 void VulkanDescriptorSet::BindImage(
-    Image &image, ImageView const& , uint32_t binding, uint32_t space)
+    Image& image, ImageView const&, uint32_t binding, uint32_t space)
 {
-    auto *vulkan_image = dynamic_cast<VulkanImage *>(&image);
+    auto* vulkan_image = dynamic_cast<VulkanImage*>(&image);
     THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
 
     VulkanBinding const& vulkan_binding = FindBinding(binding, space);
@@ -139,8 +139,8 @@ void VulkanDescriptorSet::CreateDescriptorPool()
             continue;
         }
 
-        VkDescriptorPoolSize *pool_size = nullptr;
-        for (VkDescriptorPoolSize &existing : pool_sizes)
+        VkDescriptorPoolSize* pool_size = nullptr;
+        for (VkDescriptorPoolSize& existing : pool_sizes)
         {
             if (existing.type == binding.vk_descriptor_type)
             {

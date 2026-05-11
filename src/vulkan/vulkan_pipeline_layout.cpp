@@ -92,12 +92,12 @@ std::string BindingName(VulkanBinding const& binding)
 }
 } // namespace
 
-VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice &device) : device_(device)
+VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice& device) : device_(device)
 {
 }
 
 VulkanPipelineLayout::VulkanPipelineLayout(
-    VulkanDevice &device, std::vector<ShaderReflection const *> const& shaders)
+    VulkanDevice& device, std::vector<ShaderReflection const*> const& shaders)
     : device_(device)
 {
     Build(shaders);
@@ -108,11 +108,11 @@ VulkanPipelineLayout::~VulkanPipelineLayout()
     Clear();
 }
 
-void VulkanPipelineLayout::Build(std::vector<ShaderReflection const *> const& shaders)
+void VulkanPipelineLayout::Build(std::vector<ShaderReflection const*> const& shaders)
 {
     Clear();
 
-    for (ShaderReflection const *shader : shaders)
+    for (ShaderReflection const* shader : shaders)
     {
         assert(shader && "VulkanPipelineLayout::Build: shader reflection pointer is null");
         AddShaderReflection(*shader);
@@ -200,7 +200,7 @@ void VulkanPipelineLayout::AddShaderReflection(ShaderReflection const& reflectio
 
 void VulkanPipelineLayout::AddOrMergeBinding(VulkanBinding const& binding)
 {
-    for (VulkanBinding &existing : bindings_)
+    for (VulkanBinding& existing : bindings_)
     {
         if (existing.binding != binding.binding || existing.set != binding.set)
         {
@@ -283,7 +283,7 @@ void VulkanPipelineLayout::CreateDescriptorSetLayouts()
 void VulkanPipelineLayout::CreatePipelineLayout()
 {
     uint32_t push_constant_offset = 0;
-    for (VulkanBinding &binding : bindings_)
+    for (VulkanBinding& binding : bindings_)
     {
         if (binding.descriptor_type != ShaderDescriptorType::kRootConstant)
         {

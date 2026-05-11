@@ -13,7 +13,7 @@
 
 namespace gpu
 {
-VulkanDevice::VulkanDevice(VulkanApi &api, VkPhysicalDevice physical_device)
+VulkanDevice::VulkanDevice(VulkanApi& api, VkPhysicalDevice physical_device)
     : api_(api), physical_device_(physical_device), memory_manager_(*this)
 {
     FindQueueFamilyIndices();
@@ -102,7 +102,7 @@ void VulkanDevice::CreateLogicalDevice()
         queue_create_infos.push_back(queue_create_info);
     }
 
-    std::vector<char const *> extensions = {
+    std::vector<char const*> extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
 
@@ -134,7 +134,7 @@ ImagePtr VulkanDevice::CreateImage(uint32_t width, uint32_t height, ImageFormat 
         *this, width, height, format, mip_count, array_size, flags);
 }
 
-Queue &VulkanDevice::GetQueue(QueueType queue_type)
+Queue& VulkanDevice::GetQueue(QueueType queue_type)
 {
     switch (queue_type)
     {
@@ -154,12 +154,12 @@ GraphicsPipelinePtr VulkanDevice::CreateGraphicsPipeline(GraphicsPipelineDesc co
     return std::make_unique<VulkanGraphicsPipeline>(*this, pipeline_desc);
 }
 
-ComputePipelinePtr VulkanDevice::CreateComputePipeline(char const *cs_filename)
+ComputePipelinePtr VulkanDevice::CreateComputePipeline(char const* cs_filename)
 {
     return std::make_unique<VulkanComputePipeline>(*this, cs_filename);
 }
 
-SwapchainPtr VulkanDevice::CreateSwapchain(void *window_native_handle, std::uint32_t width,
+SwapchainPtr VulkanDevice::CreateSwapchain(void* window_native_handle, std::uint32_t width,
     std::uint32_t height, std::uint32_t image_count)
 {
     return std::make_unique<VulkanSwapchain>(

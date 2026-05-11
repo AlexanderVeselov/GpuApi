@@ -73,7 +73,7 @@ D3D12_RESOURCE_FLAGS ToD3D12ResourceFlags(ImageFlags flags)
 }
 } // namespace
 
-D3D12Image::D3D12Image(D3D12Device &device, uint32_t width, uint32_t height, ImageFormat format,
+D3D12Image::D3D12Image(D3D12Device& device, uint32_t width, uint32_t height, ImageFormat format,
     uint32_t mip_count, uint32_t array_size, ImageFlags flags)
     : Image(width, height, format, mip_count, array_size, flags), device_(device)
 {
@@ -95,7 +95,7 @@ D3D12Image::D3D12Image(D3D12Device &device, uint32_t width, uint32_t height, Ima
 
     DXGI_FORMAT dxgi_format = ImageToDXGIFormat(format);
     D3D12_CLEAR_VALUE clear_value = {};
-    D3D12_CLEAR_VALUE *clear_value_ptr = nullptr;
+    D3D12_CLEAR_VALUE* clear_value_ptr = nullptr;
 
     if (HasFlag(flags_, ImageFlags::kDepthStencil))
     {
@@ -118,7 +118,7 @@ D3D12Image::D3D12Image(D3D12Device &device, uint32_t width, uint32_t height, Ima
         &resource_desc, D3D12_RESOURCE_STATE_COMMON, clear_value_ptr, IID_PPV_ARGS(&resource_)));
 }
 
-D3D12Image::D3D12Image(D3D12Device &device, ID3D12Resource *resource, uint32_t width,
+D3D12Image::D3D12Image(D3D12Device& device, ID3D12Resource* resource, uint32_t width,
     uint32_t height, ImageFormat format, uint32_t mip_count, uint32_t array_size, ImageFlags flags)
     : Image(width, height, format, mip_count, array_size, flags), device_(device),
       resource_(resource)
@@ -130,20 +130,21 @@ D3D12Image::D3D12Image(D3D12Device &device, ID3D12Resource *resource, uint32_t w
 
 D3D12Image::~D3D12Image()
 {
-    // TODO: do not wait for the device to be idle here, but instead track resource usage and defer descriptor freeing until it's safe
+    // TODO: do not wait for the device to be idle here, but instead track resource usage and defer
+    // descriptor freeing until it's safe
     device_.WaitIdle();
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
 
     descriptor_manager.Free(default_rtv_);
     descriptor_manager.Free(dsv_);
 
-    for (auto &srv : srvs_)
+    for (auto& srv : srvs_)
     {
         descriptor_manager.Free(srv.second);
     }
 
-    for (auto &uav : uavs_)
+    for (auto& uav : uavs_)
     {
         descriptor_manager.Free(uav.second);
     }
@@ -154,7 +155,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetRTVHandle()
     assert(HasFlag(flags_, ImageFlags::kRenderTarget) &&
            "D3D12Image::GetRTVHandle: image was not created with render-target support");
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     if (!default_rtv_.IsValid())
     {
         default_rtv_ = descriptor_manager.AllocateCPURTV();
@@ -187,7 +188,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetDSVHandle()
     assert(HasFlag(flags_, ImageFlags::kDepthStencil) &&
            "D3D12Image::GetDSVHandle: image was not created with depth-stencil support");
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     if (!dsv_.IsValid())
     {
         dsv_ = descriptor_manager.AllocateCPUDSV();
@@ -215,7 +216,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Image::GetDSVHandle()
     return descriptor_manager.GetCPU(dsv_);
 }
 
-D3D12Descriptor const &D3D12Image::GetView(ImageView const &view)
+D3D12Descriptor const& D3D12Image::GetView(ImageView const& view)
 {
     auto it = srvs_.find(view);
     if (it != srvs_.end())
@@ -227,7 +228,7 @@ D3D12Descriptor const &D3D12Image::GetView(ImageView const &view)
     return result.first->second;
 }
 
-D3D12Descriptor const &D3D12Image::GetUAV(ImageView const &view)
+D3D12Descriptor const& D3D12Image::GetUAV(ImageView const& view)
 {
     auto it = uavs_.find(view);
     if (it != uavs_.end())
@@ -239,7 +240,7 @@ D3D12Descriptor const &D3D12Image::GetUAV(ImageView const &view)
     return result.first->second;
 }
 
-D3D12Descriptor D3D12Image::CreateSRV(ImageView const &view)
+D3D12Descriptor D3D12Image::CreateSRV(ImageView const& view)
 {
     assert(HasFlag(flags_, ImageFlags::kShaderResource) &&
            "D3D12Image::CreateSRV: image was not created with shader-resource support");
@@ -248,7 +249,7 @@ D3D12Descriptor D3D12Image::CreateSRV(ImageView const &view)
     assert(view.mip + view.mip_count <= mip_count_ &&
            "D3D12Image::CreateSRV: mip range exceeds image mip count");
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
 
     D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
@@ -279,14 +280,14 @@ D3D12Descriptor D3D12Image::CreateSRV(ImageView const &view)
     return descriptor;
 }
 
-D3D12Descriptor D3D12Image::CreateUAV(ImageView const &view)
+D3D12Descriptor D3D12Image::CreateUAV(ImageView const& view)
 {
     assert(HasFlag(flags_, ImageFlags::kStorage) &&
            "D3D12Image::CreateUAV: image was not created with storage/UAV support");
     assert(view.mip < mip_count_ && "D3D12Image::CreateUAV: mip is out of range");
     assert(view.mip_count == 1 && "D3D12Image::CreateUAV: UAV supports exactly one mip per view");
 
-    D3D12DescriptorManager &descriptor_manager = device_.GetDescriptorManager();
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};

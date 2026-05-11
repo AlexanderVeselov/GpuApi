@@ -20,7 +20,7 @@
 #include <thread>
 #include <utility>
 
-GLFWwindow *CreateWindow(uint32_t width, uint32_t height)
+GLFWwindow* CreateWindow(uint32_t width, uint32_t height)
 {
     int init_status = glfwInit();
 
@@ -32,12 +32,12 @@ GLFWwindow *CreateWindow(uint32_t width, uint32_t height)
         return nullptr;
     }
 
-    GLFWwindow *window =
+    GLFWwindow* window =
         glfwCreateWindow((int)width, (int)height, "HelloTriangle", nullptr, nullptr);
 
     if (window == nullptr)
     {
-        char const *description;
+        char const* description;
         glfwGetError(&description);
 
         throw std::runtime_error(
@@ -57,8 +57,8 @@ int main()
         uint32_t window_width = 1280;
         uint32_t window_height = 720;
 
-        GLFWwindow *window = CreateWindow(window_width, window_height);
-        void *window_native_handle = glfwGetWin32Window(window);
+        GLFWwindow* window = CreateWindow(window_width, window_height);
+        void* window_native_handle = glfwGetWin32Window(window);
 
         auto api = gpu::Api::Create(gpu::ApiType::kD3D12);
         assert(api);
@@ -69,7 +69,7 @@ int main()
         gpu::SwapchainPtr swapchain = device->CreateSwapchain(
             window_native_handle, window_width, window_height, swapchain_image_count);
 
-        auto &graphics_queue = device->GetQueue(gpu::QueueType::kGraphics);
+        auto& graphics_queue = device->GetQueue(gpu::QueueType::kGraphics);
 
         gpu::GraphicsPipelinePtr pipeline;
 
@@ -94,13 +94,13 @@ int main()
 
         gpu::BufferPtr vertex_buffer =
             device->CreateBuffer(sizeof(Vertex) * 3, sizeof(Vertex), gpu::BufferFlags::kCpuAccess);
-        Vertex *data = (Vertex *)vertex_buffer->Map();
+        Vertex* data = (Vertex*)vertex_buffer->Map();
         memcpy(data, vertices, sizeof(vertices));
         vertex_buffer->Unmap();
 
         gpu::BufferPtr scale_buffer = device->CreateBuffer(sizeof(float), sizeof(float),
             gpu::BufferFlags::kCpuAccess | gpu::BufferFlags::kConstant);
-        float *scale = (float *)scale_buffer->Map();
+        float* scale = (float*)scale_buffer->Map();
         *scale = 0.5f;
         scale_buffer->Unmap();
 
