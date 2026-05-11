@@ -1,6 +1,7 @@
 #include "vulkan_command_buffer.hpp"
 
 #include "vulkan_buffer.hpp"
+#include "vulkan_descriptor_set.hpp"
 #include "vulkan_device.hpp"
 #include "vulkan_exception.hpp"
 #include "vulkan_image.hpp"
@@ -152,6 +153,8 @@ void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const &pipeline)
     auto *vulkan_pipeline = dynamic_cast<VulkanGraphicsPipeline *>(pipeline.get());
     THROW_IF(!vulkan_pipeline, "Graphics pipeline does not belong to the Vulkan backend");
 
+    current_graphics_pipeline_ = vulkan_pipeline;
+    current_pipeline_bind_point_ = VK_PIPELINE_BIND_POINT_GRAPHICS;
     vkCmdBindPipeline(
         command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_pipeline->GetPipeline());
 }
@@ -161,13 +164,48 @@ void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const &pipeline)
     auto *vulkan_pipeline = dynamic_cast<VulkanComputePipeline *>(pipeline.get());
     THROW_IF(!vulkan_pipeline, "Compute pipeline does not belong to the Vulkan backend");
 
+    current_compute_pipeline_ = vulkan_pipeline;
+    current_pipeline_bind_point_ = VK_PIPELINE_BIND_POINT_COMPUTE;
     vkCmdBindPipeline(
         command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vulkan_pipeline->GetPipeline());
 }
 
-void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const &)
+void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const &descriptor_set)
 {
-    throw std::runtime_error("Vulkan descriptor sets are not implemented yet");
+    auto *vulkan_descriptor_set = dynamic_cast<VulkanDescriptorSet *>(descriptor_set.get());
+    THROW_IF(!vulkan_descriptor_set, "Descriptor set does not belong to the Vulkan backend");
+
+    std::vector<VkDescriptorSet> const &descriptor_sets =
+        vulkan_descriptor_set->GetDescriptorSets();
+    if (descriptor_sets.empty())
+    {
+        return;
+    }
+
+    if (current_pipeline_bind_point_ == VK_PIPELINE_BIND_POINT_GRAPHICS)
+    {
+        THROW_IF(!current_graphics_pipeline_, "No Vulkan graphics pipeline is currently bound");
+        THROW_IF(&vulkan_descriptor_set->GetLayout() != &current_graphics_pipeline_->GetLayout(),
+            "Descriptor set layout does not match the current Vulkan graphics pipeline layout");
+
+        vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            current_graphics_pipeline_->GetPipelineLayout(), 0,
+            static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(), 0, nullptr);
+    }
+
+    if (current_pipeline_bind_point_ == VK_PIPELINE_BIND_POINT_COMPUTE)
+    {
+        THROW_IF(!current_compute_pipeline_, "No Vulkan compute pipeline is currently bound");
+        THROW_IF(&vulkan_descriptor_set->GetLayout() != &current_compute_pipeline_->GetLayout(),
+            "Descriptor set layout does not match the current Vulkan compute pipeline layout");
+
+        vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
+            current_compute_pipeline_->GetPipelineLayout(), 0,
+            static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(), 0, nullptr);
+    }
+
+    THROW_IF(current_pipeline_bind_point_ == VK_PIPELINE_BIND_POINT_MAX_ENUM,
+        "A Vulkan pipeline must be bound before binding descriptor sets");
 }
 
 void VulkanCommandBuffer::SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment)

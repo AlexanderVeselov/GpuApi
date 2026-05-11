@@ -11,6 +11,8 @@ set(VULKAN_SOURCES
     src/vulkan/vulkan_buffer.hpp
     src/vulkan/vulkan_command_buffer.cpp
     src/vulkan/vulkan_command_buffer.hpp
+    src/vulkan/vulkan_descriptor_set.cpp
+    src/vulkan/vulkan_descriptor_set.hpp
     src/vulkan/vulkan_device.cpp
     src/vulkan/vulkan_device.hpp
     src/vulkan/vulkan_exception.hpp

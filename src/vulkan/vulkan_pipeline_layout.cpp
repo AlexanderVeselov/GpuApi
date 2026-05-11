@@ -48,12 +48,31 @@ VkShaderStageFlags ToVkShaderStageFlags(uint32_t stage_mask)
     return flags;
 }
 
-VkDescriptorType ToVkDescriptorType(ShaderDescriptorRangeType range_type)
+VkDescriptorType ToVkDescriptorType(
+    ShaderResourceType resource_type, ShaderDescriptorRangeType range_type)
 {
+    if (resource_type == ShaderResourceType::kBuffer)
+    {
+        switch (range_type)
+        {
+        case ShaderDescriptorRangeType::kCBV:
+            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        case ShaderDescriptorRangeType::kSRV:
+        case ShaderDescriptorRangeType::kUAV:
+            return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        default:
+            assert(false && "ToVkDescriptorType: unsupported buffer descriptor range type");
+            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        }
+    }
+
+    if (resource_type == ShaderResourceType::kSampler)
+    {
+        return VK_DESCRIPTOR_TYPE_SAMPLER;
+    }
+
     switch (range_type)
     {
-    case ShaderDescriptorRangeType::kCBV:
-        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     case ShaderDescriptorRangeType::kSRV:
         return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     case ShaderDescriptorRangeType::kUAV:
@@ -62,7 +81,7 @@ VkDescriptorType ToVkDescriptorType(ShaderDescriptorRangeType range_type)
         return VK_DESCRIPTOR_TYPE_SAMPLER;
     default:
         assert(false && "ToVkDescriptorType: unsupported descriptor range type");
-        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     }
 }
 
@@ -166,7 +185,8 @@ void VulkanPipelineLayout::AddShaderReflection(ShaderReflection const &reflectio
         binding.resource_type = shader_binding.resource_type;
         binding.descriptor_type = shader_binding.descriptor_type;
         binding.range_type = shader_binding.range_type;
-        binding.vk_descriptor_type = ToVkDescriptorType(shader_binding.range_type);
+        binding.vk_descriptor_type =
+            ToVkDescriptorType(shader_binding.resource_type, shader_binding.range_type);
         binding.stage_flags = ToVkShaderStageFlags(shader_binding.stage_mask);
 
         if (binding.descriptor_type == ShaderDescriptorType::kRootConstant)

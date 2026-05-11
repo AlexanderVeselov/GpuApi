@@ -19,7 +19,7 @@ struct VS_OUTPUT
 VS_OUTPUT main(VS_INPUT input, uint vertex_id : SV_VertexID)
 {
     VS_OUTPUT output;
-    output.position = float4(input.position.xyz /* * g_Scale */, 1.0f);
+    output.position = float4(input.position.xyz * g_Scale, 1.0f);
     output.color = input.color;
 
     return output;

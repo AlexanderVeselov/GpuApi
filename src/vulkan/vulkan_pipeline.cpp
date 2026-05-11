@@ -1,6 +1,7 @@
 #include "vulkan_pipeline.hpp"
 
 #include "vulkan_api.hpp"
+#include "vulkan_descriptor_set.hpp"
 #include "vulkan_device.hpp"
 #include "vulkan_exception.hpp"
 #include "vulkan_image.hpp"
@@ -152,7 +153,7 @@ VulkanPipeline::~VulkanPipeline()
 
 DescriptorSetPtr VulkanPipeline::CreateDescriptorSet()
 {
-    throw std::runtime_error("Vulkan descriptor sets are not implemented yet");
+    return std::make_unique<VulkanDescriptorSet>(device_, layout_);
 }
 
 void VulkanPipeline::DestroyPipeline()
