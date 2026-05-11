@@ -83,7 +83,18 @@ void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint3
                                  BindingName(binding, space) + " is not a buffer binding");
     }
 
-    BindDescriptor(d3d12_binding, buffer.GetCBV());
+    if (d3d12_binding.range_type == D3D12_DESCRIPTOR_RANGE_TYPE_SRV)
+    {
+        BindDescriptor(d3d12_binding, buffer.GetSRV());
+    }
+    else if (d3d12_binding.range_type == D3D12_DESCRIPTOR_RANGE_TYPE_UAV)
+    {
+        BindDescriptor(d3d12_binding, buffer.GetUAV());
+    }
+    else
+    {
+        BindDescriptor(d3d12_binding, buffer.GetCBV());
+    }
 }
 
 void D3D12DescriptorSet::BindImage(D3D12Image& image, uint32_t binding, uint32_t space)

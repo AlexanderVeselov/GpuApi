@@ -92,7 +92,7 @@ set(SPIRV_REFLECT_SOURCES
     third_party/SPIRV-Reflect/spirv_reflect.h
 )
 
-set(DXC_PATH ${CMAKE_SOURCE_DIR}/third_party/dxc_2022_12_16)
+set(DXC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc_2022_12_16)
 
 add_library(dxcompiler SHARED IMPORTED)
 set_target_properties(dxcompiler PROPERTIES
@@ -116,4 +116,7 @@ target_include_directories(GpuApi PRIVATE src/third_party_compat)
 target_include_directories(GpuApi PRIVATE third_party/SPIRV-Reflect)
 target_compile_definitions(GpuApi PRIVATE VK_USE_PLATFORM_WIN32_KHR)
 target_link_libraries(GpuApi d3d12.lib dxgi.lib dxcompiler Vulkan::Vulkan)
-add_subdirectory(samples)
+option(GPU_API_BUILD_SAMPLES "Build GpuApi samples" ON)
+if(GPU_API_BUILD_SAMPLES)
+    add_subdirectory(samples)
+endif()
