@@ -26,7 +26,7 @@ static VkSurfaceFormatKHR FindSurfaceFormat(VkPhysicalDevice physical_device, Vk
 
     for (VkSurfaceFormatKHR const& format : available_formats)
     {
-        if (format.format == VK_FORMAT_B8G8R8A8_UNORM &&
+        if (format.format == VK_FORMAT_R8G8B8A8_UNORM &&
             format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
         {
             return format;
@@ -87,6 +87,11 @@ VulkanSwapchain::VulkanSwapchain(VulkanDevice& device, void* window_native_handl
 VulkanSwapchain::~VulkanSwapchain()
 {
     VkDevice logical_device = device_.GetDevice();
+
+    if (image_acquired_fence_ != VK_NULL_HANDLE)
+    {
+        vkDestroyFence(logical_device, image_acquired_fence_, nullptr);
+    }
 
     if (swapchain_ != VK_NULL_HANDLE)
     {
@@ -207,6 +212,11 @@ void VulkanSwapchain::CreateSwapchain(
     status = vkCreateSwapchainKHR(device_.GetDevice(), &create_info, nullptr, &swapchain_);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan swapchain");
 
+    VkFenceCreateInfo fence_info{};
+    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    status = vkCreateFence(device_.GetDevice(), &fence_info, nullptr, &image_acquired_fence_);
+    VK_THROW_IF_FAILED(status, "Failed to create Vulkan swapchain acquire fence");
+
     uint32_t actual_image_count = 0;
     status = vkGetSwapchainImagesKHR(device_.GetDevice(), swapchain_, &actual_image_count, nullptr);
     VK_THROW_IF_FAILED(status, "Failed to get Vulkan swapchain images");
@@ -226,9 +236,15 @@ void VulkanSwapchain::CreateSwapchain(
 
 void VulkanSwapchain::AcquireNextImage()
 {
-    VkResult status = vkAcquireNextImageKHR(device_.GetDevice(), swapchain_, UINT64_MAX,
-        VK_NULL_HANDLE, VK_NULL_HANDLE, &current_image_index_);
+    VkResult status = vkResetFences(device_.GetDevice(), 1, &image_acquired_fence_);
+    VK_THROW_IF_FAILED(status, "Failed to reset Vulkan swapchain acquire fence");
+
+    status = vkAcquireNextImageKHR(device_.GetDevice(), swapchain_, UINT64_MAX, VK_NULL_HANDLE,
+        image_acquired_fence_, &current_image_index_);
     VK_THROW_IF_FAILED(status, "Failed to acquire next Vulkan swapchain image");
+
+    status = vkWaitForFences(device_.GetDevice(), 1, &image_acquired_fence_, VK_TRUE, UINT64_MAX);
+    VK_THROW_IF_FAILED(status, "Failed to wait for Vulkan swapchain acquire fence");
 }
 
 void VulkanSwapchain::Present()

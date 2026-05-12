@@ -94,6 +94,8 @@ VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const
     shader_args.push_back(L"-fspv-target-env=vulkan1.2");
     shader_args.push_back(L"-fvk-use-dx-layout");
     shader_args.push_back(L"-Zpr");
+    shader_args.push_back(L"-D");
+    shader_args.push_back(L"IMAGE_FORMAT(format)=[[vk::image_format(format)]]");
 
     std::wstring w_shader_path;
     if (!shader_path_.empty())

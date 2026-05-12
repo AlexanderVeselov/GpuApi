@@ -51,6 +51,8 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
     shader_args.push_back(L"-T");
     shader_args.push_back(w_shader_profile.c_str());
     shader_args.push_back(L"-Zpr");
+    shader_args.push_back(L"-D");
+    shader_args.push_back(L"IMAGE_FORMAT(format)=");
 
     std::wstring w_shader_path;
     if (!shader_path_.empty())

@@ -27,6 +27,7 @@ class VulkanSwapchain final : public Swapchain
     VkSurfaceKHR surface_ = VK_NULL_HANDLE;
     VkSwapchainKHR swapchain_ = VK_NULL_HANDLE;
     VkQueue present_queue_ = VK_NULL_HANDLE;
+    VkFence image_acquired_fence_ = VK_NULL_HANDLE;
     uint32_t present_queue_family_index_ = UINT32_MAX;
 };
 

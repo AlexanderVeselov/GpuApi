@@ -4,15 +4,16 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-static const std::vector<char const*> g_validation_layer_names = {
-    "VK_LAYER_LUNARG_standard_validation"};
+static const std::vector<char const*> g_validation_layer_names = {"VK_LAYER_KHRONOS_validation"};
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-
+    (void)messageSeverity;
+    (void)messageType;
+    (void)pUserData;
     std::cerr << "[Validation layer]: " << pCallbackData->pMessage << std::endl;
 
     return VK_FALSE;

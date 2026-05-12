@@ -27,10 +27,12 @@ class VulkanApi final : public Api
 
   private:
     void CreateInstance();
+    void SetupDebugMessenger();
     VkPhysicalDevice ChoosePhysicalDevice() const;
 
   private:
     VkInstance instance_ = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
     VulkanShaderManager shader_manager_;
 };
 
