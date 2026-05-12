@@ -68,6 +68,8 @@ enum class ImageFormat
     kRGBA8_UInt,
     kRGBA8_UNorm,
     kRGBA8_SRGB,
+    kBGRA8_UNorm,
+    kBGRA8_SRGB,
     kRGB32_Float,
     kRGB32_UInt,
     kRGB32_SInt,

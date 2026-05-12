@@ -37,6 +37,10 @@ inline DXGI_FORMAT ImageToDXGIFormat(ImageFormat format)
         return DXGI_FORMAT_R8G8B8A8_UNORM;
     case ImageFormat::kRGBA8_SRGB:
         return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    case ImageFormat::kBGRA8_UNorm:
+        return DXGI_FORMAT_B8G8R8A8_UNORM;
+    case ImageFormat::kBGRA8_SRGB:
+        return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
     case ImageFormat::kRGB32_Float:
         return DXGI_FORMAT_R32G32B32_FLOAT;
     case ImageFormat::kRGB32_UInt:

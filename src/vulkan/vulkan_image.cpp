@@ -25,6 +25,10 @@ VkFormat ToVkFormat(ImageFormat format)
         return VK_FORMAT_R8G8B8A8_UNORM;
     case ImageFormat::kRGBA8_SRGB:
         return VK_FORMAT_R8G8B8A8_SRGB;
+    case ImageFormat::kBGRA8_UNorm:
+        return VK_FORMAT_B8G8R8A8_UNORM;
+    case ImageFormat::kBGRA8_SRGB:
+        return VK_FORMAT_B8G8R8A8_SRGB;
     case ImageFormat::kRGB32_Float:
         return VK_FORMAT_R32G32B32_SFLOAT;
     case ImageFormat::kRGB32_UInt:
@@ -61,11 +65,13 @@ ImageFormat FromVkFormat(VkFormat format)
     switch (format)
     {
     case VK_FORMAT_R8G8B8A8_UNORM:
-    case VK_FORMAT_B8G8R8A8_UNORM:
         return ImageFormat::kRGBA8_UNorm;
+    case VK_FORMAT_B8G8R8A8_UNORM:
+        return ImageFormat::kBGRA8_UNorm;
     case VK_FORMAT_R8G8B8A8_SRGB:
-    case VK_FORMAT_B8G8R8A8_SRGB:
         return ImageFormat::kRGBA8_SRGB;
+    case VK_FORMAT_B8G8R8A8_SRGB:
+        return ImageFormat::kBGRA8_SRGB;
     default:
         return ImageFormat::kUnknown;
     }
