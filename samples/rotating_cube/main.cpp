@@ -144,7 +144,7 @@ int main()
             device->CreateSwapchain(window_native_handle, window_width, window_height, 3);
         // The depth buffer is a regular API image. The sample clears it explicitly every frame.
         gpu::ImagePtr depth_image = device->CreateImage(window_width, window_height,
-            gpu::ImageFormat::kD32_Float, 1, 1, gpu::ImageFlags::kDepthStencil);
+            gpu::ImageFormat::kD32_Float, gpu::ImageFlags::kDepthStencil);
 
         // The pipeline description mirrors the render target formats used later by SetRenderTarget.
         gpu::GraphicsPipelineDesc pipeline_desc;

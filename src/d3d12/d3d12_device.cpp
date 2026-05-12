@@ -61,7 +61,7 @@ BufferPtr D3D12Device::CreateBuffer(size_t size, uint32_t stride, BufferFlags fl
 }
 
 ImagePtr D3D12Device::CreateImage(uint32_t width, uint32_t height, ImageFormat format,
-    uint32_t mip_count, uint32_t array_size, ImageFlags flags)
+    ImageFlags flags, uint32_t mip_count, uint32_t array_size)
 {
     return std::make_shared<D3D12Image>(*this, width, height, format, mip_count, array_size, flags);
 }

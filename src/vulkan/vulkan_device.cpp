@@ -128,7 +128,7 @@ BufferPtr VulkanDevice::CreateBuffer(std::size_t size, std::uint32_t stride, Buf
 }
 
 ImagePtr VulkanDevice::CreateImage(uint32_t width, uint32_t height, ImageFormat format,
-    uint32_t mip_count, uint32_t array_size, ImageFlags flags)
+    ImageFlags flags, uint32_t mip_count, uint32_t array_size)
 {
     return std::make_shared<VulkanImage>(
         *this, width, height, format, mip_count, array_size, flags);

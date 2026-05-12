@@ -19,8 +19,8 @@ class VulkanDevice final : public Device
     ~VulkanDevice() override;
 
     BufferPtr CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags) override;
-    ImagePtr CreateImage(uint32_t width, uint32_t height, ImageFormat format, uint32_t mip_count,
-        uint32_t array_size, ImageFlags flags) override;
+    ImagePtr CreateImage(uint32_t width, uint32_t height, ImageFormat format, ImageFlags flags,
+        uint32_t mip_count = 1, uint32_t array_size = 1) override;
 
     Queue& GetQueue(QueueType queue_type) override;
 

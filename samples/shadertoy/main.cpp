@@ -65,9 +65,8 @@ int main()
         gpu::DevicePtr device = api->CreateDevice();
         gpu::SwapchainPtr swapchain =
             device->CreateSwapchain(window_native_handle, window_width, window_height, 3);
-        gpu::ImagePtr output_image =
-            device->CreateImage(window_width, window_height, swapchain->GetFormat(), 1, 1,
-                gpu::ImageFlags::kStorage | gpu::ImageFlags::kShaderResource);
+        gpu::ImagePtr output_image = device->CreateImage(window_width, window_height,
+            swapchain->GetFormat(), gpu::ImageFlags::kStorage | gpu::ImageFlags::kShaderResource);
 
         gpu::ComputePipelinePtr pipeline = device->CreateComputePipeline("shader.cs");
         gpu::DescriptorSetPtr descriptor_set = pipeline->CreateDescriptorSet();

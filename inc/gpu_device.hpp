@@ -15,9 +15,9 @@ class Device
     /// Creates a buffer with a fixed element stride and explicit usage flags.
     virtual BufferPtr CreateBuffer(size_t size, uint32_t stride, BufferFlags flags) = 0;
 
-    /// Creates an image with explicit subresource counts and usage flags.
+    /// Creates an image with usage flags and optional subresource counts.
     virtual ImagePtr CreateImage(uint32_t width, uint32_t height, ImageFormat format,
-        uint32_t mip_count, uint32_t array_size, ImageFlags flags) = 0;
+        ImageFlags flags, uint32_t mip_count = 1, uint32_t array_size = 1) = 0;
 
     /// Returns a queue supporting the requested command class.
     virtual Queue& GetQueue(QueueType queue_type) = 0;
