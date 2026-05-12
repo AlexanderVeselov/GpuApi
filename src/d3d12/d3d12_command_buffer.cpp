@@ -292,21 +292,33 @@ void D3D12CommandBuffer::StorageBarrier(ImagePtr image)
     cmd_list_->ResourceBarrier(1, &barrier);
 }
 
-void D3D12CommandBuffer::CopyBuffer(
-    Buffer* src, uint64_t src_offset, Buffer* dst, uint64_t dst_offset, uint64_t size)
+void D3D12CommandBuffer::StorageBarrier(BufferPtr buffer)
 {
-    D3D12Buffer* d3d12_src = static_cast<D3D12Buffer*>(src);
-    D3D12Buffer* d3d12_dst = static_cast<D3D12Buffer*>(dst);
+    D3D12Buffer* d3d12_buffer = static_cast<D3D12Buffer*>(buffer.get());
+    assert(d3d12_buffer && "D3D12CommandBuffer::StorageBarrier: buffer is not a D3D12Buffer");
+
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+    barrier.UAV.pResource = d3d12_buffer->GetResource();
+
+    cmd_list_->ResourceBarrier(1, &barrier);
+}
+
+void D3D12CommandBuffer::CopyBuffer(
+    BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset, uint64_t size)
+{
+    D3D12Buffer* d3d12_src = static_cast<D3D12Buffer*>(src.get());
+    D3D12Buffer* d3d12_dst = static_cast<D3D12Buffer*>(dst.get());
     assert(d3d12_src && d3d12_dst && "D3D12CommandBuffer::CopyBuffer: src/dst must be D3D12Buffer");
 
     cmd_list_->CopyBufferRegion(
         d3d12_dst->GetResource(), dst_offset, d3d12_src->GetResource(), src_offset, size);
 }
 
-void D3D12CommandBuffer::CopyBufferToImage(Image* dst, Buffer* src)
+void D3D12CommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)
 {
-    D3D12Image* d3d12_dst = static_cast<D3D12Image*>(dst);
-    D3D12Buffer* d3d12_src = static_cast<D3D12Buffer*>(src);
+    D3D12Image* d3d12_dst = static_cast<D3D12Image*>(dst.get());
+    D3D12Buffer* d3d12_src = static_cast<D3D12Buffer*>(src.get());
     assert(d3d12_dst && d3d12_src &&
            "D3D12CommandBuffer::CopyBufferToImage: dst must be D3D12Image and src must be "
            "D3D12Buffer");
@@ -332,10 +344,10 @@ void D3D12CommandBuffer::CopyBufferToImage(Image* dst, Buffer* src)
     cmd_list_->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
 }
 
-void D3D12CommandBuffer::CopyImage(Image* dst, Image* src)
+void D3D12CommandBuffer::CopyImage(ImagePtr dst, ImagePtr src)
 {
-    D3D12Image* d3d12_dst = static_cast<D3D12Image*>(dst);
-    D3D12Image* d3d12_src = static_cast<D3D12Image*>(src);
+    D3D12Image* d3d12_dst = static_cast<D3D12Image*>(dst.get());
+    D3D12Image* d3d12_src = static_cast<D3D12Image*>(src.get());
     assert(d3d12_dst && d3d12_src && "D3D12CommandBuffer::CopyImage: dst/src must be D3D12Image");
     assert(dst->GetWidth() == src->GetWidth() &&
            "D3D12CommandBuffer::CopyImage: source and destination widths must match");

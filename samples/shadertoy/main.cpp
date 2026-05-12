@@ -93,7 +93,7 @@ int main()
             output_layout = gpu::ImageLayout::kCopySrc;
             cmd_buffer->TransitionBarrier(
                 swapchain_image, gpu::ImageLayout::kPresent, gpu::ImageLayout::kCopyDst);
-            cmd_buffer->CopyImage(swapchain_image.get(), output_image.get());
+            cmd_buffer->CopyImage(swapchain_image, output_image);
             cmd_buffer->TransitionBarrier(
                 swapchain_image, gpu::ImageLayout::kCopyDst, gpu::ImageLayout::kPresent);
             queue.Submit(std::move(cmd_buffer));

@@ -49,11 +49,12 @@ class D3D12CommandBuffer final : public CommandBuffer
     void TransitionBarrier(
         ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) override;
     void StorageBarrier(ImagePtr image) override;
+    void StorageBarrier(BufferPtr buffer) override;
 
-    void CopyBuffer(
-        Buffer* src, uint64_t src_offset, Buffer* dst, uint64_t dst_offset, uint64_t size) override;
-    void CopyBufferToImage(Image* dst, Buffer* src) override;
-    void CopyImage(Image* dst, Image* src) override;
+    void CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset,
+        uint64_t size) override;
+    void CopyBufferToImage(ImagePtr dst, BufferPtr src) override;
+    void CopyImage(ImagePtr dst, ImagePtr src) override;
 
     void Close();
 

@@ -422,13 +422,37 @@ void VulkanCommandBuffer::StorageBarrier(ImagePtr image)
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
-void VulkanCommandBuffer::CopyBuffer(
-    Buffer* src, uint64_t src_offset, Buffer* dst, uint64_t dst_offset, uint64_t size)
+void VulkanCommandBuffer::StorageBarrier(BufferPtr buffer)
 {
     EndRendering();
 
-    auto* vulkan_src = dynamic_cast<VulkanBuffer*>(src);
-    auto* vulkan_dst = dynamic_cast<VulkanBuffer*>(dst);
+    auto* vulkan_buffer = dynamic_cast<VulkanBuffer*>(buffer.get());
+    THROW_IF(!vulkan_buffer, "Buffer does not belong to the Vulkan backend");
+
+    VkBufferMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
+                            VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.buffer = vulkan_buffer->GetBuffer();
+    barrier.offset = 0;
+    barrier.size = buffer->GetSize();
+
+    vkCmdPipelineBarrier(command_buffer_,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1,
+        &barrier, 0, nullptr);
+}
+
+void VulkanCommandBuffer::CopyBuffer(
+    BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset, uint64_t size)
+{
+    EndRendering();
+
+    auto* vulkan_src = dynamic_cast<VulkanBuffer*>(src.get());
+    auto* vulkan_dst = dynamic_cast<VulkanBuffer*>(dst.get());
     THROW_IF(!vulkan_src || !vulkan_dst, "Buffer does not belong to the Vulkan backend");
 
     VkBufferCopy copy_region{};
@@ -440,12 +464,12 @@ void VulkanCommandBuffer::CopyBuffer(
         command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetBuffer(), 1, &copy_region);
 }
 
-void VulkanCommandBuffer::CopyBufferToImage(Image* dst, Buffer* src)
+void VulkanCommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)
 {
     EndRendering();
 
-    auto* vulkan_dst = dynamic_cast<VulkanImage*>(dst);
-    auto* vulkan_src = dynamic_cast<VulkanBuffer*>(src);
+    auto* vulkan_dst = dynamic_cast<VulkanImage*>(dst.get());
+    auto* vulkan_src = dynamic_cast<VulkanBuffer*>(src.get());
     THROW_IF(!vulkan_dst || !vulkan_src, "Resource does not belong to the Vulkan backend");
 
     VkBufferImageCopy region{};
@@ -459,12 +483,12 @@ void VulkanCommandBuffer::CopyBufferToImage(Image* dst, Buffer* src)
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-void VulkanCommandBuffer::CopyImage(Image* dst, Image* src)
+void VulkanCommandBuffer::CopyImage(ImagePtr dst, ImagePtr src)
 {
     EndRendering();
 
-    auto* vulkan_dst = dynamic_cast<VulkanImage*>(dst);
-    auto* vulkan_src = dynamic_cast<VulkanImage*>(src);
+    auto* vulkan_dst = dynamic_cast<VulkanImage*>(dst.get());
+    auto* vulkan_src = dynamic_cast<VulkanImage*>(src.get());
     THROW_IF(!vulkan_dst || !vulkan_src, "Image does not belong to the Vulkan backend");
 
     VkImageCopy region{};

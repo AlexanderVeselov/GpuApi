@@ -62,15 +62,18 @@ class CommandBuffer
     /// Inserts an unordered-access/storage synchronization barrier for an image.
     virtual void StorageBarrier(ImagePtr image) = 0;
 
+    /// Inserts an unordered-access/storage synchronization barrier for a buffer.
+    virtual void StorageBarrier(BufferPtr buffer) = 0;
+
     /// Copies a byte range between buffers.
     virtual void CopyBuffer(
-        Buffer* src, uint64_t src_offset, Buffer* dst, uint64_t dst_offset, uint64_t size) = 0;
+        BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset, uint64_t size) = 0;
 
     /// Copies a linear buffer into an image.
-    virtual void CopyBufferToImage(Image* dst, Buffer* src) = 0;
+    virtual void CopyBufferToImage(ImagePtr dst, BufferPtr src) = 0;
 
     /// Copies the contents of one image into another compatible image.
-    virtual void CopyImage(Image* dst, Image* src) = 0;
+    virtual void CopyImage(ImagePtr dst, ImagePtr src) = 0;
 };
 
 } // namespace gpu
