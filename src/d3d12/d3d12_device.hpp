@@ -29,6 +29,7 @@ class D3D12Device : public Device
 
     SwapchainPtr CreateSwapchain(
         void* window_native_handle, uint32_t width, uint32_t height, uint32_t image_count) override;
+    ImGuiRendererPtr CreateImGuiRenderer(void* glfw_window, Swapchain& swapchain) override;
 
     ID3D12Device* GetD3D12Device() const
     {

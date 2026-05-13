@@ -2,6 +2,7 @@
 
 #include "gpu_buffer.hpp"
 #include "gpu_image.hpp"
+#include "gpu_imgui.hpp"
 #include "gpu_types.hpp"
 
 namespace gpu
@@ -32,6 +33,9 @@ class Device
     /// Creates a swapchain for a native platform window handle.
     virtual SwapchainPtr CreateSwapchain(
         void* window_native_handle, uint32_t width, uint32_t height, uint32_t image_count) = 0;
+
+    /// Creates an ImGui renderer bound to a GLFW window and swapchain.
+    virtual ImGuiRendererPtr CreateImGuiRenderer(void* glfw_window, Swapchain& swapchain) = 0;
 };
 
 } // namespace gpu

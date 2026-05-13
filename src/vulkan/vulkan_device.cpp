@@ -4,6 +4,7 @@
 #include "vulkan_buffer.hpp"
 #include "vulkan_exception.hpp"
 #include "vulkan_image.hpp"
+#include "vulkan_imgui_renderer.hpp"
 #include "vulkan_pipeline.hpp"
 #include "vulkan_queue.hpp"
 #include "vulkan_swapchain.hpp"
@@ -164,6 +165,11 @@ SwapchainPtr VulkanDevice::CreateSwapchain(void* window_native_handle, std::uint
 {
     return std::make_unique<VulkanSwapchain>(
         *this, window_native_handle, width, height, image_count);
+}
+
+ImGuiRendererPtr VulkanDevice::CreateImGuiRenderer(void* glfw_window, Swapchain& swapchain)
+{
+    return std::make_unique<VulkanImGuiRenderer>(*this, glfw_window, swapchain);
 }
 
 } // namespace gpu

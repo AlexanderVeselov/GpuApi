@@ -2,6 +2,7 @@
 #include "d3d12_buffer.hpp"
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
+#include "d3d12_imgui_renderer.hpp"
 #include "d3d12_pipeline.hpp"
 #include "d3d12_swapchain.hpp"
 
@@ -81,6 +82,11 @@ SwapchainPtr D3D12Device::CreateSwapchain(
 {
     return std::make_unique<D3D12Swapchain>(
         *this, window_native_handle, width, height, image_count);
+}
+
+ImGuiRendererPtr D3D12Device::CreateImGuiRenderer(void* glfw_window, Swapchain& swapchain)
+{
+    return std::make_unique<D3D12ImGuiRenderer>(*this, glfw_window, swapchain);
 }
 
 } // namespace gpu

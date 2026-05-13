@@ -29,6 +29,7 @@ class VulkanDevice final : public Device
 
     SwapchainPtr CreateSwapchain(void* window_native_handle, std::uint32_t width,
         std::uint32_t height, std::uint32_t image_count) override;
+    ImGuiRendererPtr CreateImGuiRenderer(void* glfw_window, Swapchain& swapchain) override;
 
     VulkanApi& GetApi() const
     {

@@ -23,6 +23,7 @@ class Image;
 class Pipeline;
 class GraphicsPipeline;
 class ComputePipeline;
+class ImGuiRenderer;
 class Queue;
 class Swapchain;
 
@@ -31,6 +32,7 @@ using CommandBufferPtr = Ptr<CommandBuffer>;
 using DescriptorSetPtr = Ptr<DescriptorSet>;
 using GraphicsPipelinePtr = Ptr<GraphicsPipeline>;
 using ComputePipelinePtr = Ptr<ComputePipeline>;
+using ImGuiRendererPtr = Ptr<ImGuiRenderer>;
 using SwapchainPtr = Ptr<Swapchain>;
 
 using BufferPtr = SharedPtr<Buffer>;
