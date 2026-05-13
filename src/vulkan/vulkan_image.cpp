@@ -3,6 +3,8 @@
 #include "vulkan_device.hpp"
 #include "vulkan_exception.hpp"
 
+#include <stdexcept>
+
 namespace gpu
 {
 VkFormat ToVkFormat(ImageFormat format)
@@ -135,8 +137,6 @@ VulkanImage::VulkanImage(VulkanDevice& device, uint32_t width, uint32_t height, 
 
     status = vkBindImageMemory(logical_device, image_, memory_, 0);
     VK_THROW_IF_FAILED(status, "Failed to bind Vulkan image memory");
-
-    CreateImageView();
 }
 
 VulkanImage::VulkanImage(VulkanDevice& device, VkImage image, uint32_t width, uint32_t height,
@@ -144,17 +144,17 @@ VulkanImage::VulkanImage(VulkanDevice& device, VkImage image, uint32_t width, ui
     : Image(width, height, FromVkFormat(native_format), mip_count, array_size, flags),
       device_(device), image_(image), native_format_(native_format)
 {
-    CreateImageView();
 }
 
 VulkanImage::~VulkanImage()
 {
     VkDevice logical_device = device_.GetDevice();
 
-    if (image_view_ != VK_NULL_HANDLE)
+    for (auto const& image_view : image_views_)
     {
-        vkDestroyImageView(logical_device, image_view_, nullptr);
+        vkDestroyImageView(logical_device, image_view.second, nullptr);
     }
+    image_views_.clear();
 
     if (memory_ != VK_NULL_HANDLE)
     {
@@ -167,7 +167,33 @@ VulkanImage::~VulkanImage()
     }
 }
 
-void VulkanImage::CreateImageView()
+VkImageView VulkanImage::GetView(ImageView const& view)
+{
+    if (view.mip >= GetMipCount())
+    {
+        throw std::runtime_error("VulkanImage::GetView: base mip is out of range");
+    }
+    if (view.mip_count == 0)
+    {
+        throw std::runtime_error("VulkanImage::GetView: mip count must be greater than zero");
+    }
+    if (view.mip + view.mip_count > GetMipCount())
+    {
+        throw std::runtime_error("VulkanImage::GetView: mip range exceeds image mip count");
+    }
+
+    auto it = image_views_.find(view);
+    if (it != image_views_.end())
+    {
+        return it->second;
+    }
+
+    VkImageView image_view = CreateImageView(view);
+    image_views_.emplace(view, image_view);
+    return image_view;
+}
+
+VkImageView VulkanImage::CreateImageView(ImageView const& view)
 {
     VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
     if (HasFlag(GetFlags(), ImageFlags::kDepthStencil))
@@ -181,13 +207,15 @@ void VulkanImage::CreateImageView()
     create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
     create_info.format = native_format_;
     create_info.subresourceRange.aspectMask = aspect;
-    create_info.subresourceRange.baseMipLevel = 0;
-    create_info.subresourceRange.levelCount = GetMipCount();
+    create_info.subresourceRange.baseMipLevel = view.mip;
+    create_info.subresourceRange.levelCount = view.mip_count;
     create_info.subresourceRange.baseArrayLayer = 0;
     create_info.subresourceRange.layerCount = GetArraySize();
 
-    VkResult status = vkCreateImageView(device_.GetDevice(), &create_info, nullptr, &image_view_);
+    VkImageView image_view = VK_NULL_HANDLE;
+    VkResult status = vkCreateImageView(device_.GetDevice(), &create_info, nullptr, &image_view);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan image view");
+    return image_view;
 }
 
 } // namespace gpu

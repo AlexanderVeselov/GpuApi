@@ -75,7 +75,7 @@ void VulkanDescriptorSet::BindImage(Image& image, uint32_t binding, uint32_t spa
 }
 
 void VulkanDescriptorSet::BindImage(
-    Image& image, ImageView const&, uint32_t binding, uint32_t space)
+    Image& image, ImageView const& view, uint32_t binding, uint32_t space)
 {
     auto* vulkan_image = dynamic_cast<VulkanImage*>(&image);
     THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
@@ -88,7 +88,7 @@ void VulkanDescriptorSet::BindImage(
     }
 
     VkDescriptorImageInfo image_info = {};
-    image_info.imageView = vulkan_image->GetImageView();
+    image_info.imageView = vulkan_image->GetView(view);
     image_info.imageLayout = GetDescriptorImageLayout(vulkan_binding);
 
     VkWriteDescriptorSet write = {};

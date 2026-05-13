@@ -4,6 +4,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include <unordered_map>
+
 namespace gpu
 {
 class VulkanDevice;
@@ -23,20 +25,21 @@ class VulkanImage final : public Image
     {
         return image_;
     }
-    VkImageView GetImageView() const
+    VkImageView GetImageView()
     {
-        return image_view_;
+        return GetView(ImageView{});
     }
+    VkImageView GetView(ImageView const& view);
 
   private:
-    void CreateImageView();
+    VkImageView CreateImageView(ImageView const& view);
 
   private:
     VulkanDevice& device_;
     VkImage image_ = VK_NULL_HANDLE;
     VkDeviceMemory memory_ = VK_NULL_HANDLE;
-    VkImageView image_view_ = VK_NULL_HANDLE;
     VkFormat native_format_ = VK_FORMAT_UNDEFINED;
+    std::unordered_map<ImageView, VkImageView, ImageViewHash> image_views_;
     bool owns_image_ = false;
 };
 
