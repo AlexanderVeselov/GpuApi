@@ -48,7 +48,7 @@ VulkanImGuiRenderer::VulkanImGuiRenderer(
 
     VulkanQueue& graphics_queue = static_cast<VulkanQueue&>(device_.GetQueue(QueueType::kGraphics));
 
-    uint32_t image_count = std::max(2u, swapchain.GetImageCount());
+    uint32_t image_count = swapchain.GetImageCount();
 
     ImGui_ImplVulkan_InitInfo init_info{};
     init_info.ApiVersion = VK_API_VERSION_1_3;
