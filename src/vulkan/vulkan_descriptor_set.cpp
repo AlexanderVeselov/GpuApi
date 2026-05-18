@@ -103,6 +103,57 @@ void VulkanDescriptorSet::BindImage(Image& image, ImageView const& view, uint32_
     vkUpdateDescriptorSets(device_.GetDevice(), 1, &write, 0, nullptr);
 }
 
+void VulkanDescriptorSet::BindImageArray(std::vector<ImageDescriptor> const& images, uint32_t binding, uint32_t space)
+{
+    VulkanBinding const& vulkan_binding = FindBinding(binding, space);
+    if (vulkan_binding.resource_type != ShaderResourceType::kImage)
+    {
+        throw std::runtime_error("VulkanDescriptorSet::BindImageArray: pipeline binding " + BindingName(binding, space)
+            + " is not an image binding");
+    }
+
+    if (images.empty())
+    {
+        throw std::runtime_error("VulkanDescriptorSet::BindImageArray: image descriptor array is empty");
+    }
+
+    if (images.size() != vulkan_binding.descriptor_count)
+    {
+        throw std::runtime_error(
+            "VulkanDescriptorSet::BindImageArray: descriptor count does not match pipeline "
+            "layout binding count");
+    }
+
+    std::vector<VkDescriptorImageInfo> image_infos;
+    image_infos.reserve(images.size());
+    for (ImageDescriptor const& image_descriptor : images)
+    {
+        if (!image_descriptor.image)
+        {
+            throw std::runtime_error("VulkanDescriptorSet::BindImageArray: image descriptor is null");
+        }
+
+        auto* vulkan_image = dynamic_cast<VulkanImage*>(image_descriptor.image);
+        THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
+
+        VkDescriptorImageInfo image_info = {};
+        image_info.imageView = vulkan_image->GetView(image_descriptor.view);
+        image_info.imageLayout = GetDescriptorImageLayout(vulkan_binding);
+        image_infos.push_back(image_info);
+    }
+
+    VkWriteDescriptorSet write = {};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.dstSet = descriptor_sets_[vulkan_binding.set];
+    write.dstBinding = vulkan_binding.binding;
+    write.dstArrayElement = 0;
+    write.descriptorCount = static_cast<uint32_t>(image_infos.size());
+    write.descriptorType = vulkan_binding.vk_descriptor_type;
+    write.pImageInfo = image_infos.data();
+
+    vkUpdateDescriptorSets(device_.GetDevice(), 1, &write, 0, nullptr);
+}
+
 void VulkanDescriptorSet::BindSampler(Sampler& sampler, uint32_t binding, uint32_t space)
 {
     auto* vulkan_sampler = dynamic_cast<VulkanSampler*>(&sampler);

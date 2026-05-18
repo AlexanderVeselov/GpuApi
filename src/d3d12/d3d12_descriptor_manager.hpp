@@ -24,34 +24,26 @@ struct D3D12Descriptor
     D3D12DescriptorHeapId heap = D3D12DescriptorHeapId::CPU_CBV_SRV_UAV;
     uint32_t index = UINT32_MAX;
 
-    bool IsValid() const
-    {
-        return index != UINT32_MAX;
-    }
+    bool IsValid() const { return index != UINT32_MAX; }
 };
 
 class D3D12DescriptorHeapAllocator
 {
-  public:
-    D3D12DescriptorHeapAllocator(D3D12Device& device, D3D12_DESCRIPTOR_HEAP_TYPE type,
-        uint32_t capacity, bool shader_visible);
+public:
+    D3D12DescriptorHeapAllocator(D3D12Device& device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t capacity,
+        bool shader_visible);
 
     uint32_t Allocate();
+    std::vector<uint32_t> AllocateRange(uint32_t count);
     void Free(uint32_t index);
 
     D3D12_CPU_DESCRIPTOR_HANDLE CPU(uint32_t index) const;
     D3D12_GPU_DESCRIPTOR_HANDLE GPU(uint32_t index) const;
 
-    bool IsShaderVisible() const
-    {
-        return shader_visible_;
-    }
-    ID3D12DescriptorHeap* Heap() const
-    {
-        return heap_.Get();
-    }
+    bool IsShaderVisible() const { return shader_visible_; }
+    ID3D12DescriptorHeap* Heap() const { return heap_.Get(); }
 
-  private:
+private:
     ComPtr<ID3D12DescriptorHeap> heap_;
 
     D3D12_CPU_DESCRIPTOR_HANDLE cpu_start_{};
@@ -62,15 +54,12 @@ class D3D12DescriptorHeapAllocator
     bool shader_visible_ = false;
 
     std::vector<uint32_t> free_list_;
-
-#ifndef NDEBUG
     std::vector<bool> allocated_;
-#endif
 };
 
 class D3D12DescriptorManager
 {
-  public:
+public:
     explicit D3D12DescriptorManager(D3D12Device& device);
 
     D3D12Descriptor AllocateCPUCBVSRVUAV();
@@ -80,6 +69,8 @@ class D3D12DescriptorManager
 
     D3D12Descriptor AllocateGPUCBVSRVUAV();
     D3D12Descriptor AllocateGPUSampler();
+    std::vector<D3D12Descriptor> AllocateGPUCBVSRVUAV(uint32_t count);
+    std::vector<D3D12Descriptor> AllocateGPUSampler(uint32_t count);
 
     void Free(D3D12Descriptor descriptor);
 
@@ -88,15 +79,17 @@ class D3D12DescriptorManager
 
     D3D12Descriptor CopyToGPUCBVSRVUAV(D3D12Descriptor src);
     D3D12Descriptor CopyToGPUSampler(D3D12Descriptor src);
+    std::vector<D3D12Descriptor> CopyToGPUCBVSRVUAV(std::vector<D3D12Descriptor> const& src);
+    std::vector<D3D12Descriptor> CopyToGPUSampler(std::vector<D3D12Descriptor> const& src);
 
     ID3D12DescriptorHeap* GetGPUCBVSRVUAVHeap() const;
     ID3D12DescriptorHeap* GetGPUSamplerHeap() const;
 
-  private:
+private:
     D3D12DescriptorHeapAllocator& GetAllocator(D3D12DescriptorHeapId heap);
     D3D12DescriptorHeapAllocator const& GetAllocator(D3D12DescriptorHeapId heap) const;
 
-  private:
+private:
     D3D12Device& device_;
 
     D3D12DescriptorHeapAllocator cpu_cbv_srv_uav_;
@@ -107,4 +100,4 @@ class D3D12DescriptorManager
     D3D12DescriptorHeapAllocator gpu_cbv_srv_uav_;
     D3D12DescriptorHeapAllocator gpu_sampler_;
 };
-} // namespace gpu
+}  // namespace gpu

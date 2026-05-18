@@ -120,6 +120,38 @@ void D3D12DescriptorSet::BindImage(D3D12Image& image, ImageView const& view, uin
     }
 }
 
+void D3D12DescriptorSet::BindImageArray(std::vector<ImageDescriptor> const& images, uint32_t binding, uint32_t space)
+{
+    D3D12Binding const& d3d12_binding = FindBinding(binding, space);
+    if (d3d12_binding.type != D3D12Binding::ResourceType::kImage)
+    {
+        throw std::runtime_error("D3D12DescriptorSet::BindImageArray: pipeline binding " + BindingName(binding, space)
+            + " is not an image binding");
+    }
+
+    std::vector<D3D12Descriptor> descriptors;
+    descriptors.reserve(images.size());
+    for (ImageDescriptor const& image_descriptor : images)
+    {
+        if (!image_descriptor.image)
+        {
+            throw std::runtime_error("D3D12DescriptorSet::BindImageArray: image descriptor is null");
+        }
+
+        D3D12Image& image = CastResource<D3D12Image>(*image_descriptor.image, "D3D12DescriptorSet::BindImageArray");
+        if (d3d12_binding.range_type == D3D12_DESCRIPTOR_RANGE_TYPE_UAV)
+        {
+            descriptors.push_back(image.GetUAV(image_descriptor.view));
+        }
+        else
+        {
+            descriptors.push_back(image.GetView(image_descriptor.view));
+        }
+    }
+
+    BindDescriptors(d3d12_binding, std::move(descriptors));
+}
+
 void D3D12DescriptorSet::BindSampler(D3D12Sampler& sampler, uint32_t binding, uint32_t space)
 {
     D3D12Binding const& d3d12_binding = FindBinding(binding, space);
@@ -171,13 +203,33 @@ D3D12DescriptorSet::BoundDescriptor& D3D12DescriptorSet::FindOrCreateBoundDescri
 
 void D3D12DescriptorSet::BindDescriptor(D3D12Binding const& binding, D3D12Descriptor cpu_descriptor)
 {
-    assert(cpu_descriptor.IsValid() && "D3D12DescriptorSet::BindDescriptor: CPU descriptor is invalid");
+    BindDescriptors(binding, {cpu_descriptor});
+}
+
+void D3D12DescriptorSet::BindDescriptors(D3D12Binding const& binding, std::vector<D3D12Descriptor> cpu_descriptors)
+{
+    if (cpu_descriptors.empty())
+    {
+        throw std::runtime_error("D3D12DescriptorSet::BindDescriptors: descriptor array is empty");
+    }
+
+    for (D3D12Descriptor descriptor : cpu_descriptors)
+    {
+        assert(descriptor.IsValid() && "D3D12DescriptorSet::BindDescriptors: CPU descriptor is invalid");
+    }
+
+    if (cpu_descriptors.size() != binding.descriptor_count)
+    {
+        throw std::runtime_error(
+            "D3D12DescriptorSet::BindDescriptors: descriptor count does not match pipeline "
+            "layout binding count");
+    }
+
     assert(binding.descriptor_type == D3D12Binding::DescriptorType::kDescriptorTable
-        && "D3D12DescriptorSet::BindDescriptor: only descriptor-table bindings are supported");
+        && "D3D12DescriptorSet::BindDescriptors: only descriptor-table bindings are supported");
 
     BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(binding);
-
-    descriptor.cpu_descriptor = cpu_descriptor;
+    descriptor.cpu_descriptors = std::move(cpu_descriptors);
 }
 
 }  // namespace gpu

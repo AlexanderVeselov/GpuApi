@@ -24,7 +24,7 @@ public:
         uint32_t space = 0;
         uint32_t root_parameter_index = 0;
 
-        D3D12Descriptor cpu_descriptor;
+        std::vector<D3D12Descriptor> cpu_descriptors;
     };
 
     explicit D3D12DescriptorSet(D3D12PipelineLayout const& layout);
@@ -39,6 +39,7 @@ public:
     void BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space) override;
     void BindImage(Image& image, uint32_t binding, uint32_t space) override;
     void BindImage(Image& image, ImageView const& view, uint32_t binding, uint32_t space) override;
+    void BindImageArray(std::vector<ImageDescriptor> const& images, uint32_t binding, uint32_t space) override;
     void BindSampler(Sampler& sampler, uint32_t binding, uint32_t space) override;
 
     void BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint32_t space);
@@ -55,6 +56,7 @@ private:
     D3D12Binding const& FindBinding(uint32_t binding, uint32_t space) const;
     BoundDescriptor& FindOrCreateBoundDescriptor(D3D12Binding const& binding);
     void BindDescriptor(D3D12Binding const& binding, D3D12Descriptor cpu_descriptor);
+    void BindDescriptors(D3D12Binding const& binding, std::vector<D3D12Descriptor> cpu_descriptors);
 
 private:
     D3D12PipelineLayout const& layout_;
