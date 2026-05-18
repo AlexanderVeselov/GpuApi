@@ -7,6 +7,7 @@
 #include "vulkan_imgui_renderer.hpp"
 #include "vulkan_pipeline.hpp"
 #include "vulkan_queue.hpp"
+#include "vulkan_sampler.hpp"
 #include "vulkan_swapchain.hpp"
 
 #include <algorithm>
@@ -27,6 +28,7 @@ VulkanDevice::VulkanDevice(VulkanApi& api, VkPhysicalDevice physical_device)
 
 VulkanDevice::~VulkanDevice()
 {
+    ClearSamplerCache();
     graphics_queue_.reset();
     compute_queue_.reset();
     transfer_queue_.reset();
@@ -43,8 +45,7 @@ void VulkanDevice::FindQueueFamilyIndices()
     vkGetPhysicalDeviceQueueFamilyProperties(physical_device_, &queue_family_count, nullptr);
 
     std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
-    vkGetPhysicalDeviceQueueFamilyProperties(
-        physical_device_, &queue_family_count, queue_families.data());
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_device_, &queue_family_count, queue_families.data());
 
     for (uint32_t i = 0; i < queue_family_count; ++i)
     {
@@ -82,8 +83,7 @@ void VulkanDevice::CreateLogicalDevice()
     std::vector<uint32_t> queue_family_indices;
     for (uint32_t index : raw_indices)
     {
-        if (std::find(queue_family_indices.begin(), queue_family_indices.end(), index) ==
-            queue_family_indices.end())
+        if (std::find(queue_family_indices.begin(), queue_family_indices.end(), index) == queue_family_indices.end())
         {
             queue_family_indices.push_back(index);
         }
@@ -128,11 +128,15 @@ BufferPtr VulkanDevice::CreateBuffer(std::size_t size, std::uint32_t stride, Buf
     return std::make_shared<VulkanBuffer>(*this, size, stride, flags);
 }
 
-ImagePtr VulkanDevice::CreateImage(uint32_t width, uint32_t height, ImageFormat format,
-    ImageFlags flags, uint32_t mip_count, uint32_t array_size)
+ImagePtr VulkanDevice::CreateImage(uint32_t width, uint32_t height, ImageFormat format, ImageFlags flags,
+    uint32_t mip_count, uint32_t array_size)
 {
-    return std::make_shared<VulkanImage>(
-        *this, width, height, format, mip_count, array_size, flags);
+    return std::make_shared<VulkanImage>(*this, width, height, format, mip_count, array_size, flags);
+}
+
+SamplerPtr VulkanDevice::CreateSampler(SamplerDesc const& desc)
+{
+    return std::make_shared<VulkanSampler>(*this, desc);
 }
 
 Queue& VulkanDevice::GetQueue(QueueType queue_type)
@@ -160,11 +164,10 @@ ComputePipelinePtr VulkanDevice::CreateComputePipeline(char const* cs_filename)
     return std::make_unique<VulkanComputePipeline>(*this, cs_filename);
 }
 
-SwapchainPtr VulkanDevice::CreateSwapchain(void* window_native_handle, std::uint32_t width,
-    std::uint32_t height, std::uint32_t image_count)
+SwapchainPtr VulkanDevice::CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height,
+    std::uint32_t image_count)
 {
-    return std::make_unique<VulkanSwapchain>(
-        *this, window_native_handle, width, height, image_count);
+    return std::make_unique<VulkanSwapchain>(*this, window_native_handle, width, height, image_count);
 }
 
 ImGuiRendererPtr VulkanDevice::CreateImGuiRenderer(void* glfw_window, Swapchain& swapchain)
@@ -172,4 +175,4 @@ ImGuiRendererPtr VulkanDevice::CreateImGuiRenderer(void* glfw_window, Swapchain&
     return std::make_unique<VulkanImGuiRenderer>(*this, glfw_window, swapchain);
 }
 
-} // namespace gpu
+}  // namespace gpu

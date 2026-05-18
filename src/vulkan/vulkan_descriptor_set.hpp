@@ -14,7 +14,7 @@ class VulkanDevice;
 
 class VulkanDescriptorSet final : public DescriptorSet
 {
-  public:
+public:
     explicit VulkanDescriptorSet(VulkanDevice& device, VulkanPipelineLayout const& layout);
     ~VulkanDescriptorSet() override;
 
@@ -24,29 +24,24 @@ class VulkanDescriptorSet final : public DescriptorSet
     void BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space) override;
     void BindImage(Image& image, uint32_t binding, uint32_t space) override;
     void BindImage(Image& image, ImageView const& view, uint32_t binding, uint32_t space) override;
+    void BindSampler(Sampler& sampler, uint32_t binding, uint32_t space) override;
 
-    VulkanPipelineLayout const& GetLayout() const
-    {
-        return layout_;
-    }
+    VulkanPipelineLayout const& GetLayout() const { return layout_; }
 
-    std::vector<VkDescriptorSet> const& GetDescriptorSets() const
-    {
-        return descriptor_sets_;
-    }
+    std::vector<VkDescriptorSet> const& GetDescriptorSets() const { return descriptor_sets_; }
 
     void Clear() override;
 
-  private:
+private:
     VulkanBinding const& FindBinding(uint32_t binding, uint32_t space) const;
     void CreateDescriptorPool();
     void AllocateDescriptorSets();
 
-  private:
+private:
     VulkanDevice& device_;
     VulkanPipelineLayout const& layout_;
     VkDescriptorPool descriptor_pool_ = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet> descriptor_sets_;
 };
 
-} // namespace gpu
+}  // namespace gpu

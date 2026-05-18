@@ -28,6 +28,8 @@ set(VULKAN_SOURCES
     src/vulkan/vulkan_pipeline_layout.hpp
     src/vulkan/vulkan_queue.cpp
     src/vulkan/vulkan_queue.hpp
+    src/vulkan/vulkan_sampler.cpp
+    src/vulkan/vulkan_sampler.hpp
     src/vulkan/vulkan_shader_manager.cpp
     src/vulkan/vulkan_shader_manager.hpp
     src/vulkan/vulkan_shader_reflection.cpp
@@ -48,6 +50,7 @@ set(INCLUDE_FILES
     inc/gpu_imgui.hpp
     inc/gpu_pipeline.hpp
     inc/gpu_queue.hpp
+    inc/gpu_sampler.hpp
     inc/gpu_swapchain.hpp
     inc/gpu_types.hpp
 )
@@ -77,6 +80,8 @@ set(D3D12_FILES
     src/d3d12/d3d12_pipeline_layout.hpp
     src/d3d12/d3d12_queue.cpp
     src/d3d12/d3d12_queue.hpp
+    src/d3d12/d3d12_sampler.cpp
+    src/d3d12/d3d12_sampler.hpp
     src/d3d12/d3d12_shader_reflection.cpp
     src/d3d12/d3d12_shader_reflection.hpp
     src/d3d12/d3d12_shader_manager.cpp
@@ -87,6 +92,7 @@ set(D3D12_FILES
 
 set(COMMON_SOURCES
     src/common/gpu_api.cpp
+    src/common/gpu_device.cpp
     src/common/gpu_pipeline.cpp
     src/common/shader_reflection.hpp
     src/common/utils.hpp

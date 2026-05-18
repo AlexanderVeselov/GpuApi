@@ -4,6 +4,7 @@
 #include "d3d12_image.hpp"
 #include "d3d12_imgui_renderer.hpp"
 #include "d3d12_pipeline.hpp"
+#include "d3d12_sampler.hpp"
 #include "d3d12_swapchain.hpp"
 
 #include <cassert>
@@ -12,8 +13,7 @@ namespace gpu
 {
 D3D12Device::D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter) : api_(gpu_api)
 {
-    ThrowIfFailed(
-        D3D12CreateDevice(dxgi_adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12_device_)));
+    ThrowIfFailed(D3D12CreateDevice(dxgi_adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12_device_)));
 
     descriptor_manager_ = std::make_unique<D3D12DescriptorManager>(*this);
 
@@ -24,6 +24,7 @@ D3D12Device::D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter) : api_(
 D3D12Device::~D3D12Device()
 {
     WaitIdle();
+    ClearSamplerCache();
     compute_queue_.reset();
     graphics_queue_.reset();
     descriptor_manager_.reset();
@@ -61,10 +62,15 @@ BufferPtr D3D12Device::CreateBuffer(size_t size, uint32_t stride, BufferFlags fl
     return std::make_shared<D3D12Buffer>(*this, size, stride, flags);
 }
 
-ImagePtr D3D12Device::CreateImage(uint32_t width, uint32_t height, ImageFormat format,
-    ImageFlags flags, uint32_t mip_count, uint32_t array_size)
+ImagePtr D3D12Device::CreateImage(uint32_t width, uint32_t height, ImageFormat format, ImageFlags flags,
+    uint32_t mip_count, uint32_t array_size)
 {
     return std::make_shared<D3D12Image>(*this, width, height, format, mip_count, array_size, flags);
+}
+
+SamplerPtr D3D12Device::CreateSampler(SamplerDesc const& desc)
+{
+    return std::make_shared<D3D12Sampler>(*this, desc);
 }
 
 GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc)
@@ -77,11 +83,10 @@ ComputePipelinePtr D3D12Device::CreateComputePipeline(char const* cs_filename)
     return std::make_unique<D3D12ComputePipeline>(*this, cs_filename);
 }
 
-SwapchainPtr D3D12Device::CreateSwapchain(
-    void* window_native_handle, uint32_t width, uint32_t height, uint32_t image_count)
+SwapchainPtr D3D12Device::CreateSwapchain(void* window_native_handle, uint32_t width, uint32_t height,
+    uint32_t image_count)
 {
-    return std::make_unique<D3D12Swapchain>(
-        *this, window_native_handle, width, height, image_count);
+    return std::make_unique<D3D12Swapchain>(*this, window_native_handle, width, height, image_count);
 }
 
 ImGuiRendererPtr D3D12Device::CreateImGuiRenderer(void* glfw_window, Swapchain& swapchain)
@@ -89,4 +94,4 @@ ImGuiRendererPtr D3D12Device::CreateImGuiRenderer(void* glfw_window, Swapchain& 
     return std::make_unique<D3D12ImGuiRenderer>(*this, glfw_window, swapchain);
 }
 
-} // namespace gpu
+}  // namespace gpu
