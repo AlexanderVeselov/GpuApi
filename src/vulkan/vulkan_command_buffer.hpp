@@ -68,7 +68,7 @@ private:
     VulkanGraphicsPipeline* current_graphics_pipeline_ = nullptr;
     VulkanComputePipeline* current_compute_pipeline_ = nullptr;
     VkPipelineBindPoint current_pipeline_bind_point_ = VK_PIPELINE_BIND_POINT_MAX_ENUM;
-    std::vector<BufferPtr> upload_staging_buffers_;
+    std::vector<BufferPtr> staging_buffers_;
 };
 
 }  // namespace gpu

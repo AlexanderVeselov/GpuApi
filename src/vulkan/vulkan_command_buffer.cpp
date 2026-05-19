@@ -541,7 +541,7 @@ void VulkanCommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t dat
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         1,
         &region);
-    upload_staging_buffers_.push_back(std::move(staging_buffer));
+    staging_buffers_.push_back(std::move(staging_buffer));
 }
 
 void VulkanCommandBuffer::CopyImage(ImagePtr dst, ImagePtr src)

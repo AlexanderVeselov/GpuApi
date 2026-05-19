@@ -54,13 +54,8 @@ D3D12CommandBuffer::D3D12CommandBuffer(D3D12Device& device, D3D12Queue& queue,
 {
     auto d3d12_device = device_.GetD3D12Device();
     ThrowIfFailed(d3d12_device->CreateCommandAllocator(command_list_type_, IID_PPV_ARGS(&command_allocator_)));
-    ThrowIfFailed(d3d12_device
-            ->CreateCommandList(0, command_list_type_, command_allocator_.Get(), nullptr, IID_PPV_ARGS(&cmd_list_)));
-}
-
-D3D12CommandBuffer::~D3D12CommandBuffer()
-{
-    FreeCommittedDescriptors();
+    ThrowIfFailed(d3d12_device->CreateCommandList(0, command_list_type_, command_allocator_.Get(),
+        nullptr, IID_PPV_ARGS(&cmd_list_)));
 }
 
 void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer, size_t vertex_stride)
@@ -326,8 +321,8 @@ void D3D12CommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data
     UINT num_rows = 0;
     UINT64 row_size = 0;
     UINT64 total_size = 0;
-    device_.GetD3D12Device()
-        ->GetCopyableFootprints(&image_desc, 0, 1, 0, &footprint, &num_rows, &row_size, &total_size);
+    device_.GetD3D12Device()->GetCopyableFootprints(&image_desc, 0, 1, 0,
+        &footprint, &num_rows, &row_size, &total_size);
 
     const UINT64 required_source_size = row_size * num_rows;
     if (!data || data_size < required_source_size)
@@ -359,7 +354,7 @@ void D3D12CommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data
     src_location.PlacedFootprint = footprint;
 
     cmd_list_->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
-    upload_staging_buffers_.push_back(std::move(staging_buffer));
+    staging_buffers_.push_back(std::move(staging_buffer));
 }
 
 void D3D12CommandBuffer::CopyImage(ImagePtr dst, ImagePtr src)
@@ -465,11 +460,6 @@ void D3D12CommandBuffer::BindDescriptorsCompute()
         cmd_list_->SetComputeRootDescriptorTable(descriptor.root_parameter_index,
             descriptor_manager.GetGPU(descriptor.gpu_descriptors.front()));
     }
-}
-
-void D3D12CommandBuffer::FreeCommittedDescriptors()
-{
-    committed_descriptors_.clear();
 }
 
 }  // namespace gpu

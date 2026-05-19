@@ -18,7 +18,7 @@ class D3D12CommandBuffer final : public CommandBuffer
 {
 public:
     D3D12CommandBuffer(D3D12Device& device, D3D12Queue& queue, D3D12_COMMAND_LIST_TYPE command_list_type);
-    ~D3D12CommandBuffer();
+    ~D3D12CommandBuffer() = default;
 
     ID3D12GraphicsCommandList* GetCommandList() const { return cmd_list_.Get(); }
 
@@ -58,7 +58,6 @@ public:
     void BindDescriptorHeaps();
     void BindDescriptorsGraphics();
     void BindDescriptorsCompute();
-    void FreeCommittedDescriptors();
 
 private:
     D3D12Device& device_;
@@ -72,8 +71,7 @@ private:
     D3D12ComputePipeline* current_compute_pipeline_ = nullptr;
     D3D12DescriptorSet* current_descriptor_set_ = nullptr;
     bool descriptor_heaps_bound_ = false;
-    std::vector<D3D12Descriptor> committed_descriptors_;
-    std::vector<BufferPtr> upload_staging_buffers_;
+    std::vector<BufferPtr> staging_buffers_;
 };
 
 }  // namespace gpu
