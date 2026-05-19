@@ -57,6 +57,9 @@ public:
     /// Inserts an image layout transition barrier.
     virtual void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) = 0;
 
+    /// Inserts a transition barrier for multiple images.
+    virtual void TransitionBarrier(std::vector<ImagePtr> const& images, ImageLayout layout_before, ImageLayout layout_after) = 0;
+
     /// Inserts an unordered-access/storage synchronization barrier for an image.
     virtual void StorageBarrier(ImagePtr image) = 0;
 

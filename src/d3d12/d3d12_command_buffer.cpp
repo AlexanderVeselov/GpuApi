@@ -234,18 +234,34 @@ void D3D12CommandBuffer::ClearDepthImage(ImagePtr image, float depth)
 
 void D3D12CommandBuffer::TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after)
 {
-    D3D12Image* d3d12_image = static_cast<D3D12Image*>(image.get());
-    assert(d3d12_image && "D3D12CommandBuffer::TransitionBarrier: image is not a D3D12Image");
+    TransitionBarrier(std::vector<ImagePtr>{image}, layout_before, layout_after);
+}
 
-    const bool is_depth = IsDepthFormat(image->GetFormat());
+void D3D12CommandBuffer::TransitionBarrier(std::vector<ImagePtr> const& images, ImageLayout layout_before,
+    ImageLayout layout_after)
+{
+    std::vector<D3D12_RESOURCE_BARRIER> barriers;
+    barriers.reserve(images.size());
+    for (const auto& image : images)
+    {
+        D3D12Image* d3d12_image = static_cast<D3D12Image*>(image.get());
+        assert(d3d12_image && "D3D12CommandBuffer::TransitionBarrier: image is not a D3D12Image");
 
-    D3D12_RESOURCE_BARRIER barrier = {};
-    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    barrier.Transition.pResource = d3d12_image->GetResource();
-    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-    barrier.Transition.StateBefore = LayoutToD3D12ResourceState(layout_before, is_depth);
-    barrier.Transition.StateAfter = LayoutToD3D12ResourceState(layout_after, is_depth);
-    cmd_list_->ResourceBarrier(1, &barrier);
+        const bool is_depth = IsDepthFormat(image->GetFormat());
+
+        D3D12_RESOURCE_BARRIER barrier = {};
+        barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        barrier.Transition.pResource = d3d12_image->GetResource();
+        barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+        barrier.Transition.StateBefore = LayoutToD3D12ResourceState(layout_before, is_depth);
+        barrier.Transition.StateAfter = LayoutToD3D12ResourceState(layout_after, is_depth);
+        barriers.push_back(barrier);
+    }
+
+    if (!barriers.empty())
+    {
+        cmd_list_->ResourceBarrier(static_cast<UINT>(barriers.size()), barriers.data());
+    }
 }
 
 void D3D12CommandBuffer::StorageBarrier(ImagePtr image)

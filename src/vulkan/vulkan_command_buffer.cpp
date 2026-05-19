@@ -380,35 +380,53 @@ void VulkanCommandBuffer::ClearDepthImage(ImagePtr image, float depth)
 
 void VulkanCommandBuffer::TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after)
 {
+    TransitionBarrier(std::vector<ImagePtr>{image}, layout_before, layout_after);
+}
+
+void VulkanCommandBuffer::TransitionBarrier(std::vector<ImagePtr> const& images, ImageLayout layout_before,
+    ImageLayout layout_after)
+{
     EndRendering();
 
-    auto* vulkan_image = dynamic_cast<VulkanImage*>(image.get());
-    THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
+    std::vector<VkImageMemoryBarrier> barriers;
+    barriers.reserve(images.size());
 
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    bool is_depth = IsDepthImage(*image);
-    barrier.oldLayout = ToVkImageLayout(layout_before, is_depth);
-    barrier.newLayout = ToVkImageLayout(layout_after, is_depth);
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = vulkan_image->GetImage();
-    barrier.subresourceRange.aspectMask = GetImageAspect(*image);
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = vulkan_image->GetMipCount();
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = vulkan_image->GetArraySize();
+    for (ImagePtr const& image : images)
+    {
+        auto* vulkan_image = dynamic_cast<VulkanImage*>(image.get());
+        THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
 
-    vkCmdPipelineBarrier(command_buffer_,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        0,
-        0,
-        nullptr,
-        0,
-        nullptr,
-        1,
-        &barrier);
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        bool is_depth = IsDepthImage(*image);
+        barrier.oldLayout = ToVkImageLayout(layout_before, is_depth);
+        barrier.newLayout = ToVkImageLayout(layout_after, is_depth);
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = vulkan_image->GetImage();
+        barrier.subresourceRange.aspectMask = GetImageAspect(*image);
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = vulkan_image->GetMipCount();
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = vulkan_image->GetArraySize();
+
+        barriers.push_back(barrier);
+    }
+
+    if (!barriers.empty())
+    {
+        vkCmdPipelineBarrier(command_buffer_,
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+            0,
+            0,
+            nullptr,
+            0,
+            nullptr,
+            static_cast<uint32_t>(barriers.size()),
+            barriers.data());
+    }
+
 }
 
 void VulkanCommandBuffer::StorageBarrier(ImagePtr image)

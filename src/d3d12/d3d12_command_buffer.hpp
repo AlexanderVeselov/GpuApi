@@ -44,6 +44,7 @@ public:
     void ClearDepthImage(ImagePtr image, float depth) override;
 
     void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) override;
+    void TransitionBarrier(std::vector<ImagePtr> const& images, ImageLayout layout_before, ImageLayout layout_after) override;
     void StorageBarrier(ImagePtr image) override;
     void StorageBarrier(BufferPtr buffer) override;
 
