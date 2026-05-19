@@ -73,15 +73,22 @@ void D3D12Queue::WaitIdle()
         WaitForSingleObject(fence_event_, INFINITE);
     }
 
-    in_flight_submissions_.clear();
+    // Destroy completed command buffers after the queue no longer tracks them.
+    // Some D3D12 resource destructors call back into WaitIdle().
+    std::deque<InFlightSubmission> submissions_to_release;
+    submissions_to_release.swap(in_flight_submissions_);
 }
 
 void D3D12Queue::CollectCompletedSubmissions()
 {
     const std::uint64_t completed_value = fence_->GetCompletedValue();
+    // Destroy completed command buffers after removing them from the tracked queue.
+    // Some D3D12 resource destructors call back into WaitIdle().
+    std::deque<InFlightSubmission> submissions_to_release;
     while (!in_flight_submissions_.empty() &&
            in_flight_submissions_.front().fence_value <= completed_value)
     {
+        submissions_to_release.push_back(std::move(in_flight_submissions_.front()));
         in_flight_submissions_.pop_front();
     }
 }

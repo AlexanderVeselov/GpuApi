@@ -7,13 +7,14 @@
 #include "vulkan_image.hpp"
 #include "vulkan_pipeline.hpp"
 
+#include <cstring>
+
 namespace gpu
 {
 static bool IsDepthImage(Image const& image)
 {
-    return HasFlag(image.GetFlags(), ImageFlags::kDepthStencil) ||
-           image.GetFormat() == ImageFormat::kD32_Float ||
-           image.GetFormat() == ImageFormat::kR32_Typeless;
+    return HasFlag(image.GetFlags(), ImageFlags::kDepthStencil) || image.GetFormat() == ImageFormat::kD32_Float
+        || image.GetFormat() == ImageFormat::kR32_Typeless;
 }
 
 static VkImageLayout ToVkImageLayout(ImageLayout layout, bool is_depth)
@@ -29,11 +30,9 @@ static VkImageLayout ToVkImageLayout(ImageLayout layout, bool is_depth)
     case ImageLayout::kCopyDst:
         return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     case ImageLayout::kRenderTarget:
-        return is_depth ? VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL
-                        : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        return is_depth ? VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     case ImageLayout::kShaderRead:
-        return is_depth ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL
-                        : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        return is_depth ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     case ImageLayout::kShaderReadWrite:
         return VK_IMAGE_LAYOUT_GENERAL;
     default:
@@ -55,8 +54,7 @@ VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice& device, VkCommandPool com
     allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocate_info.commandBufferCount = 1;
 
-    VkResult status =
-        vkAllocateCommandBuffers(device_.GetDevice(), &allocate_info, &command_buffer_);
+    VkResult status = vkAllocateCommandBuffers(device_.GetDevice(), &allocate_info, &command_buffer_);
     VK_THROW_IF_FAILED(status, "Failed to allocate Vulkan command buffer");
 
     Begin();
@@ -111,8 +109,8 @@ void VulkanCommandBuffer::SetVertexBuffer(BufferPtr buffer, std::size_t vertex_s
     auto* vulkan_buffer = dynamic_cast<VulkanBuffer*>(buffer.get());
     THROW_IF(!vulkan_buffer, "Vertex buffer does not belong to the Vulkan backend");
     current_vertex_stride_ = static_cast<uint32_t>(vertex_stride);
-    THROW_IF(current_graphics_pipeline_ && current_graphics_pipeline_->GetVertexStride() != 0 &&
-                 current_graphics_pipeline_->GetVertexStride() != current_vertex_stride_,
+    THROW_IF(current_graphics_pipeline_ && current_graphics_pipeline_->GetVertexStride() != 0
+            && current_graphics_pipeline_->GetVertexStride() != current_vertex_stride_,
         "Vertex buffer stride does not match the current Vulkan graphics pipeline input layout");
 
     VkBuffer vertex_buffers[] = {vulkan_buffer->GetBuffer()};
@@ -135,35 +133,33 @@ void VulkanCommandBuffer::Dispatch(std::uint32_t x, std::uint32_t y, std::uint32
     vkCmdDispatch(command_buffer_, x, y, z);
 }
 
-void VulkanCommandBuffer::Draw(
-    uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance)
+void VulkanCommandBuffer::Draw(uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex,
+    uint32_t first_instance)
 {
     THROW_IF(!rendering_active_, "Draw requires an active Vulkan render target");
 
     vkCmdDraw(command_buffer_, vertex_count, instance_count, first_vertex, first_instance);
 }
 
-void VulkanCommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count,
-    uint32_t first_index, int32_t vertex_offset, uint32_t first_instance)
+void VulkanCommandBuffer::DrawIndexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index,
+    int32_t vertex_offset, uint32_t first_instance)
 {
     THROW_IF(!rendering_active_, "DrawIndexed requires an active Vulkan render target");
 
-    vkCmdDrawIndexed(
-        command_buffer_, index_count, instance_count, first_index, vertex_offset, first_instance);
+    vkCmdDrawIndexed(command_buffer_, index_count, instance_count, first_index, vertex_offset, first_instance);
 }
 
 void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const& pipeline)
 {
     auto* vulkan_pipeline = dynamic_cast<VulkanGraphicsPipeline*>(pipeline.get());
     THROW_IF(!vulkan_pipeline, "Graphics pipeline does not belong to the Vulkan backend");
-    THROW_IF(current_vertex_stride_ != 0 && vulkan_pipeline->GetVertexStride() != 0 &&
-                 vulkan_pipeline->GetVertexStride() != current_vertex_stride_,
+    THROW_IF(current_vertex_stride_ != 0 && vulkan_pipeline->GetVertexStride() != 0
+            && vulkan_pipeline->GetVertexStride() != current_vertex_stride_,
         "Current vertex buffer stride does not match the Vulkan graphics pipeline input layout");
 
     current_graphics_pipeline_ = vulkan_pipeline;
     current_pipeline_bind_point_ = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    vkCmdBindPipeline(
-        command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_pipeline->GetPipeline());
+    vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_pipeline->GetPipeline());
 }
 
 void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const& pipeline)
@@ -173,8 +169,7 @@ void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const& pipeline)
 
     current_compute_pipeline_ = vulkan_pipeline;
     current_pipeline_bind_point_ = VK_PIPELINE_BIND_POINT_COMPUTE;
-    vkCmdBindPipeline(
-        command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vulkan_pipeline->GetPipeline());
+    vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vulkan_pipeline->GetPipeline());
 }
 
 void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_set)
@@ -182,8 +177,7 @@ void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_s
     auto* vulkan_descriptor_set = dynamic_cast<VulkanDescriptorSet*>(descriptor_set.get());
     THROW_IF(!vulkan_descriptor_set, "Descriptor set does not belong to the Vulkan backend");
 
-    std::vector<VkDescriptorSet> const& descriptor_sets =
-        vulkan_descriptor_set->GetDescriptorSets();
+    std::vector<VkDescriptorSet> const& descriptor_sets = vulkan_descriptor_set->GetDescriptorSets();
     if (descriptor_sets.empty())
     {
         return;
@@ -195,9 +189,14 @@ void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_s
         THROW_IF(&vulkan_descriptor_set->GetLayout() != &current_graphics_pipeline_->GetLayout(),
             "Descriptor set layout does not match the current Vulkan graphics pipeline layout");
 
-        vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            current_graphics_pipeline_->GetPipelineLayout(), 0,
-            static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(), 0, nullptr);
+        vkCmdBindDescriptorSets(command_buffer_,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            current_graphics_pipeline_->GetPipelineLayout(),
+            0,
+            static_cast<uint32_t>(descriptor_sets.size()),
+            descriptor_sets.data(),
+            0,
+            nullptr);
     }
 
     if (current_pipeline_bind_point_ == VK_PIPELINE_BIND_POINT_COMPUTE)
@@ -206,9 +205,14 @@ void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_s
         THROW_IF(&vulkan_descriptor_set->GetLayout() != &current_compute_pipeline_->GetLayout(),
             "Descriptor set layout does not match the current Vulkan compute pipeline layout");
 
-        vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
-            current_compute_pipeline_->GetPipelineLayout(), 0,
-            static_cast<uint32_t>(descriptor_sets.size()), descriptor_sets.data(), 0, nullptr);
+        vkCmdBindDescriptorSets(command_buffer_,
+            VK_PIPELINE_BIND_POINT_COMPUTE,
+            current_compute_pipeline_->GetPipelineLayout(),
+            0,
+            static_cast<uint32_t>(descriptor_sets.size()),
+            descriptor_sets.data(),
+            0,
+            nullptr);
     }
 
     THROW_IF(current_pipeline_bind_point_ == VK_PIPELINE_BIND_POINT_MAX_ENUM,
@@ -226,13 +230,11 @@ void VulkanCommandBuffer::SetRenderTarget(ImagePtr color_attachment, ImagePtr de
     SetRenderTargets(color_attachments, depth_attachment);
 }
 
-void VulkanCommandBuffer::SetRenderTargets(
-    std::vector<ImagePtr> const& color_attachments, ImagePtr depth_attachment)
+void VulkanCommandBuffer::SetRenderTargets(std::vector<ImagePtr> const& color_attachments, ImagePtr depth_attachment)
 {
     EndRendering();
 
-    THROW_IF(color_attachments.empty() && !depth_attachment,
-        "SetRenderTargets requires at least one attachment");
+    THROW_IF(color_attachments.empty() && !depth_attachment, "SetRenderTargets requires at least one attachment");
 
     uint32_t render_width = 0;
     uint32_t render_height = 0;
@@ -252,8 +254,7 @@ void VulkanCommandBuffer::SetRenderTargets(
         }
         else
         {
-            THROW_IF(
-                attachment->GetWidth() != render_width || attachment->GetHeight() != render_height,
+            THROW_IF(attachment->GetWidth() != render_width || attachment->GetHeight() != render_height,
                 "All Vulkan render targets must have the same size");
         }
 
@@ -280,8 +281,7 @@ void VulkanCommandBuffer::SetRenderTargets(
         }
         else
         {
-            THROW_IF(depth_attachment->GetWidth() != render_width ||
-                         depth_attachment->GetHeight() != render_height,
+            THROW_IF(depth_attachment->GetWidth() != render_width || depth_attachment->GetHeight() != render_height,
                 "All Vulkan render targets must have the same size");
         }
 
@@ -298,8 +298,7 @@ void VulkanCommandBuffer::SetRenderTargets(
     rendering_info.renderArea.extent = {render_width, render_height};
     rendering_info.layerCount = 1;
     rendering_info.colorAttachmentCount = static_cast<uint32_t>(color_attachment_infos.size());
-    rendering_info.pColorAttachments =
-        color_attachment_infos.empty() ? nullptr : color_attachment_infos.data();
+    rendering_info.pColorAttachments = color_attachment_infos.empty() ? nullptr : color_attachment_infos.data();
     rendering_info.pDepthAttachment = depth_attachment ? &depth_attachment_info : nullptr;
 
     vkCmdBeginRendering(command_buffer_, &rendering_info);
@@ -344,8 +343,12 @@ void VulkanCommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, 
     range.baseArrayLayer = 0;
     range.layerCount = vulkan_image->GetArraySize();
 
-    vkCmdClearColorImage(command_buffer_, vulkan_image->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1, &range);
+    vkCmdClearColorImage(command_buffer_,
+        vulkan_image->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        &color,
+        1,
+        &range);
 }
 
 void VulkanCommandBuffer::ClearDepthImage(ImagePtr image, float depth)
@@ -354,8 +357,7 @@ void VulkanCommandBuffer::ClearDepthImage(ImagePtr image, float depth)
 
     auto* vulkan_image = dynamic_cast<VulkanImage*>(image.get());
     THROW_IF(!vulkan_image, "Image does not belong to the Vulkan backend");
-    THROW_IF(
-        !IsDepthImage(*image), "ClearDepthImage only supports depth images in the Vulkan backend");
+    THROW_IF(!IsDepthImage(*image), "ClearDepthImage only supports depth images in the Vulkan backend");
 
     VkClearDepthStencilValue clear_value = {};
     clear_value.depth = depth;
@@ -368,12 +370,15 @@ void VulkanCommandBuffer::ClearDepthImage(ImagePtr image, float depth)
     range.baseArrayLayer = 0;
     range.layerCount = vulkan_image->GetArraySize();
 
-    vkCmdClearDepthStencilImage(command_buffer_, vulkan_image->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_value, 1, &range);
+    vkCmdClearDepthStencilImage(command_buffer_,
+        vulkan_image->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        &clear_value,
+        1,
+        &range);
 }
 
-void VulkanCommandBuffer::TransitionBarrier(
-    ImagePtr image, ImageLayout layout_before, ImageLayout layout_after)
+void VulkanCommandBuffer::TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after)
 {
     EndRendering();
 
@@ -394,8 +399,16 @@ void VulkanCommandBuffer::TransitionBarrier(
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = vulkan_image->GetArraySize();
 
-    vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+    vkCmdPipelineBarrier(command_buffer_,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        1,
+        &barrier);
 }
 
 void VulkanCommandBuffer::StorageBarrier(ImagePtr image)
@@ -418,8 +431,16 @@ void VulkanCommandBuffer::StorageBarrier(ImagePtr image)
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = vulkan_image->GetArraySize();
 
-    vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+    vkCmdPipelineBarrier(command_buffer_,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        1,
+        &barrier);
 }
 
 void VulkanCommandBuffer::StorageBarrier(BufferPtr buffer)
@@ -432,8 +453,8 @@ void VulkanCommandBuffer::StorageBarrier(BufferPtr buffer)
     VkBufferMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
     barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                            VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT
+        | VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.buffer = vulkan_buffer->GetBuffer();
@@ -442,12 +463,18 @@ void VulkanCommandBuffer::StorageBarrier(BufferPtr buffer)
 
     vkCmdPipelineBarrier(command_buffer_,
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1,
-        &barrier, 0, nullptr);
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0,
+        0,
+        nullptr,
+        1,
+        &barrier,
+        0,
+        nullptr);
 }
 
-void VulkanCommandBuffer::CopyBuffer(
-    BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset, uint64_t size)
+void VulkanCommandBuffer::CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset,
+    uint64_t size)
 {
     EndRendering();
 
@@ -460,8 +487,7 @@ void VulkanCommandBuffer::CopyBuffer(
     copy_region.dstOffset = dst_offset;
     copy_region.size = size;
 
-    vkCmdCopyBuffer(
-        command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetBuffer(), 1, &copy_region);
+    vkCmdCopyBuffer(command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetBuffer(), 1, &copy_region);
 }
 
 void VulkanCommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)
@@ -479,8 +505,43 @@ void VulkanCommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)
     region.imageSubresource.layerCount = 1;
     region.imageExtent = {vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1};
 
-    vkCmdCopyBufferToImage(command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(command_buffer_,
+        vulkan_src->GetBuffer(),
+        vulkan_dst->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &region);
+}
+
+void VulkanCommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data_size)
+{
+    EndRendering();
+
+    auto* vulkan_dst = dynamic_cast<VulkanImage*>(dst.get());
+    THROW_IF(!vulkan_dst, "Image does not belong to the Vulkan backend");
+    THROW_IF(!data || data_size == 0, "Image upload data is empty");
+
+    BufferPtr staging_buffer = device_.CreateBuffer(data_size, 1, BufferFlags::kCpuAccess);
+    void* mapped_data = staging_buffer->Map();
+    std::memcpy(mapped_data, data, data_size);
+    staging_buffer->Unmap();
+
+    auto* vulkan_src = static_cast<VulkanBuffer*>(staging_buffer.get());
+
+    VkBufferImageCopy region{};
+    region.imageSubresource.aspectMask = GetImageAspect(*dst);
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageExtent = {vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1};
+
+    vkCmdCopyBufferToImage(command_buffer_,
+        vulkan_src->GetBuffer(),
+        vulkan_dst->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &region);
+    staging_buffers_.push_back(std::move(staging_buffer));
 }
 
 void VulkanCommandBuffer::CopyImage(ImagePtr dst, ImagePtr src)
@@ -498,8 +559,13 @@ void VulkanCommandBuffer::CopyImage(ImagePtr dst, ImagePtr src)
     region.dstSubresource.layerCount = 1;
     region.extent = {vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1};
 
-    vkCmdCopyImage(command_buffer_, vulkan_src->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        vulkan_dst->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyImage(command_buffer_,
+        vulkan_src->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        vulkan_dst->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &region);
 }
 
-} // namespace gpu
+}  // namespace gpu

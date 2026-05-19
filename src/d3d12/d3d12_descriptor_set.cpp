@@ -1,5 +1,6 @@
 #include "d3d12_descriptor_set.hpp"
 #include "d3d12_buffer.hpp"
+#include "d3d12_device.hpp"
 #include "d3d12_image.hpp"
 #include "d3d12_sampler.hpp"
 
@@ -30,12 +31,20 @@ TResource& CastResource(TBase& resource, char const* function_name)
     return *d3d12_resource;
 }
 
-D3D12DescriptorSet::D3D12DescriptorSet(D3D12PipelineLayout const& layout) : layout_(layout) {}
+D3D12DescriptorSet::D3D12DescriptorSet(D3D12Device& device, D3D12PipelineLayout const& layout)
+    : descriptor_manager_(device.GetDescriptorManager()), layout_(layout)
+{
+}
 
-D3D12DescriptorSet::~D3D12DescriptorSet() {}
+D3D12DescriptorSet::~D3D12DescriptorSet()
+{
+    Clear();
+}
 
 D3D12DescriptorSet::D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept
-    : layout_(other.layout_), descriptors_(std::move(other.descriptors_))
+    : descriptor_manager_(other.descriptor_manager_)
+    , layout_(other.layout_)
+    , descriptors_(std::move(other.descriptors_))
 {
 }
 
@@ -47,6 +56,8 @@ D3D12DescriptorSet& D3D12DescriptorSet::operator=(D3D12DescriptorSet&& other) no
     if (this != &other)
     {
         Clear();
+        assert(&descriptor_manager_ == &other.descriptor_manager_
+            && "D3D12DescriptorSet::operator=: descriptor sets must use the same descriptor manager");
         descriptors_ = std::move(other.descriptors_);
     }
 
@@ -166,7 +177,20 @@ void D3D12DescriptorSet::BindSampler(D3D12Sampler& sampler, uint32_t binding, ui
 
 void D3D12DescriptorSet::Clear()
 {
+    for (BoundDescriptor& descriptor : descriptors_)
+    {
+        FreeGpuDescriptors(descriptor);
+    }
     descriptors_.clear();
+}
+
+void D3D12DescriptorSet::FreeGpuDescriptors(BoundDescriptor& descriptor)
+{
+    for (D3D12Descriptor gpu_descriptor : descriptor.gpu_descriptors)
+    {
+        descriptor_manager_.Free(gpu_descriptor);
+    }
+    descriptor.gpu_descriptors.clear();
 }
 
 D3D12Binding const& D3D12DescriptorSet::FindBinding(uint32_t binding, uint32_t space) const
@@ -229,7 +253,20 @@ void D3D12DescriptorSet::BindDescriptors(D3D12Binding const& binding, std::vecto
         && "D3D12DescriptorSet::BindDescriptors: only descriptor-table bindings are supported");
 
     BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(binding);
+    FreeGpuDescriptors(descriptor);
     descriptor.cpu_descriptors = std::move(cpu_descriptors);
+    switch (descriptor.cpu_descriptors.front().heap)
+    {
+    case D3D12DescriptorHeapId::CPU_CBV_SRV_UAV:
+        descriptor.gpu_descriptors = descriptor_manager_.CopyToGPUCBVSRVUAV(descriptor.cpu_descriptors);
+        break;
+    case D3D12DescriptorHeapId::CPU_SAMPLER:
+        descriptor.gpu_descriptors = descriptor_manager_.CopyToGPUSampler(descriptor.cpu_descriptors);
+        break;
+    default:
+        assert(false && "D3D12DescriptorSet::BindDescriptors: source descriptor heap is not shader-visible-copyable");
+        break;
+    }
 }
 
 }  // namespace gpu
