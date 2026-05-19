@@ -73,4 +73,4 @@ inline DXGI_FORMAT ImageToDXGIFormat(ImageFormat format)
     }
 }
 
-} // namespace gpu
+}  // namespace gpu

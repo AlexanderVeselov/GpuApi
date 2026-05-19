@@ -12,6 +12,7 @@
 namespace gpu
 {
 class D3D12Buffer;
+class D3D12Device;
 class D3D12Image;
 class D3D12Sampler;
 
@@ -25,9 +26,10 @@ public:
         uint32_t root_parameter_index = 0;
 
         std::vector<D3D12Descriptor> cpu_descriptors;
+        std::vector<D3D12Descriptor> gpu_descriptors;
     };
 
-    explicit D3D12DescriptorSet(D3D12PipelineLayout const& layout);
+    D3D12DescriptorSet(D3D12Device& device, D3D12PipelineLayout const& layout);
     ~D3D12DescriptorSet();
 
     D3D12DescriptorSet(D3D12DescriptorSet const&) = delete;
@@ -53,12 +55,14 @@ public:
     void Clear() override;
 
 private:
+    void FreeGpuDescriptors(BoundDescriptor& descriptor);
     D3D12Binding const& FindBinding(uint32_t binding, uint32_t space) const;
     BoundDescriptor& FindOrCreateBoundDescriptor(D3D12Binding const& binding);
     void BindDescriptor(D3D12Binding const& binding, D3D12Descriptor cpu_descriptor);
     void BindDescriptors(D3D12Binding const& binding, std::vector<D3D12Descriptor> cpu_descriptors);
 
 private:
+    D3D12DescriptorManager& descriptor_manager_;
     D3D12PipelineLayout const& layout_;
     std::vector<BoundDescriptor> descriptors_;
 };

@@ -4,6 +4,7 @@
 #include "d3d12_exception.hpp"
 
 #include <cassert>
+#include <vector>
 
 namespace gpu
 {
@@ -73,15 +74,18 @@ void D3D12Queue::WaitIdle()
         WaitForSingleObject(fence_event_, INFINITE);
     }
 
+    auto completed_submissions = std::move(in_flight_submissions_);
     in_flight_submissions_.clear();
 }
 
 void D3D12Queue::CollectCompletedSubmissions()
 {
     const std::uint64_t completed_value = fence_->GetCompletedValue();
+    std::vector<InFlightSubmission> completed_submissions;
     while (!in_flight_submissions_.empty() &&
            in_flight_submissions_.front().fence_value <= completed_value)
     {
+        completed_submissions.push_back(std::move(in_flight_submissions_.front()));
         in_flight_submissions_.pop_front();
     }
 }

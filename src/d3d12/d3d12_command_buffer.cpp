@@ -8,6 +8,7 @@
 #include "d3d12_queue.hpp"
 
 #include <cassert>
+#include <cstring>
 #include <stdexcept>
 
 namespace gpu
@@ -45,22 +46,6 @@ namespace
         return format == ImageFormat::kD32_Float || format == ImageFormat::kR32_Typeless;
     }
 
-    std::vector<D3D12Descriptor> CopyDescriptorsToGPU(D3D12DescriptorManager& descriptor_manager,
-        std::vector<D3D12Descriptor> const& descriptors)
-    {
-        assert(!descriptors.empty() && "CopyDescriptorsToGPU: source descriptors are empty");
-
-        switch (descriptors.front().heap)
-        {
-        case D3D12DescriptorHeapId::CPU_CBV_SRV_UAV:
-            return descriptor_manager.CopyToGPUCBVSRVUAV(descriptors);
-        case D3D12DescriptorHeapId::CPU_SAMPLER:
-            return descriptor_manager.CopyToGPUSampler(descriptors);
-        default:
-            assert(false && "CopyDescriptorsToGPU: source descriptor heap is not shader-visible-copyable");
-            return {};
-        }
-    }
 }  // namespace
 
 D3D12CommandBuffer::D3D12CommandBuffer(D3D12Device& device, D3D12Queue& queue,
@@ -331,6 +316,52 @@ void D3D12CommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)
     cmd_list_->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
 }
 
+void D3D12CommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data_size)
+{
+    D3D12Image* d3d12_dst = static_cast<D3D12Image*>(dst.get());
+    assert(d3d12_dst && "D3D12CommandBuffer::UploadImage: dst must be D3D12Image");
+
+    D3D12_RESOURCE_DESC image_desc = d3d12_dst->GetResource()->GetDesc();
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
+    UINT num_rows = 0;
+    UINT64 row_size = 0;
+    UINT64 total_size = 0;
+    device_.GetD3D12Device()
+        ->GetCopyableFootprints(&image_desc, 0, 1, 0, &footprint, &num_rows, &row_size, &total_size);
+
+    const UINT64 required_source_size = row_size * num_rows;
+    if (!data || data_size < required_source_size)
+    {
+        throw std::runtime_error("D3D12CommandBuffer::UploadImage: source image data is too small");
+    }
+
+    BufferPtr staging_buffer = device_.CreateBuffer(total_size, 1, BufferFlags::kCpuAccess);
+    uint8_t* dst_data = static_cast<uint8_t*>(staging_buffer->Map());
+    uint8_t const* src_data = static_cast<uint8_t const*>(data);
+    for (UINT row = 0; row < num_rows; ++row)
+    {
+        std::memcpy(dst_data + footprint.Offset + footprint.Footprint.RowPitch * row,
+            src_data + row_size * row,
+            static_cast<size_t>(row_size));
+    }
+    staging_buffer->Unmap();
+
+    D3D12Buffer* d3d12_src = static_cast<D3D12Buffer*>(staging_buffer.get());
+
+    D3D12_TEXTURE_COPY_LOCATION dst_location = {};
+    dst_location.pResource = d3d12_dst->GetResource();
+    dst_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dst_location.SubresourceIndex = 0;
+
+    D3D12_TEXTURE_COPY_LOCATION src_location = {};
+    src_location.pResource = d3d12_src->GetResource();
+    src_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    src_location.PlacedFootprint = footprint;
+
+    cmd_list_->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
+    upload_staging_buffers_.push_back(std::move(staging_buffer));
+}
+
 void D3D12CommandBuffer::CopyImage(ImagePtr dst, ImagePtr src)
 {
     D3D12Image* d3d12_dst = static_cast<D3D12Image*>(dst.get());
@@ -367,9 +398,9 @@ void D3D12CommandBuffer::Close()
     closed_ = true;
 }
 
-void D3D12CommandBuffer::BindDescriptorsGraphics()
+void D3D12CommandBuffer::BindDescriptorHeaps()
 {
-    if (!current_graphics_pipeline_)
+    if (descriptor_heaps_bound_)
     {
         return;
     }
@@ -377,6 +408,17 @@ void D3D12CommandBuffer::BindDescriptorsGraphics()
     D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     ID3D12DescriptorHeap* heaps[] = {descriptor_manager.GetGPUCBVSRVUAVHeap(), descriptor_manager.GetGPUSamplerHeap()};
     cmd_list_->SetDescriptorHeaps(2, heaps);
+    descriptor_heaps_bound_ = true;
+}
+
+void D3D12CommandBuffer::BindDescriptorsGraphics()
+{
+    if (!current_graphics_pipeline_)
+    {
+        return;
+    }
+
+    BindDescriptorHeaps();
 
     if (!current_descriptor_set_)
     {
@@ -387,14 +429,13 @@ void D3D12CommandBuffer::BindDescriptorsGraphics()
            "D3D12CommandBuffer::BindDescriptorsGraphics: descriptor set layout must match the "
            "current graphics pipeline layout");
 
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     for (D3D12DescriptorSet::BoundDescriptor const& descriptor : current_descriptor_set_->GetBoundDescriptors())
     {
-        std::vector<D3D12Descriptor> gpu_descriptors = CopyDescriptorsToGPU(descriptor_manager,
-            descriptor.cpu_descriptors);
-        committed_descriptors_.insert(committed_descriptors_.end(), gpu_descriptors.begin(), gpu_descriptors.end());
-
+        assert(!descriptor.gpu_descriptors.empty()
+            && "D3D12CommandBuffer::BindDescriptorsGraphics: descriptor set has no GPU descriptors");
         cmd_list_->SetGraphicsRootDescriptorTable(descriptor.root_parameter_index,
-            descriptor_manager.GetGPU(gpu_descriptors.front()));
+            descriptor_manager.GetGPU(descriptor.gpu_descriptors.front()));
     }
 }
 
@@ -405,9 +446,7 @@ void D3D12CommandBuffer::BindDescriptorsCompute()
         return;
     }
 
-    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
-    ID3D12DescriptorHeap* heaps[] = {descriptor_manager.GetGPUCBVSRVUAVHeap(), descriptor_manager.GetGPUSamplerHeap()};
-    cmd_list_->SetDescriptorHeaps(2, heaps);
+    BindDescriptorHeaps();
 
     if (!current_descriptor_set_)
     {
@@ -418,25 +457,18 @@ void D3D12CommandBuffer::BindDescriptorsCompute()
            "D3D12CommandBuffer::BindDescriptorsCompute: descriptor set layout must match the "
            "current compute pipeline layout");
 
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     for (D3D12DescriptorSet::BoundDescriptor const& descriptor : current_descriptor_set_->GetBoundDescriptors())
     {
-        std::vector<D3D12Descriptor> gpu_descriptors = CopyDescriptorsToGPU(descriptor_manager,
-            descriptor.cpu_descriptors);
-        committed_descriptors_.insert(committed_descriptors_.end(), gpu_descriptors.begin(), gpu_descriptors.end());
-
+        assert(!descriptor.gpu_descriptors.empty()
+            && "D3D12CommandBuffer::BindDescriptorsCompute: descriptor set has no GPU descriptors");
         cmd_list_->SetComputeRootDescriptorTable(descriptor.root_parameter_index,
-            descriptor_manager.GetGPU(gpu_descriptors.front()));
+            descriptor_manager.GetGPU(descriptor.gpu_descriptors.front()));
     }
 }
 
 void D3D12CommandBuffer::FreeCommittedDescriptors()
 {
-    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
-    for (D3D12Descriptor descriptor : committed_descriptors_)
-    {
-        descriptor_manager.Free(descriptor);
-    }
-
     committed_descriptors_.clear();
 }
 

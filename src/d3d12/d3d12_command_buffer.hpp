@@ -4,6 +4,8 @@
 #include "d3d12_descriptor_manager.hpp"
 #include "gpu_command_buffer.hpp"
 
+#include <vector>
+
 namespace gpu
 {
 class D3D12Device;
@@ -14,15 +16,11 @@ class D3D12GraphicsPipeline;
 
 class D3D12CommandBuffer final : public CommandBuffer
 {
-  public:
-    D3D12CommandBuffer(
-        D3D12Device& device, D3D12Queue& queue, D3D12_COMMAND_LIST_TYPE command_list_type);
+public:
+    D3D12CommandBuffer(D3D12Device& device, D3D12Queue& queue, D3D12_COMMAND_LIST_TYPE command_list_type);
     ~D3D12CommandBuffer();
 
-    ID3D12GraphicsCommandList* GetCommandList() const
-    {
-        return cmd_list_.Get();
-    }
+    ID3D12GraphicsCommandList* GetCommandList() const { return cmd_list_.Get(); }
 
     void SetVertexBuffer(BufferPtr buffer, size_t vertex_stride) override;
     void SetIndexBuffer(BufferPtr buffer) override;
@@ -37,8 +35,7 @@ class D3D12CommandBuffer final : public CommandBuffer
         int32_t vertex_offset = 0, uint32_t first_instance = 0) override;
 
     void SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment) override;
-    void SetRenderTargets(
-        std::vector<ImagePtr> const& color_attachments, ImagePtr depth_attachment) override;
+    void SetRenderTargets(std::vector<ImagePtr> const& color_attachments, ImagePtr depth_attachment) override;
 
     void SetViewport(const Viewport& viewport) override;
     void SetScissor(const Rect& rect) override;
@@ -46,24 +43,24 @@ class D3D12CommandBuffer final : public CommandBuffer
     void ClearImage(ImagePtr image, float r, float g, float b, float a) override;
     void ClearDepthImage(ImagePtr image, float depth) override;
 
-    void TransitionBarrier(
-        ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) override;
+    void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) override;
     void StorageBarrier(ImagePtr image) override;
     void StorageBarrier(BufferPtr buffer) override;
 
-    void CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset,
-        uint64_t size) override;
+    void CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset, uint64_t size) override;
     void CopyBufferToImage(ImagePtr dst, BufferPtr src) override;
+    void UploadImage(ImagePtr dst, void const* data, size_t data_size) override;
     void CopyImage(ImagePtr dst, ImagePtr src) override;
 
     void Close();
 
   private:
+    void BindDescriptorHeaps();
     void BindDescriptorsGraphics();
     void BindDescriptorsCompute();
     void FreeCommittedDescriptors();
 
-  private:
+private:
     D3D12Device& device_;
     D3D12Queue& queue_;
     D3D12_COMMAND_LIST_TYPE command_list_type_;
@@ -74,7 +71,9 @@ class D3D12CommandBuffer final : public CommandBuffer
     D3D12GraphicsPipeline* current_graphics_pipeline_ = nullptr;
     D3D12ComputePipeline* current_compute_pipeline_ = nullptr;
     D3D12DescriptorSet* current_descriptor_set_ = nullptr;
+    bool descriptor_heaps_bound_ = false;
     std::vector<D3D12Descriptor> committed_descriptors_;
+    std::vector<BufferPtr> upload_staging_buffers_;
 };
 
-} // namespace gpu
+}  // namespace gpu
