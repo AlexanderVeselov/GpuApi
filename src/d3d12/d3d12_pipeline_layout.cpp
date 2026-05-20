@@ -11,102 +11,98 @@ namespace gpu
 {
 namespace
 {
-D3D12_SHADER_VISIBILITY GetShaderVisibility(uint32_t stage_mask)
-{
-    if ((stage_mask & (stage_mask - 1)) != 0)
+    D3D12_SHADER_VISIBILITY GetShaderVisibility(uint32_t stage_mask)
     {
+        if ((stage_mask & (stage_mask - 1)) != 0)
+        {
+            return D3D12_SHADER_VISIBILITY_ALL;
+        }
+
+        switch (static_cast<ShaderStage>(stage_mask))
+        {
+        case ShaderStage::kPixel:
+            return D3D12_SHADER_VISIBILITY_PIXEL;
+        case ShaderStage::kVertex:
+            return D3D12_SHADER_VISIBILITY_VERTEX;
+        case ShaderStage::kGeometry:
+            return D3D12_SHADER_VISIBILITY_GEOMETRY;
+        case ShaderStage::kHull:
+            return D3D12_SHADER_VISIBILITY_HULL;
+        case ShaderStage::kDomain:
+            return D3D12_SHADER_VISIBILITY_DOMAIN;
+        case ShaderStage::kCompute:
+            return D3D12_SHADER_VISIBILITY_ALL;
+        default:
+            assert(false && "D3D12PipelineLayout: unknown shader stage");
+            return D3D12_SHADER_VISIBILITY_ALL;
+        }
+    }
+
+    D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(ShaderDescriptorRangeType type)
+    {
+        switch (type)
+        {
+        case ShaderDescriptorRangeType::kCBV:
+            return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+        case ShaderDescriptorRangeType::kSRV:
+            return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+        case ShaderDescriptorRangeType::kUAV:
+            return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+        case ShaderDescriptorRangeType::kSampler:
+            return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+        default:
+            assert(false && "D3D12PipelineLayout: unsupported shader descriptor range type");
+            return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+        }
+    }
+
+    D3D12Binding::ResourceType GetResourceType(ShaderResourceType type)
+    {
+        switch (type)
+        {
+        case ShaderResourceType::kBuffer:
+            return D3D12Binding::ResourceType::kBuffer;
+        case ShaderResourceType::kImage:
+            return D3D12Binding::ResourceType::kImage;
+        case ShaderResourceType::kSampler:
+            return D3D12Binding::ResourceType::kSampler;
+        default:
+            return D3D12Binding::ResourceType::kBuffer;
+        }
+    }
+
+    D3D12Binding::DescriptorType GetDescriptorType(ShaderDescriptorType type)
+    {
+        switch (type)
+        {
+        case ShaderDescriptorType::kRootConstant:
+            return D3D12Binding::DescriptorType::kRootConstant;
+        case ShaderDescriptorType::kDescriptorTable:
+            return D3D12Binding::DescriptorType::kDescriptorTable;
+        default:
+            return D3D12Binding::DescriptorType::kDescriptorTable;
+        }
+    }
+
+    D3D12_SHADER_VISIBILITY MergeVisibility(D3D12_SHADER_VISIBILITY lhs, D3D12_SHADER_VISIBILITY rhs)
+    {
+        if (lhs == rhs)
+        {
+            return lhs;
+        }
+
         return D3D12_SHADER_VISIBILITY_ALL;
     }
 
-    switch (static_cast<ShaderStage>(stage_mask))
+    std::string BindingName(D3D12Binding const& binding)
     {
-    case ShaderStage::kPixel:
-        return D3D12_SHADER_VISIBILITY_PIXEL;
-    case ShaderStage::kVertex:
-        return D3D12_SHADER_VISIBILITY_VERTEX;
-    case ShaderStage::kGeometry:
-        return D3D12_SHADER_VISIBILITY_GEOMETRY;
-    case ShaderStage::kHull:
-        return D3D12_SHADER_VISIBILITY_HULL;
-    case ShaderStage::kDomain:
-        return D3D12_SHADER_VISIBILITY_DOMAIN;
-    case ShaderStage::kCompute:
-        return D3D12_SHADER_VISIBILITY_ALL;
-    default:
-        assert(false && "D3D12PipelineLayout: unknown shader stage");
-        return D3D12_SHADER_VISIBILITY_ALL;
+        return "(binding = " + std::to_string(binding.binding) + ", space = " + std::to_string(binding.space) + ")";
     }
-}
+}  // namespace
 
-D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(ShaderDescriptorRangeType type)
-{
-    switch (type)
-    {
-    case ShaderDescriptorRangeType::kCBV:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-    case ShaderDescriptorRangeType::kSRV:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    case ShaderDescriptorRangeType::kUAV:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-    case ShaderDescriptorRangeType::kSampler:
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-    default:
-        assert(false && "D3D12PipelineLayout: unsupported shader descriptor range type");
-        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-    }
-}
+D3D12PipelineLayout::D3D12PipelineLayout(D3D12Device& device) : device_(device) {}
 
-D3D12Binding::ResourceType GetResourceType(ShaderResourceType type)
-{
-    switch (type)
-    {
-    case ShaderResourceType::kBuffer:
-        return D3D12Binding::ResourceType::kBuffer;
-    case ShaderResourceType::kImage:
-        return D3D12Binding::ResourceType::kImage;
-    case ShaderResourceType::kSampler:
-        return D3D12Binding::ResourceType::kSampler;
-    default:
-        return D3D12Binding::ResourceType::kBuffer;
-    }
-}
-
-D3D12Binding::DescriptorType GetDescriptorType(ShaderDescriptorType type)
-{
-    switch (type)
-    {
-    case ShaderDescriptorType::kRootConstant:
-        return D3D12Binding::DescriptorType::kRootConstant;
-    case ShaderDescriptorType::kDescriptorTable:
-        return D3D12Binding::DescriptorType::kDescriptorTable;
-    default:
-        return D3D12Binding::DescriptorType::kDescriptorTable;
-    }
-}
-
-D3D12_SHADER_VISIBILITY MergeVisibility(D3D12_SHADER_VISIBILITY lhs, D3D12_SHADER_VISIBILITY rhs)
-{
-    if (lhs == rhs)
-    {
-        return lhs;
-    }
-
-    return D3D12_SHADER_VISIBILITY_ALL;
-}
-
-std::string BindingName(D3D12Binding const& binding)
-{
-    return "(binding = " + std::to_string(binding.binding) +
-           ", space = " + std::to_string(binding.space) + ")";
-}
-} // namespace
-
-D3D12PipelineLayout::D3D12PipelineLayout(D3D12Device& device) : device_(device)
-{
-}
-
-D3D12PipelineLayout::D3D12PipelineLayout(
-    D3D12Device& device, std::vector<D3D12Shader const*> const& shaders)
+D3D12PipelineLayout::D3D12PipelineLayout(D3D12Device& device, std::vector<D3D12Shader const*> const& shaders)
     : device_(device)
 {
     Build(shaders);
@@ -133,6 +129,29 @@ void D3D12PipelineLayout::Clear()
     bindings_.clear();
 }
 
+bool D3D12PipelineLayout::IsCompatibleWith(D3D12PipelineLayout const& other) const
+{
+    if (bindings_.size() != other.bindings_.size())
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < bindings_.size(); ++i)
+    {
+        D3D12Binding const& lhs = bindings_[i];
+        D3D12Binding const& rhs = other.bindings_[i];
+        if (lhs.binding != rhs.binding || lhs.space != rhs.space || lhs.root_parameter_index != rhs.root_parameter_index
+            || lhs.type != rhs.type || lhs.descriptor_type != rhs.descriptor_type || lhs.range_type != rhs.range_type
+            || lhs.descriptor_count != rhs.descriptor_count || lhs.num_32bit_values != rhs.num_32bit_values
+            || lhs.visibility != rhs.visibility)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool D3D12PipelineLayout::HasBinding(uint32_t binding, uint32_t space) const
 {
     for (D3D12Binding const& d3d12_binding : bindings_)
@@ -156,9 +175,8 @@ D3D12Binding const& D3D12PipelineLayout::FindBinding(uint32_t binding, uint32_t 
         }
     }
 
-    throw std::runtime_error(
-        "D3D12PipelineLayout::FindBinding: binding (binding = " + std::to_string(binding) +
-        ", space = " + std::to_string(space) + ") was not found");
+    throw std::runtime_error("D3D12PipelineLayout::FindBinding: binding (binding = " + std::to_string(binding)
+        + ", space = " + std::to_string(space) + ") was not found");
 }
 
 void D3D12PipelineLayout::AddShaderReflection(ShaderReflection const& reflection)
@@ -189,13 +207,11 @@ void D3D12PipelineLayout::AddOrMergeBinding(D3D12Binding const& binding)
             continue;
         }
 
-        if (existing.type != binding.type || existing.descriptor_type != binding.descriptor_type ||
-            existing.range_type != binding.range_type ||
-            existing.descriptor_count != binding.descriptor_count ||
-            existing.num_32bit_values != binding.num_32bit_values)
+        if (existing.type != binding.type || existing.descriptor_type != binding.descriptor_type
+            || existing.range_type != binding.range_type || existing.descriptor_count != binding.descriptor_count
+            || existing.num_32bit_values != binding.num_32bit_values)
         {
-            throw std::runtime_error(
-                "D3D12PipelineLayout: incompatible shader bindings for " + BindingName(binding));
+            throw std::runtime_error("D3D12PipelineLayout: incompatible shader bindings for " + BindingName(binding));
         }
 
         existing.visibility = MergeVisibility(existing.visibility, binding.visibility);
@@ -233,8 +249,7 @@ void D3D12PipelineLayout::CreateRootSignature()
             descriptor_range.NumDescriptors = binding.descriptor_count;
             descriptor_range.BaseShaderRegister = binding.binding;
             descriptor_range.RegisterSpace = binding.space;
-            descriptor_range.OffsetInDescriptorsFromTableStart =
-                D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+            descriptor_range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
             descriptor_ranges_.push_back(descriptor_range);
 
             root_parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
@@ -252,15 +267,16 @@ void D3D12PipelineLayout::CreateRootSignature()
 
     ComPtr<ID3D10Blob> root_signature_blob;
     ComPtr<ID3D10Blob> root_signature_error_blob;
-    HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0,
-        &root_signature_blob, &root_signature_error_blob);
+    HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc,
+        D3D_ROOT_SIGNATURE_VERSION_1_0,
+        &root_signature_blob,
+        &root_signature_error_blob);
     if (FAILED(hr))
     {
         std::string error_message = "Failed to serialize D3D12 pipeline layout root signature";
         if (root_signature_error_blob)
         {
-            std::string error_blob_message =
-                static_cast<char*>(root_signature_error_blob->GetBufferPointer());
+            std::string error_blob_message = static_cast<char*>(root_signature_error_blob->GetBufferPointer());
             if (!error_blob_message.empty() && error_blob_message.back() == '\n')
             {
                 error_blob_message.pop_back();
@@ -272,9 +288,10 @@ void D3D12PipelineLayout::CreateRootSignature()
         throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
 
-    ThrowIfFailed(
-        device_.GetD3D12Device()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
-            root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature_)));
+    ThrowIfFailed(device_.GetD3D12Device()->CreateRootSignature(0,
+        root_signature_blob->GetBufferPointer(),
+        root_signature_blob->GetBufferSize(),
+        IID_PPV_ARGS(&root_signature_)));
 }
 
-} // namespace gpu
+}  // namespace gpu

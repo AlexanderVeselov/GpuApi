@@ -28,7 +28,7 @@ struct VulkanBinding
 
 class VulkanPipelineLayout
 {
-  public:
+public:
     explicit VulkanPipelineLayout(VulkanDevice& device);
     VulkanPipelineLayout(VulkanDevice& device, std::vector<ShaderReflection const*> const& shaders);
     ~VulkanPipelineLayout();
@@ -36,30 +36,23 @@ class VulkanPipelineLayout
     void Build(std::vector<ShaderReflection const*> const& shaders);
     void Clear();
 
-    VkPipelineLayout GetPipelineLayout() const
-    {
-        return pipeline_layout_;
-    }
-    std::vector<VkDescriptorSetLayout> const& GetDescriptorSetLayouts() const
-    {
-        return descriptor_set_layouts_;
-    }
+    VkPipelineLayout GetPipelineLayout() const { return pipeline_layout_; }
+    std::vector<VkDescriptorSetLayout> const& GetDescriptorSetLayouts() const { return descriptor_set_layouts_; }
 
-    std::vector<VulkanBinding> const& GetBindings() const
-    {
-        return bindings_;
-    }
+    std::vector<VulkanBinding> const& GetBindings() const { return bindings_; }
+
+    bool IsCompatibleWith(VulkanPipelineLayout const& other) const;
 
     bool HasBinding(uint32_t binding, uint32_t set) const;
     VulkanBinding const& FindBinding(uint32_t binding, uint32_t set) const;
 
-  private:
+private:
     void AddShaderReflection(ShaderReflection const& reflection);
     void AddOrMergeBinding(VulkanBinding const& binding);
     void CreateDescriptorSetLayouts();
     void CreatePipelineLayout();
 
-  private:
+private:
     VulkanDevice& device_;
     std::vector<VulkanBinding> bindings_;
     std::vector<VkDescriptorSetLayout> descriptor_set_layouts_;
@@ -67,4 +60,4 @@ class VulkanPipelineLayout
     VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
 };
 
-} // namespace gpu
+}  // namespace gpu

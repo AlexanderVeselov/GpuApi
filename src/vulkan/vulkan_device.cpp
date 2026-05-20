@@ -161,12 +161,23 @@ Queue& VulkanDevice::GetQueue(QueueType queue_type)
 
 GraphicsPipelinePtr VulkanDevice::CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc)
 {
-    return std::make_unique<VulkanGraphicsPipeline>(*this, pipeline_desc);
+    auto pipeline = std::make_unique<VulkanGraphicsPipeline>(*this, pipeline_desc);
+    RegisterPipeline(pipeline.get());
+    return pipeline;
 }
 
 ComputePipelinePtr VulkanDevice::CreateComputePipeline(char const* cs_filename)
 {
-    return std::make_unique<VulkanComputePipeline>(*this, cs_filename);
+    auto pipeline = std::make_unique<VulkanComputePipeline>(*this, cs_filename);
+    RegisterPipeline(pipeline.get());
+    return pipeline;
+}
+
+PipelineReloadResult VulkanDevice::ReloadPipelines()
+{
+    GetQueue(QueueType::kGraphics).WaitIdle();
+    GetQueue(QueueType::kCompute).WaitIdle();
+    return ReloadRegisteredPipelines();
 }
 
 SwapchainPtr VulkanDevice::CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height,

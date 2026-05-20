@@ -26,6 +26,7 @@ public:
     // Pipelines
     GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) override;
     ComputePipelinePtr CreateComputePipeline(char const* cs_filename) override;
+    PipelineReloadResult ReloadPipelines() override;
 
     SwapchainPtr CreateSwapchain(void* window_native_handle, uint32_t width, uint32_t height,
         uint32_t image_count) override;

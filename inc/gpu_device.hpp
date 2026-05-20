@@ -10,6 +10,13 @@
 
 namespace gpu
 {
+struct PipelineReloadResult
+{
+    bool success = true;
+    uint32_t reloaded_count = 0;
+    std::string error;
+};
+
 /// Logical GPU device. Creates resources, queues, pipelines, and presentation objects.
 class Device
 {
@@ -35,6 +42,12 @@ public:
     /// Creates a compute pipeline from a compute shader path.
     virtual ComputePipelinePtr CreateComputePipeline(char const* cs_filename) = 0;
 
+    /// Reloads all pipelines. A pipeline keeps its old state if compilation fails or its shader layout changes.
+    virtual PipelineReloadResult ReloadPipelines() = 0;
+
+    /// Internal lifetime tracking used by backend pipeline objects.
+    void UnregisterPipeline(Pipeline* pipeline);
+
     /// Creates a swapchain for a native platform window handle.
     virtual SwapchainPtr CreateSwapchain(void* window_native_handle, uint32_t width, uint32_t height,
         uint32_t image_count) = 0;
@@ -45,11 +58,16 @@ public:
 protected:
     void ClearSamplerCache() { sampler_cache_.clear(); }
 
+    void RegisterPipeline(Pipeline* pipeline);
+    std::vector<Pipeline*> const& GetRegisteredPipelines() const { return pipelines_; }
+    PipelineReloadResult ReloadRegisteredPipelines();
+
 private:
     virtual SamplerPtr CreateSampler(SamplerDesc const& desc) = 0;
 
 private:
     std::unordered_map<SamplerDesc, SamplerPtr, SamplerDescHash> sampler_cache_;
+    std::vector<Pipeline*> pipelines_;
 };
 
 }  // namespace gpu
