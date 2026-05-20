@@ -41,31 +41,28 @@ struct D3D12Binding
 
 class D3D12PipelineLayout
 {
-  public:
+public:
     explicit D3D12PipelineLayout(D3D12Device& device);
     D3D12PipelineLayout(D3D12Device& device, std::vector<D3D12Shader const*> const& shaders);
 
     void Build(std::vector<D3D12Shader const*> const& shaders);
     void Clear();
 
-    ID3D12RootSignature* GetRootSignature() const
-    {
-        return root_signature_.Get();
-    }
-    std::vector<D3D12Binding> const& GetBindings() const
-    {
-        return bindings_;
-    }
+    ID3D12RootSignature* GetRootSignature() const { return root_signature_.Get(); }
+    std::vector<D3D12Binding> const& GetBindings() const { return bindings_; }
+
+    bool IsCompatibleWith(D3D12PipelineLayout const& other) const;
 
     bool HasBinding(uint32_t binding, uint32_t space) const;
     D3D12Binding const& FindBinding(uint32_t binding, uint32_t space) const;
 
-  private:
+private:
     void AddShaderReflection(ShaderReflection const& reflection);
     void AddOrMergeBinding(D3D12Binding const& binding);
+    void SortBindings();
     void CreateRootSignature();
 
-  private:
+private:
     D3D12Device& device_;
     std::vector<D3D12Binding> bindings_;
     std::vector<D3D12_DESCRIPTOR_RANGE> descriptor_ranges_;
@@ -73,4 +70,4 @@ class D3D12PipelineLayout
     ComPtr<ID3D12RootSignature> root_signature_;
 };
 
-} // namespace gpu
+}  // namespace gpu

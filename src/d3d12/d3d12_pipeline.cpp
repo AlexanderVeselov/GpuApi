@@ -7,6 +7,7 @@
 #include "d3d12_image.hpp"
 #include <cassert>
 #include <dxcapi.h>
+#include <stdexcept>
 
 namespace gpu
 {
@@ -140,6 +141,11 @@ namespace
 
 D3D12Pipeline::D3D12Pipeline(D3D12Device& device) : device_(device), layout_(device) {}
 
+D3D12Pipeline::~D3D12Pipeline()
+{
+    device_.UnregisterPipeline(this);
+}
+
 DescriptorSetPtr D3D12Pipeline::CreateDescriptorSet()
 {
     return std::make_unique<D3D12DescriptorSet>(device_, layout_);
@@ -166,7 +172,21 @@ void D3D12GraphicsPipeline::Reload()
     D3D12_SHADER_BYTECODE ps_bytecode = {};
     ps_bytecode.BytecodeLength = ps_shader.dxc_blob->GetBufferSize();
     ps_bytecode.pShaderBytecode = ps_shader.dxc_blob->GetBufferPointer();
-    layout_.Build({&vs_shader, &ps_shader});
+
+    if (!pipeline_state_)
+    {
+        layout_.Build({&vs_shader, &ps_shader});
+    }
+    else
+    {
+        // Check if the new pipeline layout is compatible with the existing layout.
+        D3D12PipelineLayout new_layout(device_);
+        new_layout.Build({&vs_shader, &ps_shader});
+        if (!layout_.IsCompatibleWith(new_layout))
+        {
+            throw std::runtime_error("D3D12GraphicsPipeline::Reload: pipeline layout changed");
+        }
+    }
 
     ///@TODO: add blend support
     D3D12_BLEND_DESC blend_state = {};
@@ -243,7 +263,10 @@ void D3D12GraphicsPipeline::Reload()
     pipeline_state_desc.SampleDesc.Count = 1u;
     pipeline_state_desc.SampleDesc.Quality = 0u;
 
-    ThrowIfFailed(d3d12_device->CreateGraphicsPipelineState(&pipeline_state_desc, IID_PPV_ARGS(&pipeline_state_)));
+    ComPtr<ID3D12PipelineState> new_pipeline_state;
+    ThrowIfFailed(d3d12_device->CreateGraphicsPipelineState(&pipeline_state_desc, IID_PPV_ARGS(&new_pipeline_state)));
+
+    pipeline_state_ = std::move(new_pipeline_state);
 }
 
 D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_filename)
@@ -262,13 +285,29 @@ void D3D12ComputePipeline::Reload()
     cs_bytecode.BytecodeLength = cs_shader.dxc_blob->GetBufferSize();
     cs_bytecode.pShaderBytecode = cs_shader.dxc_blob->GetBufferPointer();
 
-    layout_.Build({&cs_shader});
+    if (!pipeline_state_)
+    {
+        layout_.Build({&cs_shader});
+    }
+    else
+    {
+        // Check if the new pipeline layout is compatible with the existing layout.
+        D3D12PipelineLayout new_layout(device_);
+        new_layout.Build({&cs_shader});
+        if (!layout_.IsCompatibleWith(new_layout))
+        {
+            throw std::runtime_error("D3D12ComputePipeline::Reload: pipeline layout changed");
+        }
+    }
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC pipeline_state_desc = {};
     pipeline_state_desc.pRootSignature = layout_.GetRootSignature();
     pipeline_state_desc.CS = cs_bytecode;
 
-    ThrowIfFailed(d3d12_device->CreateComputePipelineState(&pipeline_state_desc, IID_PPV_ARGS(&pipeline_state_)));
+    ComPtr<ID3D12PipelineState> new_pipeline_state;
+    ThrowIfFailed(d3d12_device->CreateComputePipelineState(&pipeline_state_desc, IID_PPV_ARGS(&new_pipeline_state)));
+
+    pipeline_state_ = std::move(new_pipeline_state);
 }
 
 }  // namespace gpu

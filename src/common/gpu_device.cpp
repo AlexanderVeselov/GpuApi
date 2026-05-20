@@ -1,5 +1,11 @@
 #include "gpu_device.hpp"
 
+#include "gpu_pipeline.hpp"
+
+#include <algorithm>
+#include <exception>
+#include <string>
+
 namespace gpu
 {
 SamplerPtr Device::GetSampler(SamplerDesc const& desc)
@@ -13,6 +19,65 @@ SamplerPtr Device::GetSampler(SamplerDesc const& desc)
     SamplerPtr sampler = CreateSampler(desc);
     sampler_cache_.emplace(desc, sampler);
     return sampler;
+}
+
+void Device::RegisterPipeline(Pipeline* pipeline)
+{
+    if (!pipeline)
+    {
+        return;
+    }
+
+    if (std::find(pipelines_.begin(), pipelines_.end(), pipeline) == pipelines_.end())
+    {
+        pipelines_.push_back(pipeline);
+    }
+}
+
+void Device::UnregisterPipeline(Pipeline* pipeline)
+{
+    auto it = std::find(pipelines_.begin(), pipelines_.end(), pipeline);
+    if (it != pipelines_.end())
+    {
+        pipelines_.erase(it);
+    }
+}
+
+PipelineReloadResult Device::ReloadPipelines()
+{
+    WaitIdle();
+
+    PipelineReloadResult result = {};
+    uint32_t pipeline_index = 0;
+    for (Pipeline* pipeline : pipelines_)
+    {
+        try
+        {
+            pipeline->Reload();
+            ++result.reloaded_count;
+        }
+        catch (std::exception const& ex)
+        {
+            result.success = false;
+            if (!result.error.empty())
+            {
+                result.error += '\n';
+            }
+            result.error += "Pipeline " + std::to_string(pipeline_index) + ": " + ex.what();
+        }
+        catch (...)
+        {
+            result.success = false;
+            if (!result.error.empty())
+            {
+                result.error += '\n';
+            }
+            result.error += "Pipeline " + std::to_string(pipeline_index) + ": unknown reload error";
+        }
+        ++pipeline_index;
+    }
+
+    return result;
 }
 
 }  // namespace gpu

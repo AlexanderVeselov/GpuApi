@@ -75,12 +75,16 @@ SamplerPtr D3D12Device::CreateSampler(SamplerDesc const& desc)
 
 GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc)
 {
-    return std::make_unique<D3D12GraphicsPipeline>(*this, pipeline_desc);
+    auto pipeline = std::make_unique<D3D12GraphicsPipeline>(*this, pipeline_desc);
+    RegisterPipeline(pipeline.get());
+    return pipeline;
 }
 
 ComputePipelinePtr D3D12Device::CreateComputePipeline(char const* cs_filename)
 {
-    return std::make_unique<D3D12ComputePipeline>(*this, cs_filename);
+    auto pipeline = std::make_unique<D3D12ComputePipeline>(*this, cs_filename);
+    RegisterPipeline(pipeline.get());
+    return pipeline;
 }
 
 SwapchainPtr D3D12Device::CreateSwapchain(void* window_native_handle, uint32_t width, uint32_t height,

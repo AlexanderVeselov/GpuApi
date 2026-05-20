@@ -11,33 +11,19 @@ class VulkanDevice;
 
 class VulkanPipeline : virtual public Pipeline
 {
-  public:
+public:
     explicit VulkanPipeline(VulkanDevice& device);
     ~VulkanPipeline() override;
-
     DescriptorSetPtr CreateDescriptorSet() override;
+    VkPipeline GetPipeline() const { return pipeline_; }
+    VkPipelineLayout GetPipelineLayout() const { return layout_.GetPipelineLayout(); }
+    VulkanPipelineLayout const& GetLayout() const { return layout_; }
+    std::vector<VulkanBinding> const& GetBindings() const { return layout_.GetBindings(); }
 
-    VkPipeline GetPipeline() const
-    {
-        return pipeline_;
-    }
-    VkPipelineLayout GetPipelineLayout() const
-    {
-        return layout_.GetPipelineLayout();
-    }
-    VulkanPipelineLayout const& GetLayout() const
-    {
-        return layout_;
-    }
-    std::vector<VulkanBinding> const& GetBindings() const
-    {
-        return layout_.GetBindings();
-    }
-
-  protected:
+protected:
     void DestroyPipeline();
 
-  protected:
+protected:
     VulkanDevice& device_;
     VulkanPipelineLayout layout_;
     VkPipeline pipeline_ = VK_NULL_HANDLE;
@@ -45,25 +31,19 @@ class VulkanPipeline : virtual public Pipeline
 
 class VulkanGraphicsPipeline final : public GraphicsPipeline, public VulkanPipeline
 {
-  public:
+public:
     VulkanGraphicsPipeline(VulkanDevice& device, GraphicsPipelineDesc const& pipeline_desc);
-
-    uint32_t GetVertexStride() const
-    {
-        return vertex_stride_;
-    }
-
+    uint32_t GetVertexStride() const { return vertex_stride_; }
     void Reload() override;
 
-  private:
+private:
     uint32_t vertex_stride_ = 0;
 };
 
 class VulkanComputePipeline final : public ComputePipeline, public VulkanPipeline
 {
-  public:
+public:
     VulkanComputePipeline(VulkanDevice& device, char const* cs_filename);
-
     void Reload() override;
 };
 

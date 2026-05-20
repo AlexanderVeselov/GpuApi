@@ -36,7 +36,7 @@ public:
     D3D12Api& GetD3D12Api() { return api_; }
 
     D3D12DescriptorManager& GetDescriptorManager() const { return *descriptor_manager_; }
-    void WaitIdle();
+    void WaitIdle() override;
 
 private:
     SamplerPtr CreateSampler(SamplerDesc const& desc) override;

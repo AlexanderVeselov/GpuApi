@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <stdexcept>
+#include <tuple>
 
 namespace gpu
 {
@@ -48,8 +49,7 @@ VkShaderStageFlags ToVkShaderStageFlags(uint32_t stage_mask)
     return flags;
 }
 
-VkDescriptorType ToVkDescriptorType(
-    ShaderResourceType resource_type, ShaderDescriptorRangeType range_type)
+VkDescriptorType ToVkDescriptorType(ShaderResourceType resource_type, ShaderDescriptorRangeType range_type)
 {
     if (resource_type == ShaderResourceType::kBuffer)
     {
@@ -87,17 +87,13 @@ VkDescriptorType ToVkDescriptorType(
 
 std::string BindingName(VulkanBinding const& binding)
 {
-    return "(binding = " + std::to_string(binding.binding) +
-           ", set = " + std::to_string(binding.set) + ")";
+    return "(binding = " + std::to_string(binding.binding) + ", set = " + std::to_string(binding.set) + ")";
 }
-} // namespace
+}  // namespace
 
-VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice& device) : device_(device)
-{
-}
+VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice& device) : device_(device) {}
 
-VulkanPipelineLayout::VulkanPipelineLayout(
-    VulkanDevice& device, std::vector<ShaderReflection const*> const& shaders)
+VulkanPipelineLayout::VulkanPipelineLayout(VulkanDevice& device, std::vector<ShaderReflection const*> const& shaders)
     : device_(device)
 {
     Build(shaders);
@@ -118,6 +114,10 @@ void VulkanPipelineLayout::Build(std::vector<ShaderReflection const*> const& sha
         AddShaderReflection(*shader);
     }
 
+    // Reflection order is not part of the pipeline layout ABI. Canonicalize bindings before assigning descriptor set
+    // layouts and push constant offsets so hot reload compatibility does not depend on compiler/reflection iteration
+    // order.
+    SortBindings();
     CreateDescriptorSetLayouts();
     CreatePipelineLayout();
 }
@@ -145,6 +145,30 @@ void VulkanPipelineLayout::Clear()
     bindings_.clear();
 }
 
+bool VulkanPipelineLayout::IsCompatibleWith(VulkanPipelineLayout const& other) const
+{
+    if (bindings_.size() != other.bindings_.size())
+    {
+        return false;
+    }
+
+    for (size_t i = 0; i < bindings_.size(); ++i)
+    {
+        VulkanBinding const& lhs = bindings_[i];
+        VulkanBinding const& rhs = other.bindings_[i];
+        if (lhs.binding != rhs.binding || lhs.set != rhs.set || lhs.descriptor_count != rhs.descriptor_count
+            || lhs.resource_type != rhs.resource_type || lhs.descriptor_type != rhs.descriptor_type
+            || lhs.range_type != rhs.range_type || lhs.vk_descriptor_type != rhs.vk_descriptor_type
+            || lhs.stage_flags != rhs.stage_flags || lhs.push_constant_offset != rhs.push_constant_offset
+            || lhs.push_constant_size != rhs.push_constant_size)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool VulkanPipelineLayout::HasBinding(uint32_t binding, uint32_t set) const
 {
     for (VulkanBinding const& vulkan_binding : bindings_)
@@ -168,9 +192,8 @@ VulkanBinding const& VulkanPipelineLayout::FindBinding(uint32_t binding, uint32_
         }
     }
 
-    throw std::runtime_error(
-        "VulkanPipelineLayout::FindBinding: binding was not found (binding = " +
-        std::to_string(binding) + ", set = " + std::to_string(set) + ")");
+    throw std::runtime_error("VulkanPipelineLayout::FindBinding: binding was not found (binding = "
+        + std::to_string(binding) + ", set = " + std::to_string(set) + ")");
 }
 
 void VulkanPipelineLayout::AddShaderReflection(ShaderReflection const& reflection)
@@ -185,8 +208,7 @@ void VulkanPipelineLayout::AddShaderReflection(ShaderReflection const& reflectio
         binding.resource_type = shader_binding.resource_type;
         binding.descriptor_type = shader_binding.descriptor_type;
         binding.range_type = shader_binding.range_type;
-        binding.vk_descriptor_type =
-            ToVkDescriptorType(shader_binding.resource_type, shader_binding.range_type);
+        binding.vk_descriptor_type = ToVkDescriptorType(shader_binding.resource_type, shader_binding.range_type);
         binding.stage_flags = ToVkShaderStageFlags(shader_binding.stage_mask);
 
         if (binding.descriptor_type == ShaderDescriptorType::kRootConstant)
@@ -207,15 +229,12 @@ void VulkanPipelineLayout::AddOrMergeBinding(VulkanBinding const& binding)
             continue;
         }
 
-        if (existing.resource_type != binding.resource_type ||
-            existing.descriptor_type != binding.descriptor_type ||
-            existing.range_type != binding.range_type ||
-            existing.vk_descriptor_type != binding.vk_descriptor_type ||
-            existing.descriptor_count != binding.descriptor_count ||
-            existing.push_constant_size != binding.push_constant_size)
+        if (existing.resource_type != binding.resource_type || existing.descriptor_type != binding.descriptor_type
+            || existing.range_type != binding.range_type || existing.vk_descriptor_type != binding.vk_descriptor_type
+            || existing.descriptor_count != binding.descriptor_count
+            || existing.push_constant_size != binding.push_constant_size)
         {
-            throw std::runtime_error(
-                "VulkanPipelineLayout: incompatible shader bindings for " + BindingName(binding));
+            throw std::runtime_error("VulkanPipelineLayout: incompatible shader bindings for " + BindingName(binding));
         }
 
         existing.stage_flags |= binding.stage_flags;
@@ -223,6 +242,17 @@ void VulkanPipelineLayout::AddOrMergeBinding(VulkanBinding const& binding)
     }
 
     bindings_.push_back(binding);
+}
+
+void VulkanPipelineLayout::SortBindings()
+{
+    std::sort(bindings_.begin(),
+        bindings_.end(),
+        [](VulkanBinding const& lhs, VulkanBinding const& rhs)
+        {
+            return std::tie(lhs.set, lhs.binding, lhs.descriptor_type, lhs.range_type, lhs.resource_type)
+                < std::tie(rhs.set, rhs.binding, rhs.descriptor_type, rhs.range_type, rhs.resource_type);
+        });
 }
 
 void VulkanPipelineLayout::CreateDescriptorSetLayouts()
@@ -254,8 +284,7 @@ void VulkanPipelineLayout::CreateDescriptorSetLayouts()
 
         for (VulkanBinding const& binding : bindings_)
         {
-            if (binding.set != set ||
-                binding.descriptor_type != ShaderDescriptorType::kDescriptorTable)
+            if (binding.set != set || binding.descriptor_type != ShaderDescriptorType::kDescriptorTable)
             {
                 continue;
             }
@@ -274,8 +303,10 @@ void VulkanPipelineLayout::CreateDescriptorSetLayouts()
         create_info.bindingCount = static_cast<uint32_t>(set_bindings.size());
         create_info.pBindings = set_bindings.empty() ? nullptr : set_bindings.data();
 
-        VkResult status = vkCreateDescriptorSetLayout(
-            device_.GetDevice(), &create_info, nullptr, &descriptor_set_layouts_[set]);
+        VkResult status = vkCreateDescriptorSetLayout(device_.GetDevice(),
+            &create_info,
+            nullptr,
+            &descriptor_set_layouts_[set]);
         VK_THROW_IF_FAILED(status, "Failed to create Vulkan descriptor set layout");
     }
 }
@@ -304,15 +335,12 @@ void VulkanPipelineLayout::CreatePipelineLayout()
     VkPipelineLayoutCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     create_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts_.size());
-    create_info.pSetLayouts =
-        descriptor_set_layouts_.empty() ? nullptr : descriptor_set_layouts_.data();
+    create_info.pSetLayouts = descriptor_set_layouts_.empty() ? nullptr : descriptor_set_layouts_.data();
     create_info.pushConstantRangeCount = static_cast<uint32_t>(push_constant_ranges_.size());
-    create_info.pPushConstantRanges =
-        push_constant_ranges_.empty() ? nullptr : push_constant_ranges_.data();
+    create_info.pPushConstantRanges = push_constant_ranges_.empty() ? nullptr : push_constant_ranges_.data();
 
-    VkResult status =
-        vkCreatePipelineLayout(device_.GetDevice(), &create_info, nullptr, &pipeline_layout_);
+    VkResult status = vkCreatePipelineLayout(device_.GetDevice(), &create_info, nullptr, &pipeline_layout_);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan pipeline layout");
 }
 
-} // namespace gpu
+}  // namespace gpu
