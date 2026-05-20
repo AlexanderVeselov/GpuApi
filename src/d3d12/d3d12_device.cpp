@@ -87,12 +87,6 @@ ComputePipelinePtr D3D12Device::CreateComputePipeline(char const* cs_filename)
     return pipeline;
 }
 
-PipelineReloadResult D3D12Device::ReloadPipelines()
-{
-    WaitIdle();
-    return ReloadRegisteredPipelines();
-}
-
 SwapchainPtr D3D12Device::CreateSwapchain(void* window_native_handle, uint32_t width, uint32_t height,
     uint32_t image_count)
 {

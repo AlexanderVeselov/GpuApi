@@ -42,8 +42,10 @@ void Device::UnregisterPipeline(Pipeline* pipeline)
     }
 }
 
-PipelineReloadResult Device::ReloadRegisteredPipelines()
+PipelineReloadResult Device::ReloadPipelines()
 {
+    WaitIdle();
+
     PipelineReloadResult result = {};
     for (Pipeline* pipeline : pipelines_)
     {

@@ -26,7 +26,6 @@ public:
     // Pipelines
     GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) override;
     ComputePipelinePtr CreateComputePipeline(char const* cs_filename) override;
-    PipelineReloadResult ReloadPipelines() override;
 
     SwapchainPtr CreateSwapchain(void* window_native_handle, uint32_t width, uint32_t height,
         uint32_t image_count) override;
@@ -37,7 +36,7 @@ public:
     D3D12Api& GetD3D12Api() { return api_; }
 
     D3D12DescriptorManager& GetDescriptorManager() const { return *descriptor_manager_; }
-    void WaitIdle();
+    void WaitIdle() override;
 
 private:
     SamplerPtr CreateSampler(SamplerDesc const& desc) override;

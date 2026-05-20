@@ -10,6 +10,9 @@
 
 namespace gpu
 {
+class D3D12Pipeline;
+class VulkanPipeline;
+
 struct PipelineReloadResult
 {
     bool success = true;
@@ -43,10 +46,10 @@ public:
     virtual ComputePipelinePtr CreateComputePipeline(char const* cs_filename) = 0;
 
     /// Reloads all pipelines. A pipeline keeps its old state if compilation fails or its shader layout changes.
-    virtual PipelineReloadResult ReloadPipelines() = 0;
+    PipelineReloadResult ReloadPipelines();
 
-    /// Internal lifetime tracking used by backend pipeline objects.
-    void UnregisterPipeline(Pipeline* pipeline);
+    /// Blocks until all device queues are idle.
+    virtual void WaitIdle() = 0;
 
     /// Creates a swapchain for a native platform window handle.
     virtual SwapchainPtr CreateSwapchain(void* window_native_handle, uint32_t width, uint32_t height,
@@ -57,12 +60,12 @@ public:
 
 protected:
     void ClearSamplerCache() { sampler_cache_.clear(); }
-
     void RegisterPipeline(Pipeline* pipeline);
-    std::vector<Pipeline*> const& GetRegisteredPipelines() const { return pipelines_; }
-    PipelineReloadResult ReloadRegisteredPipelines();
 
 private:
+    friend class D3D12Pipeline;
+    friend class VulkanPipeline;
+    void UnregisterPipeline(Pipeline* pipeline);
     virtual SamplerPtr CreateSampler(SamplerDesc const& desc) = 0;
 
 private:

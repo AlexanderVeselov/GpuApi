@@ -28,6 +28,7 @@ VulkanDevice::VulkanDevice(VulkanApi& api, VkPhysicalDevice physical_device)
 
 VulkanDevice::~VulkanDevice()
 {
+    WaitIdle();
     ClearSamplerCache();
     graphics_queue_.reset();
     compute_queue_.reset();
@@ -173,11 +174,22 @@ ComputePipelinePtr VulkanDevice::CreateComputePipeline(char const* cs_filename)
     return pipeline;
 }
 
-PipelineReloadResult VulkanDevice::ReloadPipelines()
+void VulkanDevice::WaitIdle()
 {
-    GetQueue(QueueType::kGraphics).WaitIdle();
-    GetQueue(QueueType::kCompute).WaitIdle();
-    return ReloadRegisteredPipelines();
+    if (graphics_queue_)
+    {
+        graphics_queue_->WaitIdle();
+    }
+
+    if (compute_queue_)
+    {
+        compute_queue_->WaitIdle();
+    }
+
+    if (transfer_queue_)
+    {
+        transfer_queue_->WaitIdle();
+    }
 }
 
 SwapchainPtr VulkanDevice::CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height,
