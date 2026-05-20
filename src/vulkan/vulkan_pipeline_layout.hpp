@@ -49,6 +49,7 @@ public:
 private:
     void AddShaderReflection(ShaderReflection const& reflection);
     void AddOrMergeBinding(VulkanBinding const& binding);
+    void SortBindings();
     void CreateDescriptorSetLayouts();
     void CreatePipelineLayout();
 

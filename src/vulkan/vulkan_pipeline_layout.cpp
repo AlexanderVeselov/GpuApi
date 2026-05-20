@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cassert>
 #include <stdexcept>
+#include <tuple>
 
 namespace gpu
 {
@@ -113,6 +114,10 @@ void VulkanPipelineLayout::Build(std::vector<ShaderReflection const*> const& sha
         AddShaderReflection(*shader);
     }
 
+    // Reflection order is not part of the pipeline layout ABI. Canonicalize bindings before assigning descriptor set
+    // layouts and push constant offsets so hot reload compatibility does not depend on compiler/reflection iteration
+    // order.
+    SortBindings();
     CreateDescriptorSetLayouts();
     CreatePipelineLayout();
 }
@@ -237,6 +242,17 @@ void VulkanPipelineLayout::AddOrMergeBinding(VulkanBinding const& binding)
     }
 
     bindings_.push_back(binding);
+}
+
+void VulkanPipelineLayout::SortBindings()
+{
+    std::sort(bindings_.begin(),
+        bindings_.end(),
+        [](VulkanBinding const& lhs, VulkanBinding const& rhs)
+        {
+            return std::tie(lhs.set, lhs.binding, lhs.descriptor_type, lhs.range_type, lhs.resource_type)
+                < std::tie(rhs.set, rhs.binding, rhs.descriptor_type, rhs.range_type, rhs.resource_type);
+        });
 }
 
 void VulkanPipelineLayout::CreateDescriptorSetLayouts()

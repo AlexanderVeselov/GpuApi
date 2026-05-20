@@ -59,6 +59,7 @@ public:
 private:
     void AddShaderReflection(ShaderReflection const& reflection);
     void AddOrMergeBinding(D3D12Binding const& binding);
+    void SortBindings();
     void CreateRootSignature();
 
 private:

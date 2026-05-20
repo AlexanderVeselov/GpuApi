@@ -3,9 +3,11 @@
 #include "d3d12_exception.hpp"
 #include "d3d12_shader_manager.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 
 namespace gpu
 {
@@ -118,6 +120,9 @@ void D3D12PipelineLayout::Build(std::vector<D3D12Shader const*> const& shaders)
         AddShaderReflection(shader->reflection);
     }
 
+    // Reflection order is not part of the pipeline layout ABI. Canonicalize bindings before assigning root parameter
+    // indices so hot reload compatibility does not depend on compiler/reflection iteration order.
+    SortBindings();
     CreateRootSignature();
 }
 
@@ -219,6 +224,17 @@ void D3D12PipelineLayout::AddOrMergeBinding(D3D12Binding const& binding)
     }
 
     bindings_.push_back(binding);
+}
+
+void D3D12PipelineLayout::SortBindings()
+{
+    std::sort(bindings_.begin(),
+        bindings_.end(),
+        [](D3D12Binding const& lhs, D3D12Binding const& rhs)
+        {
+            return std::tie(lhs.space, lhs.binding, lhs.descriptor_type, lhs.range_type, lhs.type)
+                < std::tie(rhs.space, rhs.binding, rhs.descriptor_type, rhs.range_type, rhs.type);
+        });
 }
 
 void D3D12PipelineLayout::CreateRootSignature()
