@@ -25,9 +25,7 @@ protected:
     ComPtr<ID3D12PipelineState> pipeline_state_;
 };
 
-class D3D12GraphicsPipeline
-    : public GraphicsPipeline
-    , public D3D12Pipeline
+class D3D12GraphicsPipeline : public GraphicsPipeline, public D3D12Pipeline
 {
 public:
     D3D12GraphicsPipeline(D3D12Device& device, GraphicsPipelineDesc const& pipeline_desc);
@@ -38,9 +36,7 @@ private:
     uint32_t vertex_stride_ = 0;
 };
 
-class D3D12ComputePipeline
-    : public ComputePipeline
-    , public D3D12Pipeline
+class D3D12ComputePipeline : public ComputePipeline, public D3D12Pipeline
 {
 public:
     D3D12ComputePipeline(D3D12Device& device, char const* cs_filename);

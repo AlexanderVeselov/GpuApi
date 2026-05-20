@@ -11,93 +11,93 @@ namespace gpu
 {
 namespace
 {
-    D3D12_SHADER_VISIBILITY GetShaderVisibility(uint32_t stage_mask)
+D3D12_SHADER_VISIBILITY GetShaderVisibility(uint32_t stage_mask)
+{
+    if ((stage_mask & (stage_mask - 1)) != 0)
     {
-        if ((stage_mask & (stage_mask - 1)) != 0)
-        {
-            return D3D12_SHADER_VISIBILITY_ALL;
-        }
-
-        switch (static_cast<ShaderStage>(stage_mask))
-        {
-        case ShaderStage::kPixel:
-            return D3D12_SHADER_VISIBILITY_PIXEL;
-        case ShaderStage::kVertex:
-            return D3D12_SHADER_VISIBILITY_VERTEX;
-        case ShaderStage::kGeometry:
-            return D3D12_SHADER_VISIBILITY_GEOMETRY;
-        case ShaderStage::kHull:
-            return D3D12_SHADER_VISIBILITY_HULL;
-        case ShaderStage::kDomain:
-            return D3D12_SHADER_VISIBILITY_DOMAIN;
-        case ShaderStage::kCompute:
-            return D3D12_SHADER_VISIBILITY_ALL;
-        default:
-            assert(false && "D3D12PipelineLayout: unknown shader stage");
-            return D3D12_SHADER_VISIBILITY_ALL;
-        }
-    }
-
-    D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(ShaderDescriptorRangeType type)
-    {
-        switch (type)
-        {
-        case ShaderDescriptorRangeType::kCBV:
-            return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-        case ShaderDescriptorRangeType::kSRV:
-            return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        case ShaderDescriptorRangeType::kUAV:
-            return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-        case ShaderDescriptorRangeType::kSampler:
-            return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-        default:
-            assert(false && "D3D12PipelineLayout: unsupported shader descriptor range type");
-            return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        }
-    }
-
-    D3D12Binding::ResourceType GetResourceType(ShaderResourceType type)
-    {
-        switch (type)
-        {
-        case ShaderResourceType::kBuffer:
-            return D3D12Binding::ResourceType::kBuffer;
-        case ShaderResourceType::kImage:
-            return D3D12Binding::ResourceType::kImage;
-        case ShaderResourceType::kSampler:
-            return D3D12Binding::ResourceType::kSampler;
-        default:
-            return D3D12Binding::ResourceType::kBuffer;
-        }
-    }
-
-    D3D12Binding::DescriptorType GetDescriptorType(ShaderDescriptorType type)
-    {
-        switch (type)
-        {
-        case ShaderDescriptorType::kRootConstant:
-            return D3D12Binding::DescriptorType::kRootConstant;
-        case ShaderDescriptorType::kDescriptorTable:
-            return D3D12Binding::DescriptorType::kDescriptorTable;
-        default:
-            return D3D12Binding::DescriptorType::kDescriptorTable;
-        }
-    }
-
-    D3D12_SHADER_VISIBILITY MergeVisibility(D3D12_SHADER_VISIBILITY lhs, D3D12_SHADER_VISIBILITY rhs)
-    {
-        if (lhs == rhs)
-        {
-            return lhs;
-        }
-
         return D3D12_SHADER_VISIBILITY_ALL;
     }
 
-    std::string BindingName(D3D12Binding const& binding)
+    switch (static_cast<ShaderStage>(stage_mask))
     {
-        return "(binding = " + std::to_string(binding.binding) + ", space = " + std::to_string(binding.space) + ")";
+    case ShaderStage::kPixel:
+        return D3D12_SHADER_VISIBILITY_PIXEL;
+    case ShaderStage::kVertex:
+        return D3D12_SHADER_VISIBILITY_VERTEX;
+    case ShaderStage::kGeometry:
+        return D3D12_SHADER_VISIBILITY_GEOMETRY;
+    case ShaderStage::kHull:
+        return D3D12_SHADER_VISIBILITY_HULL;
+    case ShaderStage::kDomain:
+        return D3D12_SHADER_VISIBILITY_DOMAIN;
+    case ShaderStage::kCompute:
+        return D3D12_SHADER_VISIBILITY_ALL;
+    default:
+        assert(false && "D3D12PipelineLayout: unknown shader stage");
+        return D3D12_SHADER_VISIBILITY_ALL;
     }
+}
+
+D3D12_DESCRIPTOR_RANGE_TYPE GetRangeType(ShaderDescriptorRangeType type)
+{
+    switch (type)
+    {
+    case ShaderDescriptorRangeType::kCBV:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+    case ShaderDescriptorRangeType::kSRV:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    case ShaderDescriptorRangeType::kUAV:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    case ShaderDescriptorRangeType::kSampler:
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+    default:
+        assert(false && "D3D12PipelineLayout: unsupported shader descriptor range type");
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    }
+}
+
+D3D12Binding::ResourceType GetResourceType(ShaderResourceType type)
+{
+    switch (type)
+    {
+    case ShaderResourceType::kBuffer:
+        return D3D12Binding::ResourceType::kBuffer;
+    case ShaderResourceType::kImage:
+        return D3D12Binding::ResourceType::kImage;
+    case ShaderResourceType::kSampler:
+        return D3D12Binding::ResourceType::kSampler;
+    default:
+        return D3D12Binding::ResourceType::kBuffer;
+    }
+}
+
+D3D12Binding::DescriptorType GetDescriptorType(ShaderDescriptorType type)
+{
+    switch (type)
+    {
+    case ShaderDescriptorType::kRootConstant:
+        return D3D12Binding::DescriptorType::kRootConstant;
+    case ShaderDescriptorType::kDescriptorTable:
+        return D3D12Binding::DescriptorType::kDescriptorTable;
+    default:
+        return D3D12Binding::DescriptorType::kDescriptorTable;
+    }
+}
+
+D3D12_SHADER_VISIBILITY MergeVisibility(D3D12_SHADER_VISIBILITY lhs, D3D12_SHADER_VISIBILITY rhs)
+{
+    if (lhs == rhs)
+    {
+        return lhs;
+    }
+
+    return D3D12_SHADER_VISIBILITY_ALL;
+}
+
+std::string BindingName(D3D12Binding const& binding)
+{
+    return "(binding = " + std::to_string(binding.binding) + ", space = " + std::to_string(binding.space) + ")";
+}
 }  // namespace
 
 D3D12PipelineLayout::D3D12PipelineLayout(D3D12Device& device) : device_(device) {}
