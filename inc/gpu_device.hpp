@@ -45,7 +45,8 @@ public:
     /// Creates a compute pipeline from a compute shader path.
     virtual ComputePipelinePtr CreateComputePipeline(char const* cs_filename) = 0;
 
-    /// Reloads all pipelines. A pipeline keeps its old state if compilation fails or its shader layout changes.
+    /// Attempts to reload all pipelines. A pipeline keeps its old state if compilation fails or its shader layout
+    /// changes.
     PipelineReloadResult ReloadPipelines();
 
     /// Blocks until all device queues are idle.

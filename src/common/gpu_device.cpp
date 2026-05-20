@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <exception>
+#include <string>
 
 namespace gpu
 {
@@ -47,6 +48,7 @@ PipelineReloadResult Device::ReloadPipelines()
     WaitIdle();
 
     PipelineReloadResult result = {};
+    uint32_t pipeline_index = 0;
     for (Pipeline* pipeline : pipelines_)
     {
         try
@@ -57,9 +59,22 @@ PipelineReloadResult Device::ReloadPipelines()
         catch (std::exception const& ex)
         {
             result.success = false;
-            result.error = ex.what();
-            return result;
+            if (!result.error.empty())
+            {
+                result.error += '\n';
+            }
+            result.error += "Pipeline " + std::to_string(pipeline_index) + ": " + ex.what();
         }
+        catch (...)
+        {
+            result.success = false;
+            if (!result.error.empty())
+            {
+                result.error += '\n';
+            }
+            result.error += "Pipeline " + std::to_string(pipeline_index) + ": unknown reload error";
+        }
+        ++pipeline_index;
     }
 
     return result;
