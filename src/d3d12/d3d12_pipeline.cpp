@@ -173,15 +173,19 @@ void D3D12GraphicsPipeline::Reload()
     ps_bytecode.BytecodeLength = ps_shader.dxc_blob->GetBufferSize();
     ps_bytecode.pShaderBytecode = ps_shader.dxc_blob->GetBufferPointer();
 
-    D3D12PipelineLayout new_layout(device_);
-    new_layout.Build({&vs_shader, &ps_shader});
-    if (pipeline_state_ && !layout_.IsCompatibleWith(new_layout))
-    {
-        throw std::runtime_error("D3D12GraphicsPipeline::Reload: shader layout changed");
-    }
     if (!pipeline_state_)
     {
         layout_.Build({&vs_shader, &ps_shader});
+    }
+    else
+    {
+        // Check if the new pipeline layout is compatible with the existing layout.
+        D3D12PipelineLayout new_layout(device_);
+        new_layout.Build({&vs_shader, &ps_shader});
+        if (!layout_.IsCompatibleWith(new_layout))
+        {
+            throw std::runtime_error("D3D12GraphicsPipeline::Reload: pipeline layout changed");
+        }
     }
 
     ///@TODO: add blend support
@@ -281,15 +285,19 @@ void D3D12ComputePipeline::Reload()
     cs_bytecode.BytecodeLength = cs_shader.dxc_blob->GetBufferSize();
     cs_bytecode.pShaderBytecode = cs_shader.dxc_blob->GetBufferPointer();
 
-    D3D12PipelineLayout new_layout(device_);
-    new_layout.Build({&cs_shader});
-    if (pipeline_state_ && !layout_.IsCompatibleWith(new_layout))
-    {
-        throw std::runtime_error("D3D12ComputePipeline::Reload: shader layout changed");
-    }
     if (!pipeline_state_)
     {
         layout_.Build({&cs_shader});
+    }
+    else
+    {
+        // Check if the new pipeline layout is compatible with the existing layout.
+        D3D12PipelineLayout new_layout(device_);
+        new_layout.Build({&cs_shader});
+        if (!layout_.IsCompatibleWith(new_layout))
+        {
+            throw std::runtime_error("D3D12ComputePipeline::Reload: pipeline layout changed");
+        }
     }
 
     D3D12_COMPUTE_PIPELINE_STATE_DESC pipeline_state_desc = {};

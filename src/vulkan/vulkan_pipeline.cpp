@@ -15,125 +15,125 @@ namespace gpu
 {
 namespace
 {
-class VulkanShaderModule
-{
-public:
-    VulkanShaderModule(VulkanDevice& device, std::vector<uint32_t> const& spirv) : device_(device)
+    class VulkanShaderModule
     {
-        VkShaderModuleCreateInfo create_info = {};
-        create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        create_info.codeSize = spirv.size() * sizeof(uint32_t);
-        create_info.pCode = spirv.data();
-
-        VkResult status = vkCreateShaderModule(device_.GetDevice(), &create_info, nullptr, &shader_module_);
-        VK_THROW_IF_FAILED(status, "Failed to create Vulkan shader module");
-    }
-
-    ~VulkanShaderModule()
-    {
-        if (shader_module_ != VK_NULL_HANDLE)
+    public:
+        VulkanShaderModule(VulkanDevice& device, std::vector<uint32_t> const& spirv) : device_(device)
         {
-            vkDestroyShaderModule(device_.GetDevice(), shader_module_, nullptr);
+            VkShaderModuleCreateInfo create_info = {};
+            create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+            create_info.codeSize = spirv.size() * sizeof(uint32_t);
+            create_info.pCode = spirv.data();
+
+            VkResult status = vkCreateShaderModule(device_.GetDevice(), &create_info, nullptr, &shader_module_);
+            VK_THROW_IF_FAILED(status, "Failed to create Vulkan shader module");
+        }
+
+        ~VulkanShaderModule()
+        {
+            if (shader_module_ != VK_NULL_HANDLE)
+            {
+                vkDestroyShaderModule(device_.GetDevice(), shader_module_, nullptr);
+            }
+        }
+
+        VkShaderModule GetShaderModule() const { return shader_module_; }
+
+    private:
+        VulkanDevice& device_;
+        VkShaderModule shader_module_ = VK_NULL_HANDLE;
+    };
+
+    VkCompareOp DepthFuncToVkCompareOp(DepthFunc depth_func)
+    {
+        switch (depth_func)
+        {
+        case DepthFunc::kNone:
+            return VK_COMPARE_OP_ALWAYS;
+        case DepthFunc::kNever:
+            return VK_COMPARE_OP_NEVER;
+        case DepthFunc::kLess:
+            return VK_COMPARE_OP_LESS;
+        case DepthFunc::kEqual:
+            return VK_COMPARE_OP_EQUAL;
+        case DepthFunc::kLessEqual:
+            return VK_COMPARE_OP_LESS_OR_EQUAL;
+        case DepthFunc::kGreater:
+            return VK_COMPARE_OP_GREATER;
+        case DepthFunc::kNotEqual:
+            return VK_COMPARE_OP_NOT_EQUAL;
+        case DepthFunc::kGreaterEqual:
+            return VK_COMPARE_OP_GREATER_OR_EQUAL;
+        case DepthFunc::kAlways:
+            return VK_COMPARE_OP_ALWAYS;
+        default:
+            assert(false && "DepthFuncToVkCompareOp: unknown depth func");
+            return VK_COMPARE_OP_ALWAYS;
         }
     }
 
-    VkShaderModule GetShaderModule() const { return shader_module_; }
-
-private:
-    VulkanDevice& device_;
-    VkShaderModule shader_module_ = VK_NULL_HANDLE;
-};
-
-VkCompareOp DepthFuncToVkCompareOp(DepthFunc depth_func)
-{
-    switch (depth_func)
+    uint32_t FormatSize(ImageFormat format)
     {
-    case DepthFunc::kNone:
-        return VK_COMPARE_OP_ALWAYS;
-    case DepthFunc::kNever:
-        return VK_COMPARE_OP_NEVER;
-    case DepthFunc::kLess:
-        return VK_COMPARE_OP_LESS;
-    case DepthFunc::kEqual:
-        return VK_COMPARE_OP_EQUAL;
-    case DepthFunc::kLessEqual:
-        return VK_COMPARE_OP_LESS_OR_EQUAL;
-    case DepthFunc::kGreater:
-        return VK_COMPARE_OP_GREATER;
-    case DepthFunc::kNotEqual:
-        return VK_COMPARE_OP_NOT_EQUAL;
-    case DepthFunc::kGreaterEqual:
-        return VK_COMPARE_OP_GREATER_OR_EQUAL;
-    case DepthFunc::kAlways:
-        return VK_COMPARE_OP_ALWAYS;
-    default:
-        assert(false && "DepthFuncToVkCompareOp: unknown depth func");
-        return VK_COMPARE_OP_ALWAYS;
-    }
-}
-
-uint32_t FormatSize(ImageFormat format)
-{
-    switch (format)
-    {
-    case ImageFormat::kR32_Float:
-    case ImageFormat::kR32_UInt:
-    case ImageFormat::kR32_SInt:
-        return 4;
-    case ImageFormat::kRG32_Float:
-    case ImageFormat::kRG32_UInt:
-    case ImageFormat::kRG32_SInt:
-        return 8;
-    case ImageFormat::kRGB32_Float:
-    case ImageFormat::kRGB32_UInt:
-    case ImageFormat::kRGB32_SInt:
-        return 12;
-    case ImageFormat::kRGBA32_Float:
-    case ImageFormat::kRGBA32_UInt:
-    case ImageFormat::kRGBA32_SInt:
-        return 16;
-    default:
-        throw std::runtime_error("Unsupported Vulkan vertex input format");
-    }
-}
-
-void GetVertexInputDescs(ShaderReflection const& reflection, VkVertexInputBindingDescription& binding_desc,
-    std::vector<VkVertexInputAttributeDescription>& attribute_descs)
-{
-    uint32_t offset = 0;
-
-    for (ShaderInputParameter const& parameter : reflection.input_parameters)
-    {
-        if (parameter.is_system_value)
+        switch (format)
         {
-            continue;
+        case ImageFormat::kR32_Float:
+        case ImageFormat::kR32_UInt:
+        case ImageFormat::kR32_SInt:
+            return 4;
+        case ImageFormat::kRG32_Float:
+        case ImageFormat::kRG32_UInt:
+        case ImageFormat::kRG32_SInt:
+            return 8;
+        case ImageFormat::kRGB32_Float:
+        case ImageFormat::kRGB32_UInt:
+        case ImageFormat::kRGB32_SInt:
+            return 12;
+        case ImageFormat::kRGBA32_Float:
+        case ImageFormat::kRGBA32_UInt:
+        case ImageFormat::kRGBA32_SInt:
+            return 16;
+        default:
+            throw std::runtime_error("Unsupported Vulkan vertex input format");
+        }
+    }
+
+    void GetVertexInputDescs(ShaderReflection const& reflection, VkVertexInputBindingDescription& binding_desc,
+        std::vector<VkVertexInputAttributeDescription>& attribute_descs)
+    {
+        uint32_t offset = 0;
+
+        for (ShaderInputParameter const& parameter : reflection.input_parameters)
+        {
+            if (parameter.is_system_value)
+            {
+                continue;
+            }
+
+            VkVertexInputAttributeDescription attribute_desc = {};
+            attribute_desc.location = parameter.semantic_index;
+            attribute_desc.binding = 0;
+            attribute_desc.format = ToVkFormat(parameter.format);
+            attribute_desc.offset = offset;
+            attribute_descs.push_back(attribute_desc);
+
+            offset += FormatSize(parameter.format);
         }
 
-        VkVertexInputAttributeDescription attribute_desc = {};
-        attribute_desc.location = parameter.semantic_index;
-        attribute_desc.binding = 0;
-        attribute_desc.format = ToVkFormat(parameter.format);
-        attribute_desc.offset = offset;
-        attribute_descs.push_back(attribute_desc);
-
-        offset += FormatSize(parameter.format);
+        binding_desc = {};
+        binding_desc.binding = 0;
+        binding_desc.stride = offset;
+        binding_desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     }
 
-    binding_desc = {};
-    binding_desc.binding = 0;
-    binding_desc.stride = offset;
-    binding_desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-}
-
-VkPipelineShaderStageCreateInfo GetShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shader_module)
-{
-    VkPipelineShaderStageCreateInfo create_info = {};
-    create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    create_info.stage = stage;
-    create_info.module = shader_module;
-    create_info.pName = "main";
-    return create_info;
-}
+    VkPipelineShaderStageCreateInfo GetShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shader_module)
+    {
+        VkPipelineShaderStageCreateInfo create_info = {};
+        create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        create_info.stage = stage;
+        create_info.module = shader_module;
+        create_info.pName = "main";
+        return create_info;
+    }
 }  // namespace
 
 VulkanPipeline::VulkanPipeline(VulkanDevice& device) : device_(device), layout_(device) {}
@@ -170,15 +170,19 @@ void VulkanGraphicsPipeline::Reload()
     VulkanShader vs_shader = shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(), "main", "vs_6_0");
     VulkanShader ps_shader = shader_manager.CompileShader(pipeline_desc_.ps_filename.c_str(), "main", "ps_6_0");
 
-    VulkanPipelineLayout new_layout(device_);
-    new_layout.Build({&vs_shader.reflection, &ps_shader.reflection});
-    if (pipeline_ != VK_NULL_HANDLE && !layout_.IsCompatibleWith(new_layout))
-    {
-        throw std::runtime_error("VulkanGraphicsPipeline::Reload: shader layout changed");
-    }
     if (pipeline_ == VK_NULL_HANDLE)
     {
         layout_.Build({&vs_shader.reflection, &ps_shader.reflection});
+    }
+    else
+    {
+        // Check if the new pipeline layout is compatible with the existing layout.
+        VulkanPipelineLayout new_layout(device_);
+        new_layout.Build({&vs_shader.reflection, &ps_shader.reflection});
+        if (!layout_.IsCompatibleWith(new_layout))
+        {
+            throw std::runtime_error("VulkanGraphicsPipeline::Reload: pipeline layout changed");
+        }
     }
 
     VulkanShaderModule vs_module(device_, vs_shader.spirv);
@@ -315,15 +319,19 @@ VulkanComputePipeline::VulkanComputePipeline(VulkanDevice& device, char const* c
 void VulkanComputePipeline::Reload()
 {
     VulkanShader cs_shader = device_.GetApi().GetShaderManager().CompileShader(cs_filename_.c_str(), "main", "cs_6_0");
-    VulkanPipelineLayout new_layout(device_);
-    new_layout.Build({&cs_shader.reflection});
-    if (pipeline_ != VK_NULL_HANDLE && !layout_.IsCompatibleWith(new_layout))
-    {
-        throw std::runtime_error("VulkanComputePipeline::Reload: shader layout changed");
-    }
     if (pipeline_ == VK_NULL_HANDLE)
     {
         layout_.Build({&cs_shader.reflection});
+    }
+    else
+    {
+        // Check if the new pipeline layout is compatible with the existing layout.
+        VulkanPipelineLayout new_layout(device_);
+        new_layout.Build({&cs_shader.reflection});
+        if (!layout_.IsCompatibleWith(new_layout))
+        {
+            throw std::runtime_error("VulkanComputePipeline::Reload: pipeline layout changed");
+        }
     }
 
     VulkanShaderModule cs_module(device_, cs_shader.spirv);
