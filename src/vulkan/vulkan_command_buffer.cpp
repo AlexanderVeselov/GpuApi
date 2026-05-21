@@ -532,9 +532,35 @@ void VulkanCommandBuffer::StorageBarrier(BufferPtr buffer)
     barrier.offset = 0;
     barrier.size = buffer->GetSize();
 
+    VkPipelineStageFlags src_stage_mask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT;
+    VkPipelineStageFlags dst_stage_mask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT;
+    if (HasFlag(vulkan_buffer->GetFlags(), BufferFlags::kAccelerationStructureBuildInput))
+    {
+        barrier.dstAccessMask |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+        dst_stage_mask |= VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+    }
+
+    vkCmdPipelineBarrier(command_buffer_, src_stage_mask, dst_stage_mask, 0, 0, nullptr, 1, &barrier, 0, nullptr);
+}
+
+void VulkanCommandBuffer::AccelerationStructureBarrier(VulkanAccelerationStructure const& acceleration_structure)
+{
+    VkBufferMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    barrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+    barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_SHADER_READ_BIT;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+    auto* storage_buffer = dynamic_cast<VulkanBuffer*>(acceleration_structure.GetStorageBuffer().get());
+    THROW_IF(!storage_buffer, "acceleration structure storage buffer does not belong to the Vulkan backend");
+    barrier.buffer = storage_buffer->GetBuffer();
+    barrier.offset = 0;
+    barrier.size = acceleration_structure.GetStorageBuffer()->GetSize();
+
     vkCmdPipelineBarrier(command_buffer_,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         0,
         0,
         nullptr,
@@ -584,6 +610,12 @@ void VulkanCommandBuffer::BuildBottomLevelAccelerationStructure(AccelerationStru
         range_ptrs.push_back(&range);
     }
 
+    for (AccelerationStructureGeometryDesc const& geometry : geometries)
+    {
+        StorageBarrier(geometry.vertex_buffer);
+        StorageBarrier(geometry.index_buffer);
+    }
+
     VkAccelerationStructureBuildGeometryInfoKHR build_info{};
     build_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
     build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
@@ -600,7 +632,7 @@ void VulkanCommandBuffer::BuildBottomLevelAccelerationStructure(AccelerationStru
     THROW_IF(!vk_cmd_build, "vkCmdBuildAccelerationStructuresKHR is unavailable");
 
     vk_cmd_build(command_buffer_, 1, &build_info, range_ptrs.data());
-    StorageBarrier(bottom_level->GetStorageBuffer());
+    AccelerationStructureBarrier(*bottom_level);
 }
 
 void VulkanCommandBuffer::BuildTopLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
@@ -663,7 +695,7 @@ void VulkanCommandBuffer::BuildTopLevelAccelerationStructure(AccelerationStructu
     THROW_IF(!vk_cmd_build, "vkCmdBuildAccelerationStructuresKHR is unavailable");
 
     vk_cmd_build(command_buffer_, 1, &build_info, &range_ptr);
-    StorageBarrier(top_level->GetStorageBuffer());
+    AccelerationStructureBarrier(*top_level);
 }
 
 void VulkanCommandBuffer::CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset,

@@ -330,6 +330,24 @@ void D3D12CommandBuffer::StorageBarrier(BufferPtr buffer)
     cmd_list_->ResourceBarrier(1, &barrier);
 }
 
+void D3D12CommandBuffer::TransitionBuffer(D3D12Buffer& buffer, D3D12_RESOURCE_STATES state_after)
+{
+    D3D12_RESOURCE_STATES state_before = buffer.GetCurrentState();
+    if (state_before == state_after)
+    {
+        return;
+    }
+
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = buffer.GetResource();
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    barrier.Transition.StateBefore = state_before;
+    barrier.Transition.StateAfter = state_after;
+    cmd_list_->ResourceBarrier(1, &barrier);
+    buffer.SetCurrentState(state_after);
+}
+
 void D3D12CommandBuffer::BuildBottomLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
     std::vector<AccelerationStructureGeometryDesc> const& geometries)
 {
@@ -354,8 +372,19 @@ void D3D12CommandBuffer::BuildBottomLevelAccelerationStructure(AccelerationStruc
     d3d12_geometries.reserve(geometries.size());
     for (AccelerationStructureGeometryDesc const& geometry : geometries)
     {
+        auto* vertex_buffer = dynamic_cast<D3D12Buffer*>(geometry.vertex_buffer.get());
+        auto* index_buffer = dynamic_cast<D3D12Buffer*>(geometry.index_buffer.get());
+        if (!vertex_buffer || !index_buffer)
+        {
+            throw std::runtime_error(
+                "D3D12CommandBuffer::BuildBottomLevelAccelerationStructure: geometry buffers are invalid");
+        }
+
+        TransitionBuffer(*vertex_buffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        TransitionBuffer(*index_buffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         d3d12_geometries.push_back(ToD3D12GeometryDesc(geometry));
     }
+    TransitionBuffer(*scratch, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC build_desc = {};
     build_desc.DestAccelerationStructureData = bottom_level->GetGpuAddress();
@@ -408,11 +437,12 @@ void D3D12CommandBuffer::BuildTopLevelAccelerationStructure(AccelerationStructur
         1,
         BufferFlags::kAccelerationStructureBuildInput);
     CopyBuffer(upload_buffer, 0, instance_buffer, 0, instance_data_size);
-    StorageBarrier(instance_buffer);
     staging_buffers_.push_back(upload_buffer);
     staging_buffers_.push_back(instance_buffer);
 
     auto* d3d12_instance_buffer = dynamic_cast<D3D12Buffer*>(instance_buffer.get());
+    TransitionBuffer(*d3d12_instance_buffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    TransitionBuffer(*scratch, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC build_desc = {};
     build_desc.DestAccelerationStructureData = top_level->GetGpuAddress();
     build_desc.ScratchAccelerationStructureData = scratch->GetGPUVirtualAddress();
@@ -435,7 +465,13 @@ void D3D12CommandBuffer::CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPt
     D3D12Buffer* d3d12_dst = static_cast<D3D12Buffer*>(dst.get());
     assert(d3d12_src && d3d12_dst && "D3D12CommandBuffer::CopyBuffer: src/dst must be D3D12Buffer");
 
+    if (d3d12_src->GetCurrentState() != D3D12_RESOURCE_STATE_GENERIC_READ)
+    {
+        TransitionBuffer(*d3d12_src, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    }
+    TransitionBuffer(*d3d12_dst, D3D12_RESOURCE_STATE_COPY_DEST);
     cmd_list_->CopyBufferRegion(d3d12_dst->GetResource(), dst_offset, d3d12_src->GetResource(), src_offset, size);
+    TransitionBuffer(*d3d12_dst, D3D12_RESOURCE_STATE_COMMON);
 }
 
 void D3D12CommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)

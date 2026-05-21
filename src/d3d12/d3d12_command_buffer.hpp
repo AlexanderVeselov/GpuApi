@@ -13,6 +13,7 @@ class D3D12DescriptorSet;
 class D3D12ComputePipeline;
 class D3D12Queue;
 class D3D12GraphicsPipeline;
+class D3D12Buffer;
 
 class D3D12CommandBuffer final : public CommandBuffer
 {
@@ -65,6 +66,7 @@ private:
     void BindDescriptorHeaps();
     void BindDescriptorsGraphics();
     void BindDescriptorsCompute();
+    void TransitionBuffer(D3D12Buffer& buffer, D3D12_RESOURCE_STATES state_after);
 
 private:
     D3D12Device& device_;

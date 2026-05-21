@@ -10,6 +10,7 @@ namespace gpu
 class VulkanDevice;
 class VulkanGraphicsPipeline;
 class VulkanComputePipeline;
+class VulkanAccelerationStructure;
 
 class VulkanCommandBuffer final : public CommandBuffer
 {
@@ -64,6 +65,7 @@ public:
 private:
     void Begin();
     void EndRendering();
+    void AccelerationStructureBarrier(VulkanAccelerationStructure const& acceleration_structure);
 
 private:
     VulkanDevice& device_;

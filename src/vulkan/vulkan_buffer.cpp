@@ -5,6 +5,12 @@
 
 namespace gpu
 {
+static bool RequiresDeviceAddress(BufferFlags flags)
+{
+    return HasFlag(flags, BufferFlags::kAccelerationStructureBuildInput)
+        || HasFlag(flags, BufferFlags::kAccelerationStructureStorage);
+}
+
 static VkBufferUsageFlags ToVkBufferUsage(BufferFlags flags)
 {
     VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
@@ -35,8 +41,7 @@ static VkBufferUsageFlags ToVkBufferUsage(BufferFlags flags)
         usage |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     }
 
-    if (HasFlag(flags, BufferFlags::kAccelerationStructureBuildInput)
-        || HasFlag(flags, BufferFlags::kAccelerationStructureStorage))
+    if (RequiresDeviceAddress(flags))
     {
         usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
     }
@@ -47,6 +52,9 @@ static VkBufferUsageFlags ToVkBufferUsage(BufferFlags flags)
 VulkanBuffer::VulkanBuffer(VulkanDevice& device, uint64_t size, uint32_t stride, BufferFlags flags)
     : Buffer(size), device_(device), flags_(flags), stride_(stride)
 {
+    THROW_IF(RequiresDeviceAddress(flags) && !device_.SupportsRayQuery(),
+        "Vulkan acceleration-structure buffers require ray query / buffer device address support");
+
     VkBufferCreateInfo buffer_create_info{};
     buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_create_info.size = size;
@@ -67,8 +75,7 @@ VulkanBuffer::VulkanBuffer(VulkanDevice& device, uint64_t size, uint32_t stride,
     }
 
     VkMemoryAllocateFlags allocate_flags = 0;
-    if (HasFlag(flags, BufferFlags::kAccelerationStructureBuildInput)
-        || HasFlag(flags, BufferFlags::kAccelerationStructureStorage))
+    if (RequiresDeviceAddress(flags))
     {
         allocate_flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
     }
