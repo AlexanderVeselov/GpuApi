@@ -18,7 +18,9 @@ public:
 
     // Resources
     BufferPtr CreateBuffer(size_t size, uint32_t stride, BufferFlags flags) override;
-    AccelerationStructurePtr CreateAccelerationStructure(AccelerationStructureType type, uint64_t size) override;
+    AccelerationStructurePtr
+    CreateBottomLevelAccelerationStructure(std::vector<AccelerationStructureGeometryDesc> const& geometries) override;
+    AccelerationStructurePtr CreateTopLevelAccelerationStructure(uint32_t instance_count) override;
     ImagePtr CreateImage(uint32_t width, uint32_t height, ImageFormat format, ImageFlags flags, uint32_t mip_count = 1,
         uint32_t array_size = 1) override;
 
@@ -42,6 +44,8 @@ public:
 
 private:
     void CheckRayQuerySupport();
+    AccelerationStructurePtr CreateAccelerationStructure(AccelerationStructureType type, uint64_t size,
+        uint64_t build_scratch_size);
     SamplerPtr CreateSampler(SamplerDesc const& desc) override;
 
 private:

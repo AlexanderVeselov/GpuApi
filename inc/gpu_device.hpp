@@ -30,8 +30,12 @@ public:
     /// Creates a buffer with a fixed element stride and explicit usage flags.
     virtual BufferPtr CreateBuffer(size_t size, uint32_t stride, BufferFlags flags) = 0;
 
-    /// Creates backend storage for a ray tracing acceleration structure. Build commands fill it later.
-    virtual AccelerationStructurePtr CreateAccelerationStructure(AccelerationStructureType type, uint64_t size) = 0;
+    /// Creates backend storage for a bottom-level acceleration structure. Build commands fill it later.
+    virtual AccelerationStructurePtr
+    CreateBottomLevelAccelerationStructure(std::vector<AccelerationStructureGeometryDesc> const& geometries) = 0;
+
+    /// Creates backend storage for a top-level acceleration structure. Build commands fill it later.
+    virtual AccelerationStructurePtr CreateTopLevelAccelerationStructure(uint32_t instance_count) = 0;
 
     /// Creates an image with usage flags and optional subresource counts.
     virtual ImagePtr CreateImage(uint32_t width, uint32_t height, ImageFormat format, ImageFlags flags,

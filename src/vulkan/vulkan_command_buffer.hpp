@@ -44,10 +44,16 @@ public:
     void ClearDepthImage(ImagePtr image, float depth) override;
 
     void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) override;
-    void TransitionBarrier(std::vector<ImagePtr> const& images, ImageLayout layout_before, ImageLayout layout_after) override;
+    void TransitionBarrier(std::vector<ImagePtr> const& images, ImageLayout layout_before,
+        ImageLayout layout_after) override;
 
     void StorageBarrier(ImagePtr image) override;
     void StorageBarrier(BufferPtr buffer) override;
+
+    void BuildBottomLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
+        std::vector<AccelerationStructureGeometryDesc> const& geometries) override;
+    void BuildTopLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
+        std::vector<AccelerationStructureInstanceDesc> const& instances) override;
 
     void CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset, uint64_t size) override;
 

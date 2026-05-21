@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gpu_acceleration_structure.hpp"
 #include "gpu_types.hpp"
 
 namespace gpu
@@ -58,13 +59,22 @@ public:
     virtual void TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after) = 0;
 
     /// Inserts a transition barrier for multiple images.
-    virtual void TransitionBarrier(std::vector<ImagePtr> const& images, ImageLayout layout_before, ImageLayout layout_after) = 0;
+    virtual void TransitionBarrier(std::vector<ImagePtr> const& images, ImageLayout layout_before,
+        ImageLayout layout_after) = 0;
 
     /// Inserts an unordered-access/storage synchronization barrier for an image.
     virtual void StorageBarrier(ImagePtr image) = 0;
 
     /// Inserts an unordered-access/storage synchronization barrier for a buffer.
     virtual void StorageBarrier(BufferPtr buffer) = 0;
+
+    /// Builds a bottom-level acceleration structure from triangle geometry.
+    virtual void BuildBottomLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
+        std::vector<AccelerationStructureGeometryDesc> const& geometries) = 0;
+
+    /// Builds a top-level acceleration structure. The command buffer uploads the backend instance descriptors.
+    virtual void BuildTopLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
+        std::vector<AccelerationStructureInstanceDesc> const& instances) = 0;
 
     /// Copies a byte range between buffers.
     virtual void CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset, uint64_t size) = 0;

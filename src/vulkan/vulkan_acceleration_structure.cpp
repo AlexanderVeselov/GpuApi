@@ -6,8 +6,8 @@ namespace gpu
 {
 
 VulkanAccelerationStructure::VulkanAccelerationStructure(VulkanDevice& device, AccelerationStructureType type,
-    BufferPtr storage_buffer, VkAccelerationStructureKHR handle, uint64_t device_address)
-    : AccelerationStructure(type, std::move(storage_buffer))
+    BufferPtr storage_buffer, uint64_t build_scratch_size, VkAccelerationStructureKHR handle, uint64_t device_address)
+    : AccelerationStructure(type, std::move(storage_buffer), build_scratch_size)
     , device_(device)
     , handle_(handle)
     , device_address_(device_address)

@@ -14,7 +14,7 @@ class D3D12AccelerationStructure final : public AccelerationStructure
 {
 public:
     D3D12AccelerationStructure(D3D12Device& device, AccelerationStructureType type, BufferPtr storage_buffer,
-        D3D12_GPU_VIRTUAL_ADDRESS gpu_address);
+        uint64_t build_scratch_size, D3D12_GPU_VIRTUAL_ADDRESS gpu_address);
     ~D3D12AccelerationStructure() override;
 
     D3D12_GPU_VIRTUAL_ADDRESS GetGpuAddress() const { return gpu_address_; }

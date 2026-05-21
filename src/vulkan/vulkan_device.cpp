@@ -19,6 +19,44 @@
 
 namespace gpu
 {
+namespace
+{
+VkAccelerationStructureGeometryKHR ToVkGeometryDesc(AccelerationStructureGeometryDesc const& geometry)
+{
+    if (!geometry.vertex_buffer || !geometry.index_buffer)
+    {
+        throw std::runtime_error("VulkanDevice: acceleration-structure geometry buffers must not be null");
+    }
+    if (geometry.vertex_count == 0 || geometry.index_count == 0 || geometry.index_count % 3 != 0)
+    {
+        throw std::runtime_error("VulkanDevice: acceleration-structure geometry must contain indexed triangles");
+    }
+
+    VkAccelerationStructureGeometryKHR desc{};
+    desc.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    desc.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+    desc.flags = geometry.opaque ? VK_GEOMETRY_OPAQUE_BIT_KHR : 0;
+    desc.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+    desc.geometry.triangles.vertexFormat = ToVkFormat(geometry.vertex_format);
+    desc.geometry.triangles.vertexData.deviceAddress = geometry.vertex_buffer->GetGpuAddress() + geometry.vertex_offset;
+    desc.geometry.triangles.vertexStride = geometry.vertex_stride;
+    desc.geometry.triangles.maxVertex = geometry.vertex_count - 1;
+    desc.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+    desc.geometry.triangles.indexData.deviceAddress = geometry.index_buffer->GetGpuAddress() + geometry.index_offset;
+    return desc;
+}
+
+VkAccelerationStructureGeometryKHR CreateTopLevelGeometryDesc()
+{
+    VkAccelerationStructureGeometryKHR desc{};
+    desc.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    desc.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+    desc.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+    desc.geometry.instances.arrayOfPointers = VK_FALSE;
+    return desc;
+}
+}  // namespace
+
 VulkanDevice::VulkanDevice(VulkanApi& api, VkPhysicalDevice physical_device)
     : api_(api), physical_device_(physical_device), memory_manager_(*this)
 {
@@ -209,7 +247,8 @@ BufferPtr VulkanDevice::CreateBuffer(std::size_t size, std::uint32_t stride, Buf
     return std::make_shared<VulkanBuffer>(*this, size, stride, flags);
 }
 
-AccelerationStructurePtr VulkanDevice::CreateAccelerationStructure(AccelerationStructureType type, uint64_t size)
+AccelerationStructurePtr VulkanDevice::CreateAccelerationStructure(AccelerationStructureType type, uint64_t size,
+    uint64_t build_scratch_size)
 {
     if (!SupportsRayQuery())
     {
@@ -255,8 +294,88 @@ AccelerationStructurePtr VulkanDevice::CreateAccelerationStructure(AccelerationS
     return std::make_shared<VulkanAccelerationStructure>(*this,
         type,
         std::move(storage_buffer),
+        build_scratch_size,
         handle,
         device_address);
+}
+
+AccelerationStructurePtr
+VulkanDevice::CreateBottomLevelAccelerationStructure(std::vector<AccelerationStructureGeometryDesc> const& geometries)
+{
+    if (geometries.empty())
+    {
+        throw std::runtime_error("VulkanDevice::CreateBottomLevelAccelerationStructure: geometry list is empty");
+    }
+
+    std::vector<VkAccelerationStructureGeometryKHR> vk_geometries;
+    std::vector<uint32_t> primitive_counts;
+    vk_geometries.reserve(geometries.size());
+    primitive_counts.reserve(geometries.size());
+    for (AccelerationStructureGeometryDesc const& geometry : geometries)
+    {
+        vk_geometries.push_back(ToVkGeometryDesc(geometry));
+        primitive_counts.push_back(geometry.index_count / 3);
+    }
+
+    VkAccelerationStructureBuildGeometryInfoKHR build_info{};
+    build_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+    build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    build_info.geometryCount = static_cast<uint32_t>(vk_geometries.size());
+    build_info.pGeometries = vk_geometries.data();
+
+    VkAccelerationStructureBuildSizesInfoKHR size_info{};
+    size_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+
+    auto vk_get_build_sizes = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(device_,
+        "vkGetAccelerationStructureBuildSizesKHR"));
+    THROW_IF(!vk_get_build_sizes,
+        "VulkanDevice::CreateBottomLevelAccelerationStructure: vkGetAccelerationStructureBuildSizesKHR is unavailable");
+
+    vk_get_build_sizes(device_,
+        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+        &build_info,
+        primitive_counts.data(),
+        &size_info);
+
+    return CreateAccelerationStructure(AccelerationStructureType::kBottomLevel,
+        size_info.accelerationStructureSize,
+        size_info.buildScratchSize);
+}
+
+AccelerationStructurePtr VulkanDevice::CreateTopLevelAccelerationStructure(uint32_t instance_count)
+{
+    if (instance_count == 0)
+    {
+        throw std::runtime_error(
+            "VulkanDevice::CreateTopLevelAccelerationStructure: instance count must be greater than zero");
+    }
+
+    VkAccelerationStructureGeometryKHR geometry = CreateTopLevelGeometryDesc();
+    VkAccelerationStructureBuildGeometryInfoKHR build_info{};
+    build_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+    build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    build_info.geometryCount = 1;
+    build_info.pGeometries = &geometry;
+
+    VkAccelerationStructureBuildSizesInfoKHR size_info{};
+    size_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+
+    auto vk_get_build_sizes = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(device_,
+        "vkGetAccelerationStructureBuildSizesKHR"));
+    THROW_IF(!vk_get_build_sizes,
+        "VulkanDevice::CreateTopLevelAccelerationStructure: vkGetAccelerationStructureBuildSizesKHR is unavailable");
+
+    vk_get_build_sizes(device_,
+        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+        &build_info,
+        &instance_count,
+        &size_info);
+
+    return CreateAccelerationStructure(AccelerationStructureType::kTopLevel,
+        size_info.accelerationStructureSize,
+        size_info.buildScratchSize);
 }
 
 ImagePtr VulkanDevice::CreateImage(uint32_t width, uint32_t height, ImageFormat format, ImageFlags flags,

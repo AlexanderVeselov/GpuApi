@@ -1,5 +1,6 @@
 #include "vulkan_command_buffer.hpp"
 
+#include "vulkan_acceleration_structure.hpp"
 #include "vulkan_buffer.hpp"
 #include "vulkan_descriptor_set.hpp"
 #include "vulkan_device.hpp"
@@ -8,6 +9,8 @@
 #include "vulkan_pipeline.hpp"
 
 #include <cstring>
+#include <stdexcept>
+#include <vector>
 
 namespace gpu
 {
@@ -43,6 +46,57 @@ static VkImageLayout ToVkImageLayout(ImageLayout layout, bool is_depth)
 static VkImageAspectFlags GetImageAspect(Image const& image)
 {
     return IsDepthImage(image) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+}
+
+static VkAccelerationStructureGeometryKHR ToVkGeometryDesc(AccelerationStructureGeometryDesc const& geometry)
+{
+    if (!geometry.vertex_buffer || !geometry.index_buffer)
+    {
+        throw std::runtime_error(
+            "VulkanCommandBuffer::BuildBottomLevelAccelerationStructure: geometry buffers must not be null");
+    }
+
+    VkAccelerationStructureGeometryKHR desc{};
+    desc.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    desc.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+    desc.flags = geometry.opaque ? VK_GEOMETRY_OPAQUE_BIT_KHR : 0;
+    desc.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+    desc.geometry.triangles.vertexFormat = ToVkFormat(geometry.vertex_format);
+    desc.geometry.triangles.vertexData.deviceAddress = geometry.vertex_buffer->GetGpuAddress() + geometry.vertex_offset;
+    desc.geometry.triangles.vertexStride = geometry.vertex_stride;
+    desc.geometry.triangles.maxVertex = geometry.vertex_count - 1;
+    desc.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+    desc.geometry.triangles.indexData.deviceAddress = geometry.index_buffer->GetGpuAddress() + geometry.index_offset;
+    return desc;
+}
+
+static VkAccelerationStructureGeometryKHR CreateTopLevelGeometryDesc(Buffer& instance_buffer)
+{
+    VkAccelerationStructureGeometryKHR desc{};
+    desc.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+    desc.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+    desc.geometry.instances.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR;
+    desc.geometry.instances.arrayOfPointers = VK_FALSE;
+    desc.geometry.instances.data.deviceAddress = instance_buffer.GetGpuAddress();
+    return desc;
+}
+
+static VkAccelerationStructureInstanceKHR ToVkInstanceDesc(AccelerationStructureInstanceDesc const& instance)
+{
+    auto* bottom_level = dynamic_cast<VulkanAccelerationStructure*>(instance.bottom_level);
+    if (!bottom_level || bottom_level->GetType() != AccelerationStructureType::kBottomLevel)
+    {
+        throw std::runtime_error("VulkanCommandBuffer::BuildTopLevelAccelerationStructure: instance BLAS is invalid");
+    }
+
+    VkAccelerationStructureInstanceKHR desc{};
+    std::memcpy(desc.transform.matrix, instance.transform, sizeof(desc.transform.matrix));
+    desc.instanceCustomIndex = instance.instance_id;
+    desc.mask = instance.instance_mask;
+    desc.instanceShaderBindingTableRecordOffset = 0;
+    desc.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+    desc.accelerationStructureReference = bottom_level->GetDeviceAddress();
+    return desc;
 }
 
 VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice& device, VkCommandPool command_pool)
@@ -426,7 +480,6 @@ void VulkanCommandBuffer::TransitionBarrier(std::vector<ImagePtr> const& images,
             static_cast<uint32_t>(barriers.size()),
             barriers.data());
     }
-
 }
 
 void VulkanCommandBuffer::StorageBarrier(ImagePtr image)
@@ -489,6 +542,128 @@ void VulkanCommandBuffer::StorageBarrier(BufferPtr buffer)
         &barrier,
         0,
         nullptr);
+}
+
+void VulkanCommandBuffer::BuildBottomLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
+    std::vector<AccelerationStructureGeometryDesc> const& geometries)
+{
+    EndRendering();
+
+    auto* bottom_level = dynamic_cast<VulkanAccelerationStructure*>(&acceleration_structure);
+    THROW_IF(!bottom_level || bottom_level->GetType() != AccelerationStructureType::kBottomLevel,
+        "acceleration structure is not a Vulkan BLAS");
+    THROW_IF(geometries.empty(), "geometry list is empty");
+
+    BufferPtr scratch_buffer = device_.CreateBuffer(bottom_level->GetBuildScratchSize(),
+        1,
+        BufferFlags::kStorage | BufferFlags::kAccelerationStructureBuildInput);
+    auto* scratch = dynamic_cast<VulkanBuffer*>(scratch_buffer.get());
+    staging_buffers_.push_back(scratch_buffer);
+
+    std::vector<VkAccelerationStructureGeometryKHR> vk_geometries;
+    std::vector<VkAccelerationStructureBuildRangeInfoKHR> ranges;
+    std::vector<VkAccelerationStructureBuildRangeInfoKHR const*> range_ptrs;
+    vk_geometries.reserve(geometries.size());
+    ranges.reserve(geometries.size());
+    range_ptrs.reserve(geometries.size());
+
+    for (AccelerationStructureGeometryDesc const& geometry : geometries)
+    {
+        vk_geometries.push_back(ToVkGeometryDesc(geometry));
+
+        VkAccelerationStructureBuildRangeInfoKHR range{};
+        range.primitiveCount = geometry.index_count / 3;
+        range.primitiveOffset = 0;
+        range.firstVertex = 0;
+        range.transformOffset = 0;
+        ranges.push_back(range);
+    }
+
+    for (VkAccelerationStructureBuildRangeInfoKHR const& range : ranges)
+    {
+        range_ptrs.push_back(&range);
+    }
+
+    VkAccelerationStructureBuildGeometryInfoKHR build_info{};
+    build_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+    build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    build_info.dstAccelerationStructure = bottom_level->GetHandle();
+    build_info.geometryCount = static_cast<uint32_t>(vk_geometries.size());
+    build_info.pGeometries = vk_geometries.data();
+    build_info.scratchData.deviceAddress = scratch->GetGpuAddress();
+
+    auto vk_cmd_build = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(vkGetDeviceProcAddr(device_
+                                                                                                          .GetDevice(),
+        "vkCmdBuildAccelerationStructuresKHR"));
+    THROW_IF(!vk_cmd_build, "vkCmdBuildAccelerationStructuresKHR is unavailable");
+
+    vk_cmd_build(command_buffer_, 1, &build_info, range_ptrs.data());
+    StorageBarrier(bottom_level->GetStorageBuffer());
+}
+
+void VulkanCommandBuffer::BuildTopLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
+    std::vector<AccelerationStructureInstanceDesc> const& instances)
+{
+    EndRendering();
+
+    auto* top_level = dynamic_cast<VulkanAccelerationStructure*>(&acceleration_structure);
+    THROW_IF(!top_level || top_level->GetType() != AccelerationStructureType::kTopLevel,
+        "acceleration structure is not a Vulkan TLAS");
+    THROW_IF(instances.empty(), "instance list is empty");
+
+    BufferPtr scratch_buffer = device_.CreateBuffer(top_level->GetBuildScratchSize(),
+        1,
+        BufferFlags::kStorage | BufferFlags::kAccelerationStructureBuildInput);
+    auto* scratch = dynamic_cast<VulkanBuffer*>(scratch_buffer.get());
+    staging_buffers_.push_back(scratch_buffer);
+
+    std::vector<VkAccelerationStructureInstanceKHR> vk_instances;
+    vk_instances.reserve(instances.size());
+    for (AccelerationStructureInstanceDesc const& instance : instances)
+    {
+        vk_instances.push_back(ToVkInstanceDesc(instance));
+    }
+
+    uint64_t instance_data_size = vk_instances.size() * sizeof(VkAccelerationStructureInstanceKHR);
+    BufferPtr upload_buffer = device_.CreateBuffer(instance_data_size, 1, BufferFlags::kCpuAccess);
+    std::memcpy(upload_buffer->Map(), vk_instances.data(), instance_data_size);
+    upload_buffer->Unmap();
+
+    BufferPtr instance_buffer = device_.CreateBuffer(instance_data_size,
+        1,
+        BufferFlags::kAccelerationStructureBuildInput);
+    CopyBuffer(upload_buffer, 0, instance_buffer, 0, instance_data_size);
+    StorageBarrier(instance_buffer);
+    staging_buffers_.push_back(upload_buffer);
+    staging_buffers_.push_back(instance_buffer);
+
+    VkAccelerationStructureGeometryKHR geometry = CreateTopLevelGeometryDesc(*instance_buffer);
+    VkAccelerationStructureBuildRangeInfoKHR range{};
+    range.primitiveCount = static_cast<uint32_t>(vk_instances.size());
+    range.primitiveOffset = 0;
+    range.firstVertex = 0;
+    range.transformOffset = 0;
+    VkAccelerationStructureBuildRangeInfoKHR const* range_ptr = &range;
+
+    VkAccelerationStructureBuildGeometryInfoKHR build_info{};
+    build_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+    build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+    build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    build_info.dstAccelerationStructure = top_level->GetHandle();
+    build_info.geometryCount = 1;
+    build_info.pGeometries = &geometry;
+    build_info.scratchData.deviceAddress = scratch->GetGpuAddress();
+
+    auto vk_cmd_build = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(vkGetDeviceProcAddr(device_
+                                                                                                          .GetDevice(),
+        "vkCmdBuildAccelerationStructuresKHR"));
+    THROW_IF(!vk_cmd_build, "vkCmdBuildAccelerationStructuresKHR is unavailable");
+
+    vk_cmd_build(command_buffer_, 1, &build_info, &range_ptr);
+    StorageBarrier(top_level->GetStorageBuffer());
 }
 
 void VulkanCommandBuffer::CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset,

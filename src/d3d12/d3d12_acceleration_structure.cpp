@@ -8,8 +8,10 @@ namespace gpu
 {
 
 D3D12AccelerationStructure::D3D12AccelerationStructure(D3D12Device& device, AccelerationStructureType type,
-    BufferPtr storage_buffer, D3D12_GPU_VIRTUAL_ADDRESS gpu_address)
-    : AccelerationStructure(type, std::move(storage_buffer)), device_(device), gpu_address_(gpu_address)
+    BufferPtr storage_buffer, uint64_t build_scratch_size, D3D12_GPU_VIRTUAL_ADDRESS gpu_address)
+    : AccelerationStructure(type, std::move(storage_buffer), build_scratch_size)
+    , device_(device)
+    , gpu_address_(gpu_address)
 {
 }
 

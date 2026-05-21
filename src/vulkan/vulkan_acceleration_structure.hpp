@@ -13,7 +13,7 @@ class VulkanAccelerationStructure final : public AccelerationStructure
 {
 public:
     VulkanAccelerationStructure(VulkanDevice& device, AccelerationStructureType type, BufferPtr storage_buffer,
-        VkAccelerationStructureKHR handle, uint64_t device_address);
+        uint64_t build_scratch_size, VkAccelerationStructureKHR handle, uint64_t device_address);
     ~VulkanAccelerationStructure() override;
 
     VkAccelerationStructureKHR GetHandle() const { return handle_; }
