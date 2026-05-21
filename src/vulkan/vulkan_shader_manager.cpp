@@ -124,11 +124,8 @@ VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const
 #endif
 
     ComPtr<IDxcResult> dxc_result;
-    ThrowIfDxcFailed(dxc_compiler_->Compile(&shader_source,
-                         shader_args.data(),
-                         static_cast<UINT32>(shader_args.size()),
-                         dxc_include_handler_,
-                         IID_PPV_ARGS(&dxc_result)),
+    ThrowIfDxcFailed(dxc_compiler_->Compile(&shader_source, shader_args.data(), static_cast<UINT32>(shader_args.size()),
+                         dxc_include_handler_, IID_PPV_ARGS(&dxc_result)),
         "VulkanShaderManager::CompileShader: DXC compile call failed");
 
     ComPtr<IDxcBlobUtf8> dxc_error;

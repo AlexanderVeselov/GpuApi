@@ -15,125 +15,125 @@ namespace gpu
 {
 namespace
 {
-    class VulkanShaderModule
+class VulkanShaderModule
+{
+public:
+    VulkanShaderModule(VulkanDevice& device, std::vector<uint32_t> const& spirv) : device_(device)
     {
-    public:
-        VulkanShaderModule(VulkanDevice& device, std::vector<uint32_t> const& spirv) : device_(device)
-        {
-            VkShaderModuleCreateInfo create_info = {};
-            create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-            create_info.codeSize = spirv.size() * sizeof(uint32_t);
-            create_info.pCode = spirv.data();
+        VkShaderModuleCreateInfo create_info = {};
+        create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        create_info.codeSize = spirv.size() * sizeof(uint32_t);
+        create_info.pCode = spirv.data();
 
-            VkResult status = vkCreateShaderModule(device_.GetDevice(), &create_info, nullptr, &shader_module_);
-            VK_THROW_IF_FAILED(status, "Failed to create Vulkan shader module");
-        }
+        VkResult status = vkCreateShaderModule(device_.GetDevice(), &create_info, nullptr, &shader_module_);
+        VK_THROW_IF_FAILED(status, "Failed to create Vulkan shader module");
+    }
 
-        ~VulkanShaderModule()
-        {
-            if (shader_module_ != VK_NULL_HANDLE)
-            {
-                vkDestroyShaderModule(device_.GetDevice(), shader_module_, nullptr);
-            }
-        }
-
-        VkShaderModule GetShaderModule() const { return shader_module_; }
-
-    private:
-        VulkanDevice& device_;
-        VkShaderModule shader_module_ = VK_NULL_HANDLE;
-    };
-
-    VkCompareOp DepthFuncToVkCompareOp(DepthFunc depth_func)
+    ~VulkanShaderModule()
     {
-        switch (depth_func)
+        if (shader_module_ != VK_NULL_HANDLE)
         {
-        case DepthFunc::kNone:
-            return VK_COMPARE_OP_ALWAYS;
-        case DepthFunc::kNever:
-            return VK_COMPARE_OP_NEVER;
-        case DepthFunc::kLess:
-            return VK_COMPARE_OP_LESS;
-        case DepthFunc::kEqual:
-            return VK_COMPARE_OP_EQUAL;
-        case DepthFunc::kLessEqual:
-            return VK_COMPARE_OP_LESS_OR_EQUAL;
-        case DepthFunc::kGreater:
-            return VK_COMPARE_OP_GREATER;
-        case DepthFunc::kNotEqual:
-            return VK_COMPARE_OP_NOT_EQUAL;
-        case DepthFunc::kGreaterEqual:
-            return VK_COMPARE_OP_GREATER_OR_EQUAL;
-        case DepthFunc::kAlways:
-            return VK_COMPARE_OP_ALWAYS;
-        default:
-            assert(false && "DepthFuncToVkCompareOp: unknown depth func");
-            return VK_COMPARE_OP_ALWAYS;
+            vkDestroyShaderModule(device_.GetDevice(), shader_module_, nullptr);
         }
     }
 
-    uint32_t FormatSize(ImageFormat format)
+    VkShaderModule GetShaderModule() const { return shader_module_; }
+
+private:
+    VulkanDevice& device_;
+    VkShaderModule shader_module_ = VK_NULL_HANDLE;
+};
+
+VkCompareOp DepthFuncToVkCompareOp(DepthFunc depth_func)
+{
+    switch (depth_func)
     {
-        switch (format)
+    case DepthFunc::kNone:
+        return VK_COMPARE_OP_ALWAYS;
+    case DepthFunc::kNever:
+        return VK_COMPARE_OP_NEVER;
+    case DepthFunc::kLess:
+        return VK_COMPARE_OP_LESS;
+    case DepthFunc::kEqual:
+        return VK_COMPARE_OP_EQUAL;
+    case DepthFunc::kLessEqual:
+        return VK_COMPARE_OP_LESS_OR_EQUAL;
+    case DepthFunc::kGreater:
+        return VK_COMPARE_OP_GREATER;
+    case DepthFunc::kNotEqual:
+        return VK_COMPARE_OP_NOT_EQUAL;
+    case DepthFunc::kGreaterEqual:
+        return VK_COMPARE_OP_GREATER_OR_EQUAL;
+    case DepthFunc::kAlways:
+        return VK_COMPARE_OP_ALWAYS;
+    default:
+        assert(false && "DepthFuncToVkCompareOp: unknown depth func");
+        return VK_COMPARE_OP_ALWAYS;
+    }
+}
+
+uint32_t FormatSize(ImageFormat format)
+{
+    switch (format)
+    {
+    case ImageFormat::kR32_Float:
+    case ImageFormat::kR32_UInt:
+    case ImageFormat::kR32_SInt:
+        return 4;
+    case ImageFormat::kRG32_Float:
+    case ImageFormat::kRG32_UInt:
+    case ImageFormat::kRG32_SInt:
+        return 8;
+    case ImageFormat::kRGB32_Float:
+    case ImageFormat::kRGB32_UInt:
+    case ImageFormat::kRGB32_SInt:
+        return 12;
+    case ImageFormat::kRGBA32_Float:
+    case ImageFormat::kRGBA32_UInt:
+    case ImageFormat::kRGBA32_SInt:
+        return 16;
+    default:
+        throw std::runtime_error("Unsupported Vulkan vertex input format");
+    }
+}
+
+void GetVertexInputDescs(ShaderReflection const& reflection, VkVertexInputBindingDescription& binding_desc,
+    std::vector<VkVertexInputAttributeDescription>& attribute_descs)
+{
+    uint32_t offset = 0;
+
+    for (ShaderInputParameter const& parameter : reflection.input_parameters)
+    {
+        if (parameter.is_system_value)
         {
-        case ImageFormat::kR32_Float:
-        case ImageFormat::kR32_UInt:
-        case ImageFormat::kR32_SInt:
-            return 4;
-        case ImageFormat::kRG32_Float:
-        case ImageFormat::kRG32_UInt:
-        case ImageFormat::kRG32_SInt:
-            return 8;
-        case ImageFormat::kRGB32_Float:
-        case ImageFormat::kRGB32_UInt:
-        case ImageFormat::kRGB32_SInt:
-            return 12;
-        case ImageFormat::kRGBA32_Float:
-        case ImageFormat::kRGBA32_UInt:
-        case ImageFormat::kRGBA32_SInt:
-            return 16;
-        default:
-            throw std::runtime_error("Unsupported Vulkan vertex input format");
-        }
-    }
-
-    void GetVertexInputDescs(ShaderReflection const& reflection, VkVertexInputBindingDescription& binding_desc,
-        std::vector<VkVertexInputAttributeDescription>& attribute_descs)
-    {
-        uint32_t offset = 0;
-
-        for (ShaderInputParameter const& parameter : reflection.input_parameters)
-        {
-            if (parameter.is_system_value)
-            {
-                continue;
-            }
-
-            VkVertexInputAttributeDescription attribute_desc = {};
-            attribute_desc.location = parameter.semantic_index;
-            attribute_desc.binding = 0;
-            attribute_desc.format = ToVkFormat(parameter.format);
-            attribute_desc.offset = offset;
-            attribute_descs.push_back(attribute_desc);
-
-            offset += FormatSize(parameter.format);
+            continue;
         }
 
-        binding_desc = {};
-        binding_desc.binding = 0;
-        binding_desc.stride = offset;
-        binding_desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        VkVertexInputAttributeDescription attribute_desc = {};
+        attribute_desc.location = parameter.semantic_index;
+        attribute_desc.binding = 0;
+        attribute_desc.format = ToVkFormat(parameter.format);
+        attribute_desc.offset = offset;
+        attribute_descs.push_back(attribute_desc);
+
+        offset += FormatSize(parameter.format);
     }
 
-    VkPipelineShaderStageCreateInfo GetShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shader_module)
-    {
-        VkPipelineShaderStageCreateInfo create_info = {};
-        create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        create_info.stage = stage;
-        create_info.module = shader_module;
-        create_info.pName = "main";
-        return create_info;
-    }
+    binding_desc = {};
+    binding_desc.binding = 0;
+    binding_desc.stride = offset;
+    binding_desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+}
+
+VkPipelineShaderStageCreateInfo GetShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shader_module)
+{
+    VkPipelineShaderStageCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    create_info.stage = stage;
+    create_info.module = shader_module;
+    create_info.pName = "main";
+    return create_info;
+}
 }  // namespace
 
 VulkanPipeline::VulkanPipeline(VulkanDevice& device) : device_(device), layout_(device) {}
@@ -298,11 +298,7 @@ void VulkanGraphicsPipeline::Reload()
     create_info.subpass = 0;
 
     VkPipeline new_pipeline = VK_NULL_HANDLE;
-    VkResult status = vkCreateGraphicsPipelines(device_.GetDevice(),
-        VK_NULL_HANDLE,
-        1,
-        &create_info,
-        nullptr,
+    VkResult status = vkCreateGraphicsPipelines(device_.GetDevice(), VK_NULL_HANDLE, 1, &create_info, nullptr,
         &new_pipeline);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan graphics pipeline");
 
@@ -342,11 +338,7 @@ void VulkanComputePipeline::Reload()
     create_info.layout = layout_.GetPipelineLayout();
 
     VkPipeline new_pipeline = VK_NULL_HANDLE;
-    VkResult status = vkCreateComputePipelines(device_.GetDevice(),
-        VK_NULL_HANDLE,
-        1,
-        &create_info,
-        nullptr,
+    VkResult status = vkCreateComputePipelines(device_.GetDevice(), VK_NULL_HANDLE, 1, &create_info, nullptr,
         &new_pipeline);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan compute pipeline");
 

@@ -22,8 +22,8 @@ void D3D12ShaderManager::SetShaderPath(char const* shader_path)
     shader_path_ = shader_path ? shader_path : "";
 }
 
-D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* entry_point,
-    char const* shader_profile, std::vector<char const*> const& definitions)
+D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* entry_point, char const* shader_profile,
+    std::vector<char const*> const& definitions)
 {
     ComPtr<IDxcBlobEncoding> dxc_source = nullptr;
     std::filesystem::path shader_file = filename;
@@ -81,8 +81,8 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
 
     // Compile shader
     ComPtr<IDxcResult> dxc_result;
-    ThrowIfFailed(dxc_compiler_->Compile(&shader_source, shader_args.data(),
-        (UINT32)shader_args.size(), dxc_include_handler_, IID_PPV_ARGS(&dxc_result)));
+    ThrowIfFailed(dxc_compiler_->Compile(&shader_source, shader_args.data(), (UINT32)shader_args.size(),
+        dxc_include_handler_, IID_PPV_ARGS(&dxc_result)));
 
     // Check compilation result
     ComPtr<IDxcBlobUtf8> dxc_error;
@@ -101,8 +101,7 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
 
     // Get shader reflection
     ComPtr<IDxcBlob> dxc_reflection;
-    ThrowIfFailed(
-        dxc_result->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&dxc_reflection), nullptr));
+    ThrowIfFailed(dxc_result->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&dxc_reflection), nullptr));
 
     // Create D3D12 reflection
     DxcBuffer reflection_buffer = {};
@@ -116,4 +115,4 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
     return shader;
 }
 
-} // namespace gpu
+}  // namespace gpu

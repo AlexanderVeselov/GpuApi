@@ -8,67 +8,67 @@ namespace gpu
 {
 namespace
 {
-    D3D12_TEXTURE_ADDRESS_MODE ToD3D12AddressMode(SamplerAddressMode mode)
+D3D12_TEXTURE_ADDRESS_MODE ToD3D12AddressMode(SamplerAddressMode mode)
+{
+    switch (mode)
     {
-        switch (mode)
-        {
-        case SamplerAddressMode::kRepeat:
-            return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        case SamplerAddressMode::kClampToEdge:
-            return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        }
-
+    case SamplerAddressMode::kRepeat:
         return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    case SamplerAddressMode::kClampToEdge:
+        return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
     }
 
-    D3D12_COMPARISON_FUNC ToD3D12ComparisonFunc(SamplerComparisonFunc func)
-    {
-        switch (func)
-        {
-        case SamplerComparisonFunc::kNever:
-            return D3D12_COMPARISON_FUNC_NEVER;
-        case SamplerComparisonFunc::kLess:
-            return D3D12_COMPARISON_FUNC_LESS;
-        case SamplerComparisonFunc::kEqual:
-            return D3D12_COMPARISON_FUNC_EQUAL;
-        case SamplerComparisonFunc::kLessEqual:
-            return D3D12_COMPARISON_FUNC_LESS_EQUAL;
-        case SamplerComparisonFunc::kGreater:
-            return D3D12_COMPARISON_FUNC_GREATER;
-        case SamplerComparisonFunc::kNotEqual:
-            return D3D12_COMPARISON_FUNC_NOT_EQUAL;
-        case SamplerComparisonFunc::kGreaterEqual:
-            return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
-        case SamplerComparisonFunc::kAlways:
-            return D3D12_COMPARISON_FUNC_ALWAYS;
-        case SamplerComparisonFunc::kNone:
-            return D3D12_COMPARISON_FUNC_ALWAYS;
-        }
+    return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+}
 
+D3D12_COMPARISON_FUNC ToD3D12ComparisonFunc(SamplerComparisonFunc func)
+{
+    switch (func)
+    {
+    case SamplerComparisonFunc::kNever:
+        return D3D12_COMPARISON_FUNC_NEVER;
+    case SamplerComparisonFunc::kLess:
+        return D3D12_COMPARISON_FUNC_LESS;
+    case SamplerComparisonFunc::kEqual:
+        return D3D12_COMPARISON_FUNC_EQUAL;
+    case SamplerComparisonFunc::kLessEqual:
+        return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    case SamplerComparisonFunc::kGreater:
+        return D3D12_COMPARISON_FUNC_GREATER;
+    case SamplerComparisonFunc::kNotEqual:
+        return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+    case SamplerComparisonFunc::kGreaterEqual:
+        return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+    case SamplerComparisonFunc::kAlways:
+        return D3D12_COMPARISON_FUNC_ALWAYS;
+    case SamplerComparisonFunc::kNone:
         return D3D12_COMPARISON_FUNC_ALWAYS;
     }
 
-    D3D12_FILTER ToD3D12Filter(SamplerFilter min_filter, SamplerFilter mag_filter, bool comparison_enabled)
+    return D3D12_COMPARISON_FUNC_ALWAYS;
+}
+
+D3D12_FILTER ToD3D12Filter(SamplerFilter min_filter, SamplerFilter mag_filter, bool comparison_enabled)
+{
+    if (min_filter == SamplerFilter::kNearest && mag_filter == SamplerFilter::kNearest)
     {
-        if (min_filter == SamplerFilter::kNearest && mag_filter == SamplerFilter::kNearest)
-        {
-            return comparison_enabled ? D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT : D3D12_FILTER_MIN_MAG_MIP_POINT;
-        }
-
-        if (min_filter == SamplerFilter::kNearest && mag_filter == SamplerFilter::kLinear)
-        {
-            return comparison_enabled ? D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR
-                                      : D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR;
-        }
-
-        if (min_filter == SamplerFilter::kLinear && mag_filter == SamplerFilter::kNearest)
-        {
-            return comparison_enabled ? D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT
-                                      : D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-        }
-
-        return comparison_enabled ? D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR : D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+        return comparison_enabled ? D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT : D3D12_FILTER_MIN_MAG_MIP_POINT;
     }
+
+    if (min_filter == SamplerFilter::kNearest && mag_filter == SamplerFilter::kLinear)
+    {
+        return comparison_enabled ? D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR
+                                  : D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+    }
+
+    if (min_filter == SamplerFilter::kLinear && mag_filter == SamplerFilter::kNearest)
+    {
+        return comparison_enabled ? D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT
+                                  : D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+    }
+
+    return comparison_enabled ? D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR : D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+}
 }  // namespace
 
 D3D12Sampler::D3D12Sampler(D3D12Device& device, SamplerDesc const& desc) : Sampler(desc), device_(device)

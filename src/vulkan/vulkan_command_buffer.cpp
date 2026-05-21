@@ -243,14 +243,9 @@ void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_s
         THROW_IF(&vulkan_descriptor_set->GetLayout() != &current_graphics_pipeline_->GetLayout(),
             "Descriptor set layout does not match the current Vulkan graphics pipeline layout");
 
-        vkCmdBindDescriptorSets(command_buffer_,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            current_graphics_pipeline_->GetPipelineLayout(),
-            0,
-            static_cast<uint32_t>(descriptor_sets.size()),
-            descriptor_sets.data(),
-            0,
-            nullptr);
+        vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            current_graphics_pipeline_->GetPipelineLayout(), 0, static_cast<uint32_t>(descriptor_sets.size()),
+            descriptor_sets.data(), 0, nullptr);
     }
 
     if (current_pipeline_bind_point_ == VK_PIPELINE_BIND_POINT_COMPUTE)
@@ -259,14 +254,9 @@ void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_s
         THROW_IF(&vulkan_descriptor_set->GetLayout() != &current_compute_pipeline_->GetLayout(),
             "Descriptor set layout does not match the current Vulkan compute pipeline layout");
 
-        vkCmdBindDescriptorSets(command_buffer_,
-            VK_PIPELINE_BIND_POINT_COMPUTE,
-            current_compute_pipeline_->GetPipelineLayout(),
-            0,
-            static_cast<uint32_t>(descriptor_sets.size()),
-            descriptor_sets.data(),
-            0,
-            nullptr);
+        vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
+            current_compute_pipeline_->GetPipelineLayout(), 0, static_cast<uint32_t>(descriptor_sets.size()),
+            descriptor_sets.data(), 0, nullptr);
     }
 
     THROW_IF(current_pipeline_bind_point_ == VK_PIPELINE_BIND_POINT_MAX_ENUM,
@@ -397,11 +387,7 @@ void VulkanCommandBuffer::ClearImage(ImagePtr image, float r, float g, float b, 
     range.baseArrayLayer = 0;
     range.layerCount = vulkan_image->GetArraySize();
 
-    vkCmdClearColorImage(command_buffer_,
-        vulkan_image->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        &color,
-        1,
+    vkCmdClearColorImage(command_buffer_, vulkan_image->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1,
         &range);
 }
 
@@ -424,12 +410,8 @@ void VulkanCommandBuffer::ClearDepthImage(ImagePtr image, float depth)
     range.baseArrayLayer = 0;
     range.layerCount = vulkan_image->GetArraySize();
 
-    vkCmdClearDepthStencilImage(command_buffer_,
-        vulkan_image->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        &clear_value,
-        1,
-        &range);
+    vkCmdClearDepthStencilImage(command_buffer_, vulkan_image->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        &clear_value, 1, &range);
 }
 
 void VulkanCommandBuffer::TransitionBarrier(ImagePtr image, ImageLayout layout_before, ImageLayout layout_after)
@@ -469,16 +451,8 @@ void VulkanCommandBuffer::TransitionBarrier(std::vector<ImagePtr> const& images,
 
     if (!barriers.empty())
     {
-        vkCmdPipelineBarrier(command_buffer_,
-            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-            0,
-            0,
-            nullptr,
-            0,
-            nullptr,
-            static_cast<uint32_t>(barriers.size()),
-            barriers.data());
+        vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0,
+            0, nullptr, 0, nullptr, static_cast<uint32_t>(barriers.size()), barriers.data());
     }
 }
 
@@ -502,16 +476,8 @@ void VulkanCommandBuffer::StorageBarrier(ImagePtr image)
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = vulkan_image->GetArraySize();
 
-    vkCmdPipelineBarrier(command_buffer_,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        0,
-        0,
-        nullptr,
-        0,
-        nullptr,
-        1,
-        &barrier);
+    vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0,
+        0, nullptr, 0, nullptr, 1, &barrier);
 }
 
 void VulkanCommandBuffer::StorageBarrier(BufferPtr buffer)
@@ -558,16 +524,9 @@ void VulkanCommandBuffer::AccelerationStructureBarrier(VulkanAccelerationStructu
     barrier.offset = 0;
     barrier.size = acceleration_structure.GetStorageBuffer()->GetSize();
 
-    vkCmdPipelineBarrier(command_buffer_,
-        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
-        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-        0,
-        0,
-        nullptr,
-        1,
-        &barrier,
-        0,
-        nullptr);
+    vkCmdPipelineBarrier(command_buffer_, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
+        VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1,
+        &barrier, 0, nullptr);
 }
 
 void VulkanCommandBuffer::BuildBottomLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
@@ -580,8 +539,7 @@ void VulkanCommandBuffer::BuildBottomLevelAccelerationStructure(AccelerationStru
         "acceleration structure is not a Vulkan BLAS");
     THROW_IF(geometries.empty(), "geometry list is empty");
 
-    BufferPtr scratch_buffer = device_.CreateBuffer(bottom_level->GetBuildScratchSize(),
-        1,
+    BufferPtr scratch_buffer = device_.CreateBuffer(bottom_level->GetBuildScratchSize(), 1,
         BufferFlags::kStorage | BufferFlags::kAccelerationStructureBuildInput);
     auto* scratch = dynamic_cast<VulkanBuffer*>(scratch_buffer.get());
     staging_buffers_.push_back(scratch_buffer);
@@ -645,8 +603,7 @@ void VulkanCommandBuffer::BuildTopLevelAccelerationStructure(AccelerationStructu
         "acceleration structure is not a Vulkan TLAS");
     THROW_IF(instances.empty(), "instance list is empty");
 
-    BufferPtr scratch_buffer = device_.CreateBuffer(top_level->GetBuildScratchSize(),
-        1,
+    BufferPtr scratch_buffer = device_.CreateBuffer(top_level->GetBuildScratchSize(), 1,
         BufferFlags::kStorage | BufferFlags::kAccelerationStructureBuildInput);
     auto* scratch = dynamic_cast<VulkanBuffer*>(scratch_buffer.get());
     staging_buffers_.push_back(scratch_buffer);
@@ -663,8 +620,7 @@ void VulkanCommandBuffer::BuildTopLevelAccelerationStructure(AccelerationStructu
     std::memcpy(upload_buffer->Map(), vk_instances.data(), instance_data_size);
     upload_buffer->Unmap();
 
-    BufferPtr instance_buffer = device_.CreateBuffer(instance_data_size,
-        1,
+    BufferPtr instance_buffer = device_.CreateBuffer(instance_data_size, 1,
         BufferFlags::kAccelerationStructureBuildInput);
     CopyBuffer(upload_buffer, 0, instance_buffer, 0, instance_data_size);
     StorageBarrier(instance_buffer);
@@ -730,12 +686,8 @@ void VulkanCommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)
     region.imageSubresource.layerCount = 1;
     region.imageExtent = {vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1};
 
-    vkCmdCopyBufferToImage(command_buffer_,
-        vulkan_src->GetBuffer(),
-        vulkan_dst->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1,
-        &region);
+    vkCmdCopyBufferToImage(command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 void VulkanCommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data_size)
@@ -760,12 +712,8 @@ void VulkanCommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t dat
     region.imageSubresource.layerCount = 1;
     region.imageExtent = {vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1};
 
-    vkCmdCopyBufferToImage(command_buffer_,
-        vulkan_src->GetBuffer(),
-        vulkan_dst->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1,
-        &region);
+    vkCmdCopyBufferToImage(command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     staging_buffers_.push_back(std::move(staging_buffer));
 }
 
@@ -784,13 +732,8 @@ void VulkanCommandBuffer::CopyImage(ImagePtr dst, ImagePtr src)
     region.dstSubresource.layerCount = 1;
     region.extent = {vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1};
 
-    vkCmdCopyImage(command_buffer_,
-        vulkan_src->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        vulkan_dst->GetImage(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1,
-        &region);
+    vkCmdCopyImage(command_buffer_, vulkan_src->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        vulkan_dst->GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 }  // namespace gpu

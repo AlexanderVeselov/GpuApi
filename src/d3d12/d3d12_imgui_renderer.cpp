@@ -33,11 +33,9 @@ D3D12ImGuiRenderer::D3D12ImGuiRenderer(D3D12Device& device, void* glfw_window, S
     heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     heap_desc.NumDescriptors = kSrvDescriptorCount;
     heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    ThrowIfFailed(
-        device_.GetD3D12Device()->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&srv_heap_)));
+    ThrowIfFailed(device_.GetD3D12Device()->CreateDescriptorHeap(&heap_desc, IID_PPV_ARGS(&srv_heap_)));
 
-    descriptor_size_ = device_.GetD3D12Device()->GetDescriptorHandleIncrementSize(
-        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    descriptor_size_ = device_.GetD3D12Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOther(static_cast<GLFWwindow*>(glfw_window), true);
@@ -94,18 +92,17 @@ void D3D12ImGuiRenderer::Render(CommandBuffer& command_buffer)
 void D3D12ImGuiRenderer::AllocateSrvDescriptor(ImGui_ImplDX12_InitInfo* info,
     D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle)
 {
-    static_cast<D3D12ImGuiRenderer*>(info->UserData)
-        ->AllocateSrvDescriptor(out_cpu_handle, out_gpu_handle);
+    static_cast<D3D12ImGuiRenderer*>(info->UserData)->AllocateSrvDescriptor(out_cpu_handle, out_gpu_handle);
 }
 
-void D3D12ImGuiRenderer::FreeSrvDescriptor(ImGui_ImplDX12_InitInfo* info,
-    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE)
+void D3D12ImGuiRenderer::FreeSrvDescriptor(ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle,
+    D3D12_GPU_DESCRIPTOR_HANDLE)
 {
     static_cast<D3D12ImGuiRenderer*>(info->UserData)->FreeSrvDescriptor(cpu_handle);
 }
 
-void D3D12ImGuiRenderer::AllocateSrvDescriptor(
-    D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle)
+void D3D12ImGuiRenderer::AllocateSrvDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle,
+    D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle)
 {
     uint32_t descriptor_index = 0;
     if (!free_descriptor_indices_.empty())
@@ -141,4 +138,4 @@ void D3D12ImGuiRenderer::FreeSrvDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE cpu_handl
     free_descriptor_indices_.push_back(static_cast<uint32_t>(offset / descriptor_size_));
 }
 
-} // namespace gpu
+}  // namespace gpu

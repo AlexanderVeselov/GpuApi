@@ -22,4 +22,4 @@ Api* Api::Create(ApiType api_type)
 
     return nullptr;
 }
-} // namespace gpu
+}  // namespace gpu

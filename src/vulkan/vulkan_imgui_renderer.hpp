@@ -11,16 +11,16 @@ class VulkanDevice;
 
 class VulkanImGuiRenderer final : public ImGuiRenderer
 {
-  public:
+public:
     VulkanImGuiRenderer(VulkanDevice& device, void* glfw_window, Swapchain& swapchain);
     ~VulkanImGuiRenderer() override;
 
     void NewFrame() override;
     void Render(CommandBuffer& command_buffer) override;
 
-  private:
+private:
     VulkanDevice& device_;
     Swapchain& swapchain_;
 };
 
-} // namespace gpu
+}  // namespace gpu

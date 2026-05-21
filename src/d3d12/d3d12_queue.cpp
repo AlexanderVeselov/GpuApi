@@ -21,8 +21,8 @@ D3D12Queue::D3D12Queue(D3D12Device& device, D3D12_COMMAND_LIST_TYPE command_list
     fence_event_ = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     if (fence_event_ == NULL)
     {
-        throw D3D12Exception("D3D12Queue: failed to create fence event",
-            HRESULT_FROM_WIN32(GetLastError()), __FILE__, __LINE__);
+        throw D3D12Exception("D3D12Queue: failed to create fence event", HRESULT_FROM_WIN32(GetLastError()), __FILE__,
+            __LINE__);
     }
 }
 
@@ -85,12 +85,11 @@ void D3D12Queue::CollectCompletedSubmissions()
     // Destroy completed command buffers after removing them from the tracked queue.
     // Some D3D12 resource destructors call back into WaitIdle().
     std::deque<InFlightSubmission> submissions_to_release;
-    while (!in_flight_submissions_.empty() &&
-           in_flight_submissions_.front().fence_value <= completed_value)
+    while (!in_flight_submissions_.empty() && in_flight_submissions_.front().fence_value <= completed_value)
     {
         submissions_to_release.push_back(std::move(in_flight_submissions_.front()));
         in_flight_submissions_.pop_front();
     }
 }
 
-} // namespace gpu
+}  // namespace gpu

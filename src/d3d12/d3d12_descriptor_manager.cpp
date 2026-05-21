@@ -205,7 +205,7 @@ D3D12_GPU_DESCRIPTOR_HANDLE D3D12DescriptorManager::GetGPU(D3D12Descriptor descr
 {
     assert(descriptor.IsValid() && "D3D12DescriptorManager::GetGPU: descriptor is invalid");
     assert((descriptor.heap == D3D12DescriptorHeapId::GPU_CBV_SRV_UAV
-               || descriptor.heap == D3D12DescriptorHeapId::GPU_SAMPLER)
+        || descriptor.heap == D3D12DescriptorHeapId::GPU_SAMPLER)
         && "D3D12DescriptorManager::GetGPU: descriptor must come from a GPU-visible heap");
 
     return GetAllocator(descriptor.heap).GPU(descriptor.index);
@@ -220,9 +220,7 @@ D3D12Descriptor D3D12DescriptorManager::CopyToGPUCBVSRVUAV(D3D12Descriptor src)
 
     D3D12Descriptor dst = AllocateGPUCBVSRVUAV();
 
-    device_.GetD3D12Device()->CopyDescriptorsSimple(1,
-        GetCPU(dst),
-        GetCPU(src),
+    device_.GetD3D12Device()->CopyDescriptorsSimple(1, GetCPU(dst), GetCPU(src),
         D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     return dst;
@@ -243,9 +241,7 @@ std::vector<D3D12Descriptor> D3D12DescriptorManager::CopyToGPUCBVSRVUAV(std::vec
     std::vector<D3D12Descriptor> dst = AllocateGPUCBVSRVUAV(static_cast<uint32_t>(src.size()));
     for (size_t i = 0; i < src.size(); ++i)
     {
-        device_.GetD3D12Device()->CopyDescriptorsSimple(1,
-            GetCPU(dst[i]),
-            GetCPU(src[i]),
+        device_.GetD3D12Device()->CopyDescriptorsSimple(1, GetCPU(dst[i]), GetCPU(src[i]),
             D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
 
@@ -281,9 +277,7 @@ std::vector<D3D12Descriptor> D3D12DescriptorManager::CopyToGPUSampler(std::vecto
     std::vector<D3D12Descriptor> dst = AllocateGPUSampler(static_cast<uint32_t>(src.size()));
     for (size_t i = 0; i < src.size(); ++i)
     {
-        device_.GetD3D12Device()->CopyDescriptorsSimple(1,
-            GetCPU(dst[i]),
-            GetCPU(src[i]),
+        device_.GetD3D12Device()->CopyDescriptorsSimple(1, GetCPU(dst[i]), GetCPU(src[i]),
             D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
     }
 

@@ -37,16 +37,14 @@ void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 {
     create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                              VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+        | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+        | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     create_info.pfnUserCallback = DebugCallback;
 }
 #endif
-} // namespace
+}  // namespace
 
 VulkanApi::VulkanApi() : shader_manager_("")
 {
@@ -121,8 +119,7 @@ void VulkanApi::SetupDebugMessenger()
     VkDebugUtilsMessengerCreateInfoEXT create_info{};
     PopulateDebugMessengerCreateInfo(create_info);
 
-    VkResult status =
-        CreateDebugUtilsMessengerEXT(instance_, &create_info, nullptr, &debug_messenger_);
+    VkResult status = CreateDebugUtilsMessengerEXT(instance_, &create_info, nullptr, &debug_messenger_);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan debug messenger");
 #endif
 }
@@ -184,4 +181,4 @@ void VulkanApi::SetShaderPath(char const* shader_path)
     shader_manager_.SetShaderPath(shader_path);
 }
 
-} // namespace gpu
+}  // namespace gpu

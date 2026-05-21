@@ -14,10 +14,10 @@ namespace gpu
 {
 namespace
 {
-    std::string BindingName(uint32_t binding, uint32_t space)
-    {
-        return "(binding = " + std::to_string(binding) + ", space = " + std::to_string(space) + ")";
-    }
+std::string BindingName(uint32_t binding, uint32_t space)
+{
+    return "(binding = " + std::to_string(binding) + ", space = " + std::to_string(space) + ")";
+}
 }  // namespace
 
 template <class TResource, class TBase>
@@ -85,8 +85,8 @@ void D3D12DescriptorSet::BindSampler(Sampler& sampler, uint32_t binding, uint32_
     BindSampler(CastResource<D3D12Sampler>(sampler, "D3D12DescriptorSet::BindSampler"), binding, space);
 }
 
-void D3D12DescriptorSet::BindAccelerationStructure(AccelerationStructure& acceleration_structure,
-    uint32_t binding, uint32_t space)
+void D3D12DescriptorSet::BindAccelerationStructure(AccelerationStructure& acceleration_structure, uint32_t binding,
+    uint32_t space)
 {
     BindAccelerationStructure(CastResource<D3D12AccelerationStructure>(acceleration_structure,
         "D3D12DescriptorSet::BindAccelerationStructure"), binding, space);

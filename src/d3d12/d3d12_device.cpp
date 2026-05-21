@@ -122,10 +122,7 @@ AccelerationStructurePtr D3D12Device::CreateAccelerationStructure(AccelerationSt
     size = AlignUp(size, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT);
     BufferPtr storage_buffer = CreateBuffer(size, 1, BufferFlags::kAccelerationStructureStorage);
     uint64_t gpu_address = storage_buffer->GetGpuAddress();
-    return std::make_shared<D3D12AccelerationStructure>(*this,
-        type,
-        std::move(storage_buffer),
-        build_scratch_size,
+    return std::make_shared<D3D12AccelerationStructure>(*this, type, std::move(storage_buffer), build_scratch_size,
         gpu_address);
 }
 
@@ -155,8 +152,7 @@ D3D12Device::CreateBottomLevelAccelerationStructure(std::vector<AccelerationStru
     ComPtr<ID3D12Device5> rt_device;
     ThrowIfFailed(d3d12_device_.As(&rt_device));
     rt_device->GetRaytracingAccelerationStructurePrebuildInfo(&inputs, &info);
-    return CreateAccelerationStructure(AccelerationStructureType::kBottomLevel,
-        info.ResultDataMaxSizeInBytes,
+    return CreateAccelerationStructure(AccelerationStructureType::kBottomLevel, info.ResultDataMaxSizeInBytes,
         info.ScratchDataSizeInBytes);
 }
 
@@ -178,8 +174,7 @@ AccelerationStructurePtr D3D12Device::CreateTopLevelAccelerationStructure(uint32
     ComPtr<ID3D12Device5> rt_device;
     ThrowIfFailed(d3d12_device_.As(&rt_device));
     rt_device->GetRaytracingAccelerationStructurePrebuildInfo(&inputs, &info);
-    return CreateAccelerationStructure(AccelerationStructureType::kTopLevel,
-        info.ResultDataMaxSizeInBytes,
+    return CreateAccelerationStructure(AccelerationStructureType::kTopLevel, info.ResultDataMaxSizeInBytes,
         info.ScratchDataSizeInBytes);
 }
 

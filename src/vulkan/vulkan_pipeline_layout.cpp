@@ -251,8 +251,7 @@ void VulkanPipelineLayout::AddOrMergeBinding(VulkanBinding const& binding)
 
 void VulkanPipelineLayout::SortBindings()
 {
-    std::sort(bindings_.begin(),
-        bindings_.end(),
+    std::sort(bindings_.begin(), bindings_.end(),
         [](VulkanBinding const& lhs, VulkanBinding const& rhs)
         {
             return std::tie(lhs.set, lhs.binding, lhs.descriptor_type, lhs.range_type, lhs.resource_type)
@@ -308,9 +307,7 @@ void VulkanPipelineLayout::CreateDescriptorSetLayouts()
         create_info.bindingCount = static_cast<uint32_t>(set_bindings.size());
         create_info.pBindings = set_bindings.empty() ? nullptr : set_bindings.data();
 
-        VkResult status = vkCreateDescriptorSetLayout(device_.GetDevice(),
-            &create_info,
-            nullptr,
+        VkResult status = vkCreateDescriptorSetLayout(device_.GetDevice(), &create_info, nullptr,
             &descriptor_set_layouts_[set]);
         VK_THROW_IF_FAILED(status, "Failed to create Vulkan descriptor set layout");
     }

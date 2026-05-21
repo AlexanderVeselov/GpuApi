@@ -8,6 +8,6 @@ namespace gpu
 namespace
 {
 
-} // namespace
+}  // namespace
 
-} // namespace gpu
+}  // namespace gpu

@@ -230,8 +230,7 @@ void D3D12PipelineLayout::AddOrMergeBinding(D3D12Binding const& binding)
 
 void D3D12PipelineLayout::SortBindings()
 {
-    std::sort(bindings_.begin(),
-        bindings_.end(),
+    std::sort(bindings_.begin(), bindings_.end(),
         [](D3D12Binding const& lhs, D3D12Binding const& rhs)
         {
             return std::tie(lhs.space, lhs.binding, lhs.descriptor_type, lhs.range_type, lhs.type)
@@ -285,9 +284,7 @@ void D3D12PipelineLayout::CreateRootSignature()
 
     ComPtr<ID3D10Blob> root_signature_blob;
     ComPtr<ID3D10Blob> root_signature_error_blob;
-    HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc,
-        D3D_ROOT_SIGNATURE_VERSION_1_0,
-        &root_signature_blob,
+    HRESULT hr = D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, &root_signature_blob,
         &root_signature_error_blob);
     if (FAILED(hr))
     {
@@ -306,10 +303,8 @@ void D3D12PipelineLayout::CreateRootSignature()
         throw D3D12Exception(error_message.c_str(), hr, __FILE__, __LINE__);
     }
 
-    ThrowIfFailed(device_.GetD3D12Device()->CreateRootSignature(0,
-        root_signature_blob->GetBufferPointer(),
-        root_signature_blob->GetBufferSize(),
-        IID_PPV_ARGS(&root_signature_)));
+    ThrowIfFailed(device_.GetD3D12Device()->CreateRootSignature(0, root_signature_blob->GetBufferPointer(),
+        root_signature_blob->GetBufferSize(), IID_PPV_ARGS(&root_signature_)));
 }
 
 }  // namespace gpu

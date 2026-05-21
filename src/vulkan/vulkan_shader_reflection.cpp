@@ -10,119 +10,119 @@ namespace gpu
 {
 namespace
 {
-    void ThrowIfSpvReflectFailed(SpvReflectResult result, char const* message)
+void ThrowIfSpvReflectFailed(SpvReflectResult result, char const* message)
+{
+    if (result != SPV_REFLECT_RESULT_SUCCESS)
     {
-        if (result != SPV_REFLECT_RESULT_SUCCESS)
-        {
-            throw std::runtime_error(message);
-        }
+        throw std::runtime_error(message);
+    }
+}
+
+ShaderStage ToShaderStage(SpvReflectShaderStageFlagBits stage)
+{
+    switch (stage)
+    {
+    case SPV_REFLECT_SHADER_STAGE_VERTEX_BIT:
+        return ShaderStage::kVertex;
+    case SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT:
+        return ShaderStage::kPixel;
+    case SPV_REFLECT_SHADER_STAGE_GEOMETRY_BIT:
+        return ShaderStage::kGeometry;
+    case SPV_REFLECT_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+        return ShaderStage::kHull;
+    case SPV_REFLECT_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+        return ShaderStage::kDomain;
+    case SPV_REFLECT_SHADER_STAGE_COMPUTE_BIT:
+        return ShaderStage::kCompute;
+    default:
+        throw std::runtime_error("Unsupported SPIR-V shader stage");
+    }
+}
+
+ShaderDescriptorRangeType ToRangeType(SpvReflectDescriptorType type)
+{
+    switch (type)
+    {
+    case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+        return ShaderDescriptorRangeType::kCBV;
+    case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
+        return ShaderDescriptorRangeType::kSampler;
+    case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+    case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+    case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+    case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+        return ShaderDescriptorRangeType::kUAV;
+    case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+    case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+    case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+    case SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+    default:
+        return ShaderDescriptorRangeType::kSRV;
+    }
+}
+
+ShaderResourceType ToResourceType(SpvReflectDescriptorType type)
+{
+    switch (type)
+    {
+    case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
+        return ShaderResourceType::kSampler;
+    case SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+        return ShaderResourceType::kAccelerationStructure;
+    case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+    case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+    case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+    case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+        return ShaderResourceType::kBuffer;
+    default:
+        return ShaderResourceType::kImage;
+    }
+}
+
+ImageFormat ToImageFormat(SpvReflectFormat format)
+{
+    switch (format)
+    {
+    case SPV_REFLECT_FORMAT_R32_SFLOAT:
+        return ImageFormat::kR32_Float;
+    case SPV_REFLECT_FORMAT_R32G32_SFLOAT:
+        return ImageFormat::kRG32_Float;
+    case SPV_REFLECT_FORMAT_R32G32B32_SFLOAT:
+        return ImageFormat::kRGB32_Float;
+    case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT:
+        return ImageFormat::kRGBA32_Float;
+    case SPV_REFLECT_FORMAT_R32_UINT:
+        return ImageFormat::kR32_UInt;
+    case SPV_REFLECT_FORMAT_R32G32_UINT:
+        return ImageFormat::kRG32_UInt;
+    case SPV_REFLECT_FORMAT_R32G32B32_UINT:
+        return ImageFormat::kRGB32_UInt;
+    case SPV_REFLECT_FORMAT_R32G32B32A32_UINT:
+        return ImageFormat::kRGBA32_UInt;
+    case SPV_REFLECT_FORMAT_R32_SINT:
+        return ImageFormat::kR32_SInt;
+    case SPV_REFLECT_FORMAT_R32G32_SINT:
+        return ImageFormat::kRG32_SInt;
+    case SPV_REFLECT_FORMAT_R32G32B32_SINT:
+        return ImageFormat::kRGB32_SInt;
+    case SPV_REFLECT_FORMAT_R32G32B32A32_SINT:
+        return ImageFormat::kRGBA32_SInt;
+    default:
+        return ImageFormat::kUnknown;
+    }
+}
+
+uint32_t GetDescriptorCount(SpvReflectDescriptorBinding const& binding)
+{
+    uint32_t array_count = 1;
+    for (uint32_t i = 0; i < binding.array.dims_count; ++i)
+    {
+        array_count *= binding.array.dims[i];
     }
 
-    ShaderStage ToShaderStage(SpvReflectShaderStageFlagBits stage)
-    {
-        switch (stage)
-        {
-        case SPV_REFLECT_SHADER_STAGE_VERTEX_BIT:
-            return ShaderStage::kVertex;
-        case SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT:
-            return ShaderStage::kPixel;
-        case SPV_REFLECT_SHADER_STAGE_GEOMETRY_BIT:
-            return ShaderStage::kGeometry;
-        case SPV_REFLECT_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-            return ShaderStage::kHull;
-        case SPV_REFLECT_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-            return ShaderStage::kDomain;
-        case SPV_REFLECT_SHADER_STAGE_COMPUTE_BIT:
-            return ShaderStage::kCompute;
-        default:
-            throw std::runtime_error("Unsupported SPIR-V shader stage");
-        }
-    }
-
-    ShaderDescriptorRangeType ToRangeType(SpvReflectDescriptorType type)
-    {
-        switch (type)
-        {
-        case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-        case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-            return ShaderDescriptorRangeType::kCBV;
-        case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
-            return ShaderDescriptorRangeType::kSampler;
-        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-            return ShaderDescriptorRangeType::kUAV;
-        case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-        case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-        case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-        case SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
-        default:
-            return ShaderDescriptorRangeType::kSRV;
-        }
-    }
-
-    ShaderResourceType ToResourceType(SpvReflectDescriptorType type)
-    {
-        switch (type)
-        {
-        case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
-            return ShaderResourceType::kSampler;
-        case SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
-            return ShaderResourceType::kAccelerationStructure;
-        case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-        case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-        case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
-            return ShaderResourceType::kBuffer;
-        default:
-            return ShaderResourceType::kImage;
-        }
-    }
-
-    ImageFormat ToImageFormat(SpvReflectFormat format)
-    {
-        switch (format)
-        {
-        case SPV_REFLECT_FORMAT_R32_SFLOAT:
-            return ImageFormat::kR32_Float;
-        case SPV_REFLECT_FORMAT_R32G32_SFLOAT:
-            return ImageFormat::kRG32_Float;
-        case SPV_REFLECT_FORMAT_R32G32B32_SFLOAT:
-            return ImageFormat::kRGB32_Float;
-        case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT:
-            return ImageFormat::kRGBA32_Float;
-        case SPV_REFLECT_FORMAT_R32_UINT:
-            return ImageFormat::kR32_UInt;
-        case SPV_REFLECT_FORMAT_R32G32_UINT:
-            return ImageFormat::kRG32_UInt;
-        case SPV_REFLECT_FORMAT_R32G32B32_UINT:
-            return ImageFormat::kRGB32_UInt;
-        case SPV_REFLECT_FORMAT_R32G32B32A32_UINT:
-            return ImageFormat::kRGBA32_UInt;
-        case SPV_REFLECT_FORMAT_R32_SINT:
-            return ImageFormat::kR32_SInt;
-        case SPV_REFLECT_FORMAT_R32G32_SINT:
-            return ImageFormat::kRG32_SInt;
-        case SPV_REFLECT_FORMAT_R32G32B32_SINT:
-            return ImageFormat::kRGB32_SInt;
-        case SPV_REFLECT_FORMAT_R32G32B32A32_SINT:
-            return ImageFormat::kRGBA32_SInt;
-        default:
-            return ImageFormat::kUnknown;
-        }
-    }
-
-    uint32_t GetDescriptorCount(SpvReflectDescriptorBinding const& binding)
-    {
-        uint32_t array_count = 1;
-        for (uint32_t i = 0; i < binding.array.dims_count; ++i)
-        {
-            array_count *= binding.array.dims[i];
-        }
-
-        return std::max(binding.count, array_count);
-    }
+    return std::max(binding.count, array_count);
+}
 }  // namespace
 
 ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv)

@@ -22,13 +22,13 @@ AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 
 # Function arguments formatting
-BinPackArguments: false
+BinPackArguments: true
 BinPackParameters: true
 
 # Alignment
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
-AlignAfterOpenBracket: DontAlign
+AlignAfterOpenBracket: false
 AlignOperands: false
 
 # Line breaking

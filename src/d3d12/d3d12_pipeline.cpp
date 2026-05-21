@@ -13,129 +13,129 @@ namespace gpu
 {
 namespace
 {
-    D3D12_COMPARISON_FUNC DepthFuncToD3D12(DepthFunc depth_func)
+D3D12_COMPARISON_FUNC DepthFuncToD3D12(DepthFunc depth_func)
+{
+    switch (depth_func)
     {
-        switch (depth_func)
+    case DepthFunc::kNone:
+        return D3D12_COMPARISON_FUNC_NONE;
+    case DepthFunc::kNever:
+        return D3D12_COMPARISON_FUNC_NEVER;
+    case DepthFunc::kLess:
+        return D3D12_COMPARISON_FUNC_LESS;
+    case DepthFunc::kEqual:
+        return D3D12_COMPARISON_FUNC_EQUAL;
+    case DepthFunc::kLessEqual:
+        return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    case DepthFunc::kGreater:
+        return D3D12_COMPARISON_FUNC_GREATER;
+    case DepthFunc::kNotEqual:
+        return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+    case DepthFunc::kGreaterEqual:
+        return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+    case DepthFunc::kAlways:
+        return D3D12_COMPARISON_FUNC_ALWAYS;
+    default:
+        assert(!"DepthFuncToD3D12: unknown depth func");
+        return D3D12_COMPARISON_FUNC_NONE;
+    }
+}
+
+DXGI_FORMAT VertexInputFormatToDXGI(ImageFormat format)
+{
+    switch (format)
+    {
+    case ImageFormat::kR32_Float:
+        return DXGI_FORMAT_R32_FLOAT;
+    case ImageFormat::kR32_UInt:
+        return DXGI_FORMAT_R32_UINT;
+    case ImageFormat::kR32_SInt:
+        return DXGI_FORMAT_R32_SINT;
+    case ImageFormat::kRG32_Float:
+        return DXGI_FORMAT_R32G32_FLOAT;
+    case ImageFormat::kRG32_UInt:
+        return DXGI_FORMAT_R32G32_UINT;
+    case ImageFormat::kRG32_SInt:
+        return DXGI_FORMAT_R32G32_SINT;
+    case ImageFormat::kRGB32_Float:
+        return DXGI_FORMAT_R32G32B32_FLOAT;
+    case ImageFormat::kRGB32_UInt:
+        return DXGI_FORMAT_R32G32B32_UINT;
+    case ImageFormat::kRGB32_SInt:
+        return DXGI_FORMAT_R32G32B32_SINT;
+    case ImageFormat::kRGBA32_Float:
+        return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case ImageFormat::kRGBA32_UInt:
+        return DXGI_FORMAT_R32G32B32A32_UINT;
+    case ImageFormat::kRGBA32_SInt:
+        return DXGI_FORMAT_R32G32B32A32_SINT;
+    default:
+        assert(!"VertexInputFormatToDXGI(...): unsupported vertex input format");
+        return DXGI_FORMAT_UNKNOWN;
+    }
+}
+
+uint32_t VertexInputFormatSize(ImageFormat format)
+{
+    switch (format)
+    {
+    case ImageFormat::kR32_Float:
+    case ImageFormat::kR32_UInt:
+    case ImageFormat::kR32_SInt:
+        return 4;
+    case ImageFormat::kRG32_Float:
+    case ImageFormat::kRG32_UInt:
+    case ImageFormat::kRG32_SInt:
+        return 8;
+    case ImageFormat::kRGB32_Float:
+    case ImageFormat::kRGB32_UInt:
+    case ImageFormat::kRGB32_SInt:
+        return 12;
+    case ImageFormat::kRGBA32_Float:
+    case ImageFormat::kRGBA32_UInt:
+    case ImageFormat::kRGBA32_SInt:
+        return 16;
+    default:
+        assert(!"VertexInputFormatSize(...): unsupported vertex input format");
+        return 0;
+    }
+}
+
+void GetInputElementDescs(ShaderReflection const& reflection, std::vector<D3D12_INPUT_ELEMENT_DESC>& element_descs)
+{
+    for (ShaderInputParameter const& parameter : reflection.input_parameters)
+    {
+        if (parameter.is_system_value)
         {
-        case DepthFunc::kNone:
-            return D3D12_COMPARISON_FUNC_NONE;
-        case DepthFunc::kNever:
-            return D3D12_COMPARISON_FUNC_NEVER;
-        case DepthFunc::kLess:
-            return D3D12_COMPARISON_FUNC_LESS;
-        case DepthFunc::kEqual:
-            return D3D12_COMPARISON_FUNC_EQUAL;
-        case DepthFunc::kLessEqual:
-            return D3D12_COMPARISON_FUNC_LESS_EQUAL;
-        case DepthFunc::kGreater:
-            return D3D12_COMPARISON_FUNC_GREATER;
-        case DepthFunc::kNotEqual:
-            return D3D12_COMPARISON_FUNC_NOT_EQUAL;
-        case DepthFunc::kGreaterEqual:
-            return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
-        case DepthFunc::kAlways:
-            return D3D12_COMPARISON_FUNC_ALWAYS;
-        default:
-            assert(!"DepthFuncToD3D12: unknown depth func");
-            return D3D12_COMPARISON_FUNC_NONE;
+            continue;
+        }
+
+        D3D12_INPUT_ELEMENT_DESC input_element_desc = {};
+        input_element_desc.SemanticName = parameter.semantic_name.c_str();
+        input_element_desc.SemanticIndex = parameter.semantic_index;
+        input_element_desc.Format = VertexInputFormatToDXGI(parameter.format);
+        input_element_desc.InputSlot = 0;
+        input_element_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+        input_element_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        input_element_desc.InstanceDataStepRate = 0;
+
+        element_descs.push_back(input_element_desc);
+    }
+}
+
+uint32_t CalculateVertexStride(ShaderReflection const& reflection)
+{
+    uint32_t stride = 0;
+    for (ShaderInputParameter const& parameter : reflection.input_parameters)
+    {
+        if (!parameter.is_system_value)
+        {
+            stride += VertexInputFormatSize(parameter.format);
         }
     }
 
-    DXGI_FORMAT VertexInputFormatToDXGI(ImageFormat format)
-    {
-        switch (format)
-        {
-        case ImageFormat::kR32_Float:
-            return DXGI_FORMAT_R32_FLOAT;
-        case ImageFormat::kR32_UInt:
-            return DXGI_FORMAT_R32_UINT;
-        case ImageFormat::kR32_SInt:
-            return DXGI_FORMAT_R32_SINT;
-        case ImageFormat::kRG32_Float:
-            return DXGI_FORMAT_R32G32_FLOAT;
-        case ImageFormat::kRG32_UInt:
-            return DXGI_FORMAT_R32G32_UINT;
-        case ImageFormat::kRG32_SInt:
-            return DXGI_FORMAT_R32G32_SINT;
-        case ImageFormat::kRGB32_Float:
-            return DXGI_FORMAT_R32G32B32_FLOAT;
-        case ImageFormat::kRGB32_UInt:
-            return DXGI_FORMAT_R32G32B32_UINT;
-        case ImageFormat::kRGB32_SInt:
-            return DXGI_FORMAT_R32G32B32_SINT;
-        case ImageFormat::kRGBA32_Float:
-            return DXGI_FORMAT_R32G32B32A32_FLOAT;
-        case ImageFormat::kRGBA32_UInt:
-            return DXGI_FORMAT_R32G32B32A32_UINT;
-        case ImageFormat::kRGBA32_SInt:
-            return DXGI_FORMAT_R32G32B32A32_SINT;
-        default:
-            assert(!"VertexInputFormatToDXGI(...): unsupported vertex input format");
-            return DXGI_FORMAT_UNKNOWN;
-        }
-    }
-
-    uint32_t VertexInputFormatSize(ImageFormat format)
-    {
-        switch (format)
-        {
-        case ImageFormat::kR32_Float:
-        case ImageFormat::kR32_UInt:
-        case ImageFormat::kR32_SInt:
-            return 4;
-        case ImageFormat::kRG32_Float:
-        case ImageFormat::kRG32_UInt:
-        case ImageFormat::kRG32_SInt:
-            return 8;
-        case ImageFormat::kRGB32_Float:
-        case ImageFormat::kRGB32_UInt:
-        case ImageFormat::kRGB32_SInt:
-            return 12;
-        case ImageFormat::kRGBA32_Float:
-        case ImageFormat::kRGBA32_UInt:
-        case ImageFormat::kRGBA32_SInt:
-            return 16;
-        default:
-            assert(!"VertexInputFormatSize(...): unsupported vertex input format");
-            return 0;
-        }
-    }
-
-    void GetInputElementDescs(ShaderReflection const& reflection, std::vector<D3D12_INPUT_ELEMENT_DESC>& element_descs)
-    {
-        for (ShaderInputParameter const& parameter : reflection.input_parameters)
-        {
-            if (parameter.is_system_value)
-            {
-                continue;
-            }
-
-            D3D12_INPUT_ELEMENT_DESC input_element_desc = {};
-            input_element_desc.SemanticName = parameter.semantic_name.c_str();
-            input_element_desc.SemanticIndex = parameter.semantic_index;
-            input_element_desc.Format = VertexInputFormatToDXGI(parameter.format);
-            input_element_desc.InputSlot = 0;
-            input_element_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-            input_element_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-            input_element_desc.InstanceDataStepRate = 0;
-
-            element_descs.push_back(input_element_desc);
-        }
-    }
-
-    uint32_t CalculateVertexStride(ShaderReflection const& reflection)
-    {
-        uint32_t stride = 0;
-        for (ShaderInputParameter const& parameter : reflection.input_parameters)
-        {
-            if (!parameter.is_system_value)
-            {
-                stride += VertexInputFormatSize(parameter.format);
-            }
-        }
-
-        return stride;
-    }
+    return stride;
+}
 
 }  // namespace
 

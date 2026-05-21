@@ -7,58 +7,58 @@ namespace gpu
 {
 namespace
 {
-    VkFilter ToVkFilter(SamplerFilter filter)
+VkFilter ToVkFilter(SamplerFilter filter)
+{
+    switch (filter)
     {
-        switch (filter)
-        {
-        case SamplerFilter::kNearest:
-            return VK_FILTER_NEAREST;
-        case SamplerFilter::kLinear:
-            return VK_FILTER_LINEAR;
-        }
-
+    case SamplerFilter::kNearest:
+        return VK_FILTER_NEAREST;
+    case SamplerFilter::kLinear:
         return VK_FILTER_LINEAR;
     }
 
-    VkSamplerAddressMode ToVkAddressMode(SamplerAddressMode mode)
-    {
-        switch (mode)
-        {
-        case SamplerAddressMode::kRepeat:
-            return VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        case SamplerAddressMode::kClampToEdge:
-            return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        }
+    return VK_FILTER_LINEAR;
+}
 
+VkSamplerAddressMode ToVkAddressMode(SamplerAddressMode mode)
+{
+    switch (mode)
+    {
+    case SamplerAddressMode::kRepeat:
         return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    case SamplerAddressMode::kClampToEdge:
+        return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     }
 
-    VkCompareOp ToVkCompareOp(SamplerComparisonFunc func)
-    {
-        switch (func)
-        {
-        case SamplerComparisonFunc::kNever:
-            return VK_COMPARE_OP_NEVER;
-        case SamplerComparisonFunc::kLess:
-            return VK_COMPARE_OP_LESS;
-        case SamplerComparisonFunc::kEqual:
-            return VK_COMPARE_OP_EQUAL;
-        case SamplerComparisonFunc::kLessEqual:
-            return VK_COMPARE_OP_LESS_OR_EQUAL;
-        case SamplerComparisonFunc::kGreater:
-            return VK_COMPARE_OP_GREATER;
-        case SamplerComparisonFunc::kNotEqual:
-            return VK_COMPARE_OP_NOT_EQUAL;
-        case SamplerComparisonFunc::kGreaterEqual:
-            return VK_COMPARE_OP_GREATER_OR_EQUAL;
-        case SamplerComparisonFunc::kAlways:
-            return VK_COMPARE_OP_ALWAYS;
-        case SamplerComparisonFunc::kNone:
-            return VK_COMPARE_OP_ALWAYS;
-        }
+    return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+}
 
+VkCompareOp ToVkCompareOp(SamplerComparisonFunc func)
+{
+    switch (func)
+    {
+    case SamplerComparisonFunc::kNever:
+        return VK_COMPARE_OP_NEVER;
+    case SamplerComparisonFunc::kLess:
+        return VK_COMPARE_OP_LESS;
+    case SamplerComparisonFunc::kEqual:
+        return VK_COMPARE_OP_EQUAL;
+    case SamplerComparisonFunc::kLessEqual:
+        return VK_COMPARE_OP_LESS_OR_EQUAL;
+    case SamplerComparisonFunc::kGreater:
+        return VK_COMPARE_OP_GREATER;
+    case SamplerComparisonFunc::kNotEqual:
+        return VK_COMPARE_OP_NOT_EQUAL;
+    case SamplerComparisonFunc::kGreaterEqual:
+        return VK_COMPARE_OP_GREATER_OR_EQUAL;
+    case SamplerComparisonFunc::kAlways:
+        return VK_COMPARE_OP_ALWAYS;
+    case SamplerComparisonFunc::kNone:
         return VK_COMPARE_OP_ALWAYS;
     }
+
+    return VK_COMPARE_OP_ALWAYS;
+}
 }  // namespace
 
 VulkanSampler::VulkanSampler(VulkanDevice& device, SamplerDesc const& desc) : Sampler(desc), device_(device)

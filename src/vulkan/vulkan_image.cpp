@@ -106,8 +106,8 @@ static VkImageUsageFlags ToVkImageUsage(ImageFlags flags)
     return usage;
 }
 
-VulkanImage::VulkanImage(VulkanDevice& device, uint32_t width, uint32_t height, ImageFormat format,
-    uint32_t mip_count, uint32_t array_size, ImageFlags flags)
+VulkanImage::VulkanImage(VulkanDevice& device, uint32_t width, uint32_t height, ImageFormat format, uint32_t mip_count,
+    uint32_t array_size, ImageFlags flags)
     : Image(width, height, format, mip_count, array_size, flags), device_(device), owns_image_(true)
 {
     native_format_ = ToVkFormat(format);
@@ -132,17 +132,18 @@ VulkanImage::VulkanImage(VulkanDevice& device, uint32_t width, uint32_t height, 
     VkMemoryRequirements memory_requirements{};
     vkGetImageMemoryRequirements(logical_device, image_, &memory_requirements);
 
-    memory_ = device_.GetMemoryManager().AllocateMemory(
-        memory_requirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    memory_ = device_.GetMemoryManager().AllocateMemory(memory_requirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     status = vkBindImageMemory(logical_device, image_, memory_, 0);
     VK_THROW_IF_FAILED(status, "Failed to bind Vulkan image memory");
 }
 
-VulkanImage::VulkanImage(VulkanDevice& device, VkImage image, uint32_t width, uint32_t height,
-    VkFormat native_format, uint32_t mip_count, uint32_t array_size, ImageFlags flags)
-    : Image(width, height, FromVkFormat(native_format), mip_count, array_size, flags),
-      device_(device), image_(image), native_format_(native_format)
+VulkanImage::VulkanImage(VulkanDevice& device, VkImage image, uint32_t width, uint32_t height, VkFormat native_format,
+    uint32_t mip_count, uint32_t array_size, ImageFlags flags)
+    : Image(width, height, FromVkFormat(native_format), mip_count, array_size, flags)
+    , device_(device)
+    , image_(image)
+    , native_format_(native_format)
 {
 }
 
@@ -218,4 +219,4 @@ VkImageView VulkanImage::CreateImageView(ImageView const& view)
     return image_view;
 }
 
-} // namespace gpu
+}  // namespace gpu

@@ -11,4 +11,4 @@ inline std::wstring StringToWstring(const std::string& str)
     return myconv.from_bytes(str);
 }
 
-} // namespace gpu
+}  // namespace gpu

@@ -16,8 +16,7 @@ VulkanQueue::VulkanQueue(VulkanDevice& device, uint32_t queue_family_index)
     command_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     command_pool_info.queueFamilyIndex = queue_family_index_;
 
-    VkResult status =
-        vkCreateCommandPool(device_.GetDevice(), &command_pool_info, nullptr, &command_pool_);
+    VkResult status = vkCreateCommandPool(device_.GetDevice(), &command_pool_info, nullptr, &command_pool_);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan command pool");
 }
 
@@ -67,4 +66,4 @@ void VulkanQueue::WaitIdle()
     in_flight_command_buffers_.clear();
 }
 
-} // namespace gpu
+}  // namespace gpu

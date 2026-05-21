@@ -72,21 +72,21 @@ inline char* const GetVkErrorString(VkResult error_code)
 
 class VulkanException : public std::exception
 {
-  public:
+public:
     VulkanException(std::string const& message, VkResult error_code)
         : std::exception((message + " (" + GetVkErrorString(error_code) + ")").c_str())
     {
     }
 };
 
-#define VK_THROW_IF_FAILED(err_code, msg)                                                          \
-    if ((err_code) != VK_SUCCESS)                                                                  \
-    {                                                                                              \
-        throw VulkanException(std::string(__FUNCTION__) + "(...): " + msg, err_code);              \
+#define VK_THROW_IF_FAILED(err_code, msg)                                             \
+    if ((err_code) != VK_SUCCESS)                                                     \
+    {                                                                                 \
+        throw VulkanException(std::string(__FUNCTION__) + "(...): " + msg, err_code); \
     }
 
-#define THROW_IF(condition, msg)                                                                   \
-    if (condition)                                                                                 \
-    {                                                                                              \
-        throw std::runtime_error(std::string(__FUNCTION__) + "(...): " + msg);                     \
+#define THROW_IF(condition, msg)                                               \
+    if (condition)                                                             \
+    {                                                                          \
+        throw std::runtime_error(std::string(__FUNCTION__) + "(...): " + msg); \
     }

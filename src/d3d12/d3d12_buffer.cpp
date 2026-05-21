@@ -93,12 +93,8 @@ D3D12Buffer::D3D12Buffer(D3D12Device& device, uint64_t size, uint32_t stride, Bu
 
     D3D12_RESOURCE_DESC resource_desc = CreateBufferDesc(size_, flags_);
 
-    ThrowIfFailed(d3d12_device->CreateCommittedResource(&heap_properties,
-        D3D12_HEAP_FLAG_NONE,
-        &resource_desc,
-        current_state_,
-        nullptr,
-        IID_PPV_ARGS(&resource_)));
+    ThrowIfFailed(d3d12_device->CreateCommittedResource(&heap_properties, D3D12_HEAP_FLAG_NONE, &resource_desc,
+        current_state_, nullptr, IID_PPV_ARGS(&resource_)));
 }
 
 D3D12Buffer::~D3D12Buffer()
@@ -198,8 +194,7 @@ D3D12Descriptor D3D12Buffer::CreateSRV()
     srv_desc.Buffer.StructureByteStride = stride_;
     srv_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 
-    device_.GetD3D12Device()->CreateShaderResourceView(resource_.Get(),
-        &srv_desc,
+    device_.GetD3D12Device()->CreateShaderResourceView(resource_.Get(), &srv_desc,
         descriptor_manager.GetCPU(descriptor));
 
     return descriptor;
@@ -222,9 +217,7 @@ D3D12Descriptor D3D12Buffer::CreateUAV()
     uav_desc.Buffer.CounterOffsetInBytes = 0;
     uav_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
 
-    device_.GetD3D12Device()->CreateUnorderedAccessView(resource_.Get(),
-        nullptr,
-        &uav_desc,
+    device_.GetD3D12Device()->CreateUnorderedAccessView(resource_.Get(), nullptr, &uav_desc,
         descriptor_manager.GetCPU(descriptor));
 
     return descriptor;

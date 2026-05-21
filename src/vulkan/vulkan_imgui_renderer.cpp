@@ -25,10 +25,9 @@ void CheckVkResult(VkResult status)
 {
     VK_THROW_IF_FAILED(status, "ImGui Vulkan backend error");
 }
-} // namespace
+}  // namespace
 
-VulkanImGuiRenderer::VulkanImGuiRenderer(
-    VulkanDevice& device, void* glfw_window, Swapchain& swapchain)
+VulkanImGuiRenderer::VulkanImGuiRenderer(VulkanDevice& device, void* glfw_window, Swapchain& swapchain)
     : device_(device), swapchain_(swapchain)
 {
     if (glfw_window == nullptr)
@@ -88,8 +87,7 @@ void VulkanImGuiRenderer::NewFrame()
 
 void VulkanImGuiRenderer::Render(CommandBuffer& command_buffer)
 {
-    VulkanCommandBuffer* vulkan_command_buffer =
-        dynamic_cast<VulkanCommandBuffer*>(&command_buffer);
+    VulkanCommandBuffer* vulkan_command_buffer = dynamic_cast<VulkanCommandBuffer*>(&command_buffer);
     if (vulkan_command_buffer == nullptr)
     {
         throw std::runtime_error("VulkanImGuiRenderer requires a Vulkan command buffer");
@@ -97,8 +95,7 @@ void VulkanImGuiRenderer::Render(CommandBuffer& command_buffer)
 
     ImGui::Render();
     command_buffer.SetRenderTarget(swapchain_.GetCurrentImage(), nullptr);
-    ImGui_ImplVulkan_RenderDrawData(
-        ImGui::GetDrawData(), vulkan_command_buffer->GetCommandBuffer());
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vulkan_command_buffer->GetCommandBuffer());
 }
 
-} // namespace gpu
+}  // namespace gpu

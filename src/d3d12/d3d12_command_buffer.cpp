@@ -96,8 +96,8 @@ D3D12CommandBuffer::D3D12CommandBuffer(D3D12Device& device, D3D12Queue& queue,
 {
     auto d3d12_device = device_.GetD3D12Device();
     ThrowIfFailed(d3d12_device->CreateCommandAllocator(command_list_type_, IID_PPV_ARGS(&command_allocator_)));
-    ThrowIfFailed(d3d12_device
-            ->CreateCommandList(0, command_list_type_, command_allocator_.Get(), nullptr, IID_PPV_ARGS(&cmd_list_)));
+    ThrowIfFailed(d3d12_device->CreateCommandList(0, command_list_type_, command_allocator_.Get(), nullptr,
+        IID_PPV_ARGS(&cmd_list_)));
 }
 
 void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer, size_t vertex_stride)
@@ -226,9 +226,7 @@ void D3D12CommandBuffer::SetRenderTargets(std::vector<ImagePtr> const& color_att
     }
 
     cmd_list_->OMSetRenderTargets(static_cast<UINT>(rtv_handles.size()),
-        rtv_handles.empty() ? nullptr : rtv_handles.data(),
-        FALSE,
-        depth_attachment ? &dsv_handle : nullptr);
+        rtv_handles.empty() ? nullptr : rtv_handles.data(), FALSE, depth_attachment ? &dsv_handle : nullptr);
 }
 
 void D3D12CommandBuffer::SetViewport(const Viewport& viewport)
@@ -362,8 +360,7 @@ void D3D12CommandBuffer::BuildBottomLevelAccelerationStructure(AccelerationStruc
         throw std::runtime_error("D3D12CommandBuffer::BuildBottomLevelAccelerationStructure: geometry list is empty");
     }
 
-    BufferPtr scratch_buffer = device_.CreateBuffer(bottom_level->GetBuildScratchSize(),
-        1,
+    BufferPtr scratch_buffer = device_.CreateBuffer(bottom_level->GetBuildScratchSize(), 1,
         BufferFlags::kStorage | BufferFlags::kAccelerationStructureBuildInput);
     auto* scratch = dynamic_cast<D3D12Buffer*>(scratch_buffer.get());
     staging_buffers_.push_back(scratch_buffer);
@@ -415,8 +412,7 @@ void D3D12CommandBuffer::BuildTopLevelAccelerationStructure(AccelerationStructur
         throw std::runtime_error("D3D12CommandBuffer::BuildTopLevelAccelerationStructure: instance list is empty");
     }
 
-    BufferPtr scratch_buffer = device_.CreateBuffer(top_level->GetBuildScratchSize(),
-        1,
+    BufferPtr scratch_buffer = device_.CreateBuffer(top_level->GetBuildScratchSize(), 1,
         BufferFlags::kStorage | BufferFlags::kAccelerationStructureBuildInput);
     auto* scratch = dynamic_cast<D3D12Buffer*>(scratch_buffer.get());
     staging_buffers_.push_back(scratch_buffer);
@@ -433,8 +429,7 @@ void D3D12CommandBuffer::BuildTopLevelAccelerationStructure(AccelerationStructur
     std::memcpy(upload_buffer->Map(), d3d12_instances.data(), instance_data_size);
     upload_buffer->Unmap();
 
-    BufferPtr instance_buffer = device_.CreateBuffer(instance_data_size,
-        1,
+    BufferPtr instance_buffer = device_.CreateBuffer(instance_data_size, 1,
         BufferFlags::kAccelerationStructureBuildInput);
     CopyBuffer(upload_buffer, 0, instance_buffer, 0, instance_data_size);
     staging_buffers_.push_back(upload_buffer);
@@ -487,8 +482,8 @@ void D3D12CommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)
     UINT num_rows = 0;
     UINT64 row_size = 0;
     UINT64 total_size = 0;
-    device_.GetD3D12Device()
-        ->GetCopyableFootprints(&image_desc, 0, 1, 0, &footprint, &num_rows, &row_size, &total_size);
+    device_.GetD3D12Device()->GetCopyableFootprints(&image_desc, 0, 1, 0, &footprint, &num_rows, &row_size,
+        &total_size);
 
     D3D12_TEXTURE_COPY_LOCATION dst_location = {};
     dst_location.pResource = d3d12_dst->GetResource();
@@ -513,8 +508,8 @@ void D3D12CommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data
     UINT num_rows = 0;
     UINT64 row_size = 0;
     UINT64 total_size = 0;
-    device_.GetD3D12Device()
-        ->GetCopyableFootprints(&image_desc, 0, 1, 0, &footprint, &num_rows, &row_size, &total_size);
+    device_.GetD3D12Device()->GetCopyableFootprints(&image_desc, 0, 1, 0, &footprint, &num_rows, &row_size,
+        &total_size);
 
     const UINT64 required_source_size = row_size * num_rows;
     if (!data || data_size < required_source_size)
@@ -527,8 +522,7 @@ void D3D12CommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data
     uint8_t const* src_data = static_cast<uint8_t const*>(data);
     for (UINT row = 0; row < num_rows; ++row)
     {
-        std::memcpy(dst_data + footprint.Offset + footprint.Footprint.RowPitch * row,
-            src_data + row_size * row,
+        std::memcpy(dst_data + footprint.Offset + footprint.Footprint.RowPitch * row, src_data + row_size * row,
             static_cast<size_t>(row_size));
     }
     staging_buffer->Unmap();

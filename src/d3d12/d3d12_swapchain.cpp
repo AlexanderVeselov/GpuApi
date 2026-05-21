@@ -9,8 +9,8 @@
 
 namespace gpu
 {
-D3D12Swapchain::D3D12Swapchain(D3D12Device& device, void* window_native_handle, uint32_t width,
-    uint32_t height, uint32_t image_count)
+D3D12Swapchain::D3D12Swapchain(D3D12Device& device, void* window_native_handle, uint32_t width, uint32_t height,
+    uint32_t image_count)
     : Swapchain(ImageFormat::kRGBA8_UNorm), device_(device)
 {
     auto& api = device_.GetD3D12Api();
@@ -34,8 +34,8 @@ D3D12Swapchain::D3D12Swapchain(D3D12Device& device, void* window_native_handle, 
     D3D12Queue& d3d12_queue = static_cast<D3D12Queue&>(gfx_queue);
 
     HWND hwnd = (HWND)window_native_handle;
-    ThrowIfFailed(dxgi_factory->CreateSwapChainForHwnd(
-        d3d12_queue.GetQueue(), hwnd, &swapchain_desc, nullptr, nullptr, &swapchain_));
+    ThrowIfFailed(dxgi_factory->CreateSwapChainForHwnd(d3d12_queue.GetQueue(), hwnd, &swapchain_desc, nullptr, nullptr,
+        &swapchain_));
 
     for (auto i = 0; i < swapchain_images_.size(); ++i)
     {
@@ -55,4 +55,4 @@ void D3D12Swapchain::Present()
     ThrowIfFailed(swapchain_->Present(1, 0));
     current_image_index_ = (current_image_index_ + 1) % GetImageCount();
 }
-} // namespace gpu
+}  // namespace gpu

@@ -14,24 +14,24 @@ class Swapchain;
 
 class D3D12ImGuiRenderer final : public ImGuiRenderer
 {
-  public:
+public:
     D3D12ImGuiRenderer(D3D12Device& device, void* glfw_window, Swapchain& swapchain);
     ~D3D12ImGuiRenderer() override;
 
     void NewFrame() override;
     void Render(CommandBuffer& command_buffer) override;
 
-  private:
-    static void AllocateSrvDescriptor(ImGui_ImplDX12_InitInfo* info,
-        D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle);
-    static void FreeSrvDescriptor(ImGui_ImplDX12_InitInfo* info,
-        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle);
+private:
+    static void AllocateSrvDescriptor(ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle,
+        D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle);
+    static void FreeSrvDescriptor(ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle,
+        D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle);
 
-    void AllocateSrvDescriptor(
-        D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle);
+    void AllocateSrvDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle,
+        D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle);
     void FreeSrvDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle);
 
-  private:
+private:
     D3D12Device& device_;
     Swapchain& swapchain_;
     ComPtr<ID3D12DescriptorHeap> srv_heap_;
@@ -40,4 +40,4 @@ class D3D12ImGuiRenderer final : public ImGuiRenderer
     std::vector<uint32_t> free_descriptor_indices_;
 };
 
-} // namespace gpu
+}  // namespace gpu

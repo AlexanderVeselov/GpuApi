@@ -12,7 +12,7 @@ class D3D12Device;
 
 class D3D12Queue : public Queue
 {
-  public:
+public:
     D3D12Queue(D3D12Device& device, D3D12_COMMAND_LIST_TYPE command_list_type);
     ~D3D12Queue() override;
 
@@ -20,12 +20,9 @@ class D3D12Queue : public Queue
     void Submit(CommandBufferPtr cmd_buffer) override;
     void WaitIdle() override;
 
-    ID3D12CommandQueue* GetQueue() const
-    {
-        return queue_.Get();
-    }
+    ID3D12CommandQueue* GetQueue() const { return queue_.Get(); }
 
-  private:
+private:
     struct InFlightSubmission
     {
         std::uint64_t fence_value = 0;
@@ -34,7 +31,7 @@ class D3D12Queue : public Queue
 
     void CollectCompletedSubmissions();
 
-  private:
+private:
     D3D12Device& device_;
     D3D12_COMMAND_LIST_TYPE command_list_type_;
     ComPtr<ID3D12CommandQueue> queue_;
@@ -44,4 +41,4 @@ class D3D12Queue : public Queue
     std::deque<InFlightSubmission> in_flight_submissions_;
 };
 
-} // namespace gpu
+}  // namespace gpu

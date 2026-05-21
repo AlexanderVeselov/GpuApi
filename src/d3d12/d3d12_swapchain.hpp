@@ -10,14 +10,14 @@ class D3D12Device;
 
 class D3D12Swapchain : public Swapchain
 {
-  public:
+public:
     D3D12Swapchain(D3D12Device& device, void* window_native_handle, uint32_t width, uint32_t height,
         uint32_t image_count);
     void Present() override;
 
-  private:
+private:
     D3D12Device& device_;
     ComPtr<IDXGISwapChain1> swapchain_;
 };
 
-} // namespace gpu
+}  // namespace gpu

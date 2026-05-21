@@ -29,7 +29,9 @@ protected:
     VkPipeline pipeline_ = VK_NULL_HANDLE;
 };
 
-class VulkanGraphicsPipeline final : public GraphicsPipeline, public VulkanPipeline
+class VulkanGraphicsPipeline final
+    : public GraphicsPipeline
+    , public VulkanPipeline
 {
 public:
     VulkanGraphicsPipeline(VulkanDevice& device, GraphicsPipelineDesc const& pipeline_desc);
@@ -40,11 +42,13 @@ private:
     uint32_t vertex_stride_ = 0;
 };
 
-class VulkanComputePipeline final : public ComputePipeline, public VulkanPipeline
+class VulkanComputePipeline final
+    : public ComputePipeline
+    , public VulkanPipeline
 {
 public:
     VulkanComputePipeline(VulkanDevice& device, char const* cs_filename);
     void Reload() override;
 };
 
-} // namespace gpu
+}  // namespace gpu

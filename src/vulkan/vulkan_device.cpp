@@ -127,9 +127,7 @@ bool VulkanDevice::CheckRayQuerySupport() const
 
     auto has_extension = [&](char const* extension_name)
     {
-        return std::find_if(extensions.begin(),
-                   extensions.end(),
-                   [&](VkExtensionProperties const& extension)
+        return std::find_if(extensions.begin(), extensions.end(), [&](VkExtensionProperties const& extension)
                    { return std::strcmp(extension.extensionName, extension_name) == 0; })
             != extensions.end();
     };
@@ -291,12 +289,8 @@ AccelerationStructurePtr VulkanDevice::CreateAccelerationStructure(AccelerationS
         "VulkanDevice::CreateAccelerationStructure: vkGetAccelerationStructureDeviceAddressKHR is unavailable");
 
     uint64_t device_address = vk_get_acceleration_structure_device_address(device_, &address_info);
-    return std::make_shared<VulkanAccelerationStructure>(*this,
-        type,
-        std::move(storage_buffer),
-        build_scratch_size,
-        handle,
-        device_address);
+    return std::make_shared<VulkanAccelerationStructure>(*this, type, std::move(storage_buffer), build_scratch_size,
+        handle, device_address);
 }
 
 AccelerationStructurePtr
@@ -332,14 +326,10 @@ VulkanDevice::CreateBottomLevelAccelerationStructure(std::vector<AccelerationStr
     THROW_IF(!vk_get_build_sizes,
         "VulkanDevice::CreateBottomLevelAccelerationStructure: vkGetAccelerationStructureBuildSizesKHR is unavailable");
 
-    vk_get_build_sizes(device_,
-        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-        &build_info,
-        primitive_counts.data(),
+    vk_get_build_sizes(device_, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &build_info, primitive_counts.data(),
         &size_info);
 
-    return CreateAccelerationStructure(AccelerationStructureType::kBottomLevel,
-        size_info.accelerationStructureSize,
+    return CreateAccelerationStructure(AccelerationStructureType::kBottomLevel, size_info.accelerationStructureSize,
         size_info.buildScratchSize);
 }
 
@@ -367,14 +357,10 @@ AccelerationStructurePtr VulkanDevice::CreateTopLevelAccelerationStructure(uint3
     THROW_IF(!vk_get_build_sizes,
         "VulkanDevice::CreateTopLevelAccelerationStructure: vkGetAccelerationStructureBuildSizesKHR is unavailable");
 
-    vk_get_build_sizes(device_,
-        VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-        &build_info,
-        &instance_count,
+    vk_get_build_sizes(device_, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &build_info, &instance_count,
         &size_info);
 
-    return CreateAccelerationStructure(AccelerationStructureType::kTopLevel,
-        size_info.accelerationStructureSize,
+    return CreateAccelerationStructure(AccelerationStructureType::kTopLevel, size_info.accelerationStructureSize,
         size_info.buildScratchSize);
 }
 
