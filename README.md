@@ -1,32 +1,39 @@
 # GpuApi
 
-GpuApi is a small C++ rendering abstraction over Direct3D 12 and Vulkan. The project is intentionally compact: it exposes the pieces needed to create devices, queues, buffers, images, swapchains, graphics pipelines, compute pipelines, descriptor sets, and command buffers without hiding the explicit GPU programming model.
+GpuApi is a compact C++17 rendering abstraction over Direct3D 12 and Vulkan.
+It exposes the pieces needed by the renderer without trying to hide the
+explicit GPU programming model: devices, queues, command buffers, buffers,
+images, swapchains, pipelines, descriptor sets, samplers and acceleration
+structures.
 
-The codebase is currently Windows-focused and uses HLSL shaders compiled through DXC for both backends. Vulkan shaders are compiled to SPIR-V and reflected with SPIRV-Reflect.
+The library is currently Windows-focused. Shaders are written in HLSL and
+compiled with DXC for both backends. Vulkan shaders are compiled to SPIR-V and
+reflected with SPIRV-Reflect.
 
 ## Features
 
-- Direct3D 12 and Vulkan backend selection through `gpu::Api::Create`.
-- Graphics pipelines with vertex/pixel shaders, reflected vertex inputs, render target formats, and optional depth state.
-- Compute pipelines with reflected resource bindings.
-- Descriptor sets for buffers and images.
-- Buffers with CPU mapping support.
-- Images with render target, depth/stencil, shader resource, and storage usage flags.
-- Swapchain creation from a Win32 window handle.
-- Command buffers for draw, dispatch, barriers, clears, copies, render target binding, viewport, and scissor.
-- Vulkan dynamic rendering path, without a fixed render pass/framebuffer API.
+- Direct3D 12 and Vulkan backend selection through `gpu::Api::Create`
+- Graphics pipelines with reflected vertex inputs, render target formats and optional depth state
+- Compute pipelines with reflected resource bindings
+- Descriptor sets for buffers, images, image arrays, samplers and acceleration structures
+- Buffer creation with CPU access, shader-resource, storage and acceleration-structure usage flags
+- Images with render target, depth/stencil, shader resource, storage, mip and array support
+- Swapchain creation from a Win32 window handle
+- Command buffers for draw, dispatch, copies, clears, barriers, render target binding, viewport and scissor
+- Runtime pipeline hot reload through `Device::ReloadPipelines`
+- Hardware ray tracing support through Ray Query acceleration structures
 
 ## Repository Layout
 
 ```text
 inc/                     Public backend-independent API
-src/common/              Shared API helpers and shader reflection types
+src/common/              Shared API helpers, pipeline reload and shader reflection types
 src/d3d12/               Direct3D 12 backend
 src/vulkan/              Vulkan backend
 samples/hello_triangle/  Graphics pipeline sample
 samples/rotating_cube/   Indexed graphics and depth-buffer sample
 samples/shadertoy/       Compute pipeline sample
-third_party/             Bundled DXC, GLFW binaries, and SPIRV-Reflect
+third_party/             Bundled DXC, GLFW binaries and SPIRV-Reflect
 ```
 
 ## Requirements
@@ -52,7 +59,8 @@ The sample targets are built with the library:
 - `RotatingCube`
 - `Shadertoy`
 
-The sample CMake files copy `dxcompiler.dll` and `dxil.dll` next to the built executables.
+The sample CMake files copy `dxcompiler.dll` and `dxil.dll` next to the built
+executables.
 
 ## Basic Usage
 
@@ -91,15 +99,7 @@ queue.Submit(std::move(cmd));
 swapchain->Present();
 ```
 
-## Samples
-
-`samples/hello_triangle` creates a swapchain, graphics pipeline, vertex buffer, descriptor set, and renders a triangle.
-
-`samples/rotating_cube` renders an indexed, depth-tested cube with a per-frame MVP constant buffer.
-
-`samples/shadertoy` creates a storage image, dispatches a compute shader into it, then copies the result into the swapchain image.
-
-Switching backends is an one-line change:
+Switching backends is a one-line change:
 
 ```cpp
 auto api = gpu::Api::Create(gpu::ApiType::kD3D12);
@@ -107,10 +107,67 @@ auto api = gpu::Api::Create(gpu::ApiType::kD3D12);
 auto api = gpu::Api::Create(gpu::ApiType::kVulkan);
 ```
 
+## Acceleration Structures for Hardware Ray Tracing
+
+GpuApi exposes acceleration structures for compute-shader Ray Query usage. It
+does not expose ray tracing pipelines, shader binding tables or `DispatchRays`.
+
+Typical flow:
+
+1. Check `device->SupportsRayQuery()`.
+2. Create vertex and index buffers with `BufferFlags::kAccelerationStructureBuildInput`.
+3. Create a BLAS with `CreateBottomLevelAccelerationStructure`.
+4. Record `CommandBuffer::BuildBottomLevelAccelerationStructure`.
+5. Create a TLAS with `CreateTopLevelAccelerationStructure`.
+6. Record `CommandBuffer::BuildTopLevelAccelerationStructure`.
+7. Bind the TLAS with `DescriptorSet::BindAccelerationStructure`.
+8. Trace from an HLSL compute shader using `RaytracingAccelerationStructure` and ray query intrinsics.
+
+Acceleration-structure objects own backend storage through `GetStorageBuffer()`;
+native Vulkan/D3D12 handles stay inside the backend implementations. Public
+buffer flags do not expose a generic shader-device-address bit. Vulkan enables
+device addresses internally only for acceleration-structure build input and
+storage buffers, and rejects those flags when Ray Query support is unavailable.
+
+## Pipeline Hot Reload
+
+`Device::ReloadPipelines()` reloads all registered pipelines. A pipeline reload
+is atomic at the pipeline level: if shader compilation fails or the reflected
+layout is incompatible with the previous layout, the old pipeline state remains
+active.
+
+The result reports whether the full reload succeeded, how many pipelines were
+reloaded, and the last error message when any pipeline failed:
+
+```cpp
+gpu::PipelineReloadResult result = device->ReloadPipelines();
+if (!result.success)
+{
+    std::cerr << result.error << std::endl;
+}
+```
+
+Pipeline layout compatibility is order-independent for reflected bindings. The
+layout comparison canonicalizes bindings so semantically identical layouts are
+not rejected due to reflection iteration order.
+
+## Samples
+
+`samples/hello_triangle` creates a swapchain, graphics pipeline, vertex buffer,
+descriptor set and renders a triangle.
+
+`samples/rotating_cube` renders an indexed, depth-tested cube with a per-frame
+MVP constant buffer.
+
+`samples/shadertoy` creates a storage image, dispatches a compute shader into
+it, then copies the result into the swapchain image.
+
 ## Current Limitations
 
 - The platform layer is Win32-only.
-- Shaders are loaded by filename from the sample working directory.
-- Descriptor image binding currently uses the default image view; explicit `ImageView` mip/slice views need more Vulkan image view support.
-- Synchronization is intentionally simple and explicit; callers are responsible for correct layout transitions.
+- Shaders are loaded by filename from the configured shader path.
+- Hardware ray tracing is limited to Ray Query from compute shaders.
+- Ray tracing pipelines, shader binding tables and `DispatchRays` are not part of the API.
+- Descriptor image binding currently uses the default image view unless a specific `ImageView` is provided.
+- Synchronization is intentionally explicit; callers are responsible for image layout transitions and pass ordering.
 - The API is still evolving and favors clarity over broad feature coverage.
