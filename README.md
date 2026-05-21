@@ -107,50 +107,6 @@ auto api = gpu::Api::Create(gpu::ApiType::kD3D12);
 auto api = gpu::Api::Create(gpu::ApiType::kVulkan);
 ```
 
-## Acceleration Structures for Hardware Ray Tracing
-
-GpuApi exposes acceleration structures for compute-shader Ray Query usage. It
-does not expose ray tracing pipelines, shader binding tables or `DispatchRays`.
-
-Typical flow:
-
-1. Check `device->SupportsRayQuery()`.
-2. Create vertex and index buffers with `BufferFlags::kAccelerationStructureBuildInput`.
-3. Create a BLAS with `CreateBottomLevelAccelerationStructure`.
-4. Record `CommandBuffer::BuildBottomLevelAccelerationStructure`.
-5. Create a TLAS with `CreateTopLevelAccelerationStructure`.
-6. Record `CommandBuffer::BuildTopLevelAccelerationStructure`.
-7. Bind the TLAS with `DescriptorSet::BindAccelerationStructure`.
-8. Trace from an HLSL compute shader using `RaytracingAccelerationStructure` and ray query intrinsics.
-
-Acceleration-structure objects own backend storage through `GetStorageBuffer()`;
-native Vulkan/D3D12 handles stay inside the backend implementations. Public
-buffer flags do not expose a generic shader-device-address bit. Vulkan enables
-device addresses internally only for acceleration-structure build input and
-storage buffers, and rejects those flags when Ray Query support is unavailable.
-
-## Pipeline Hot Reload
-
-`Device::ReloadPipelines()` reloads all registered pipelines. A pipeline reload
-is atomic at the pipeline level: if shader compilation fails or the reflected
-layout is incompatible with the previous layout, the old pipeline state remains
-active.
-
-The result reports whether the full reload succeeded, how many pipelines were
-reloaded, and the last error message when any pipeline failed:
-
-```cpp
-gpu::PipelineReloadResult result = device->ReloadPipelines();
-if (!result.success)
-{
-    std::cerr << result.error << std::endl;
-}
-```
-
-Pipeline layout compatibility is order-independent for reflected bindings. The
-layout comparison canonicalizes bindings so semantically identical layouts are
-not rejected due to reflection iteration order.
-
 ## Samples
 
 `samples/hello_triangle` creates a swapchain, graphics pipeline, vertex buffer,
