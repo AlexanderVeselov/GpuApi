@@ -16,6 +16,7 @@ template <class T>
 using SharedPtr = std::shared_ptr<T>;
 
 class Api;
+class AccelerationStructure;
 class Device;
 class Buffer;
 class CommandBuffer;
@@ -31,6 +32,7 @@ class Queue;
 class Swapchain;
 
 using DevicePtr = Ptr<Device>;
+using AccelerationStructurePtr = SharedPtr<AccelerationStructure>;
 using CommandBufferPtr = Ptr<CommandBuffer>;
 using DescriptorSetPtr = Ptr<DescriptorSet>;
 using GraphicsPipelinePtr = Ptr<GraphicsPipeline>;

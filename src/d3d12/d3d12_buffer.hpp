@@ -12,48 +12,34 @@ class D3D12Device;
 
 class D3D12Buffer final : public Buffer
 {
-  public:
+public:
     D3D12Buffer(D3D12Device& device, uint64_t size, uint32_t stride);
     D3D12Buffer(D3D12Device& device, uint64_t size, uint32_t stride, BufferFlags flags);
     ~D3D12Buffer() override;
 
-    ID3D12Resource* GetResource() const
-    {
-        return resource_.Get();
-    }
+    ID3D12Resource* GetResource() const { return resource_.Get(); }
 
-    D3D12_GPU_VIRTUAL_ADDRESS GetGPUVirtualAddress() const
-    {
-        return resource_->GetGPUVirtualAddress();
-    }
+    D3D12_GPU_VIRTUAL_ADDRESS GetGPUVirtualAddress() const { return resource_->GetGPUVirtualAddress(); }
+    uint64_t GetGpuAddress() const override { return GetGPUVirtualAddress(); }
 
     D3D12Descriptor const& GetCBV();
     D3D12Descriptor const& GetSRV();
     D3D12Descriptor const& GetUAV();
-    uint32_t GetStride() const
-    {
-        return stride_;
-    }
+    uint32_t GetStride() const { return stride_; }
 
-    D3D12_RESOURCE_STATES GetCurrentState() const
-    {
-        return current_state_;
-    }
+    D3D12_RESOURCE_STATES GetCurrentState() const { return current_state_; }
 
-    void SetCurrentState(D3D12_RESOURCE_STATES state)
-    {
-        current_state_ = state;
-    }
+    void SetCurrentState(D3D12_RESOURCE_STATES state) { current_state_ = state; }
 
     void* Map() override;
     void Unmap() override;
 
-  private:
+private:
     D3D12Descriptor CreateCBV();
     D3D12Descriptor CreateSRV();
     D3D12Descriptor CreateUAV();
 
-  private:
+private:
     D3D12Device& device_;
     ComPtr<ID3D12Resource> resource_;
 
@@ -67,4 +53,4 @@ class D3D12Buffer final : public Buffer
     D3D12Descriptor uav_;
 };
 
-} // namespace gpu
+}  // namespace gpu

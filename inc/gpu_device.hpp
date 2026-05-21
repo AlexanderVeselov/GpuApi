@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gpu_acceleration_structure.hpp"
 #include "gpu_buffer.hpp"
 #include "gpu_image.hpp"
 #include "gpu_imgui.hpp"
@@ -29,6 +30,13 @@ public:
     /// Creates a buffer with a fixed element stride and explicit usage flags.
     virtual BufferPtr CreateBuffer(size_t size, uint32_t stride, BufferFlags flags) = 0;
 
+    /// Creates backend storage for a bottom-level acceleration structure. Build commands fill it later.
+    virtual AccelerationStructurePtr
+    CreateBottomLevelAccelerationStructure(std::vector<AccelerationStructureGeometryDesc> const& geometries) = 0;
+
+    /// Creates backend storage for a top-level acceleration structure. Build commands fill it later.
+    virtual AccelerationStructurePtr CreateTopLevelAccelerationStructure(uint32_t instance_count) = 0;
+
     /// Creates an image with usage flags and optional subresource counts.
     virtual ImagePtr CreateImage(uint32_t width, uint32_t height, ImageFormat format, ImageFlags flags,
         uint32_t mip_count = 1, uint32_t array_size = 1) = 0;
@@ -51,6 +59,9 @@ public:
 
     /// Blocks until all device queues are idle.
     virtual void WaitIdle() = 0;
+
+    /// Returns true when this device can use acceleration structures from compute shaders via ray query.
+    virtual bool SupportsRayQuery() const = 0;
 
     /// Creates a swapchain for a native platform window handle.
     virtual SwapchainPtr CreateSwapchain(void* window_native_handle, uint32_t width, uint32_t height,

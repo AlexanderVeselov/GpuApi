@@ -1,4 +1,5 @@
 #include "d3d12_command_buffer.hpp"
+#include "d3d12_acceleration_structure.hpp"
 #include "d3d12_buffer.hpp"
 #include "d3d12_descriptor_set.hpp"
 #include "d3d12_device.hpp"
@@ -10,41 +11,82 @@
 #include <cassert>
 #include <cstring>
 #include <stdexcept>
+#include <vector>
 
 namespace gpu
 {
 namespace
 {
-    D3D12_RESOURCE_STATES LayoutToD3D12ResourceState(ImageLayout layout, bool is_depth)
+D3D12_RESOURCE_STATES LayoutToD3D12ResourceState(ImageLayout layout, bool is_depth)
+{
+    switch (layout)
     {
-        switch (layout)
-        {
-        case ImageLayout::kUndefined:
-            return D3D12_RESOURCE_STATE_COMMON;
-        case ImageLayout::kPresent:
-            return D3D12_RESOURCE_STATE_PRESENT;
-        case ImageLayout::kCopySrc:
-            return D3D12_RESOURCE_STATE_COPY_SOURCE;
-        case ImageLayout::kCopyDst:
-            return D3D12_RESOURCE_STATE_COPY_DEST;
-        case ImageLayout::kRenderTarget:
-            return is_depth ? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_RENDER_TARGET;
-        case ImageLayout::kShaderRead:
-            return is_depth
-                ? D3D12_RESOURCE_STATE_DEPTH_READ
-                : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-        case ImageLayout::kShaderReadWrite:
-            return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-        }
-
-        assert(false && "LayoutToD3D12ResourceState: unsupported image layout");
+    case ImageLayout::kUndefined:
         return D3D12_RESOURCE_STATE_COMMON;
+    case ImageLayout::kPresent:
+        return D3D12_RESOURCE_STATE_PRESENT;
+    case ImageLayout::kCopySrc:
+        return D3D12_RESOURCE_STATE_COPY_SOURCE;
+    case ImageLayout::kCopyDst:
+        return D3D12_RESOURCE_STATE_COPY_DEST;
+    case ImageLayout::kRenderTarget:
+        return is_depth ? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_RENDER_TARGET;
+    case ImageLayout::kShaderRead:
+        return is_depth ? D3D12_RESOURCE_STATE_DEPTH_READ
+                        : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+    case ImageLayout::kShaderReadWrite:
+        return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
     }
 
-    bool IsDepthFormat(ImageFormat format)
+    assert(false && "LayoutToD3D12ResourceState: unsupported image layout");
+    return D3D12_RESOURCE_STATE_COMMON;
+}
+
+bool IsDepthFormat(ImageFormat format)
+{
+    return format == ImageFormat::kD32_Float || format == ImageFormat::kR32_Typeless;
+}
+
+D3D12_RAYTRACING_GEOMETRY_DESC ToD3D12GeometryDesc(AccelerationStructureGeometryDesc const& geometry)
+{
+    auto* vertex_buffer = dynamic_cast<D3D12Buffer*>(geometry.vertex_buffer.get());
+    auto* index_buffer = dynamic_cast<D3D12Buffer*>(geometry.index_buffer.get());
+    if (!vertex_buffer || !index_buffer)
     {
-        return format == ImageFormat::kD32_Float || format == ImageFormat::kR32_Typeless;
+        throw std::runtime_error(
+            "D3D12CommandBuffer::BuildBottomLevelAccelerationStructure: geometry buffers must be D3D12 buffers");
     }
+
+    D3D12_RAYTRACING_GEOMETRY_DESC desc = {};
+    desc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+    desc.Flags = geometry.opaque ? D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE : D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
+    desc.Triangles.VertexBuffer.StartAddress = vertex_buffer->GetGPUVirtualAddress() + geometry.vertex_offset;
+    desc.Triangles.VertexBuffer.StrideInBytes = geometry.vertex_stride;
+    desc.Triangles.VertexCount = geometry.vertex_count;
+    desc.Triangles.VertexFormat = ImageToDXGIFormat(geometry.vertex_format);
+    desc.Triangles.IndexBuffer = index_buffer->GetGPUVirtualAddress() + geometry.index_offset;
+    desc.Triangles.IndexCount = geometry.index_count;
+    desc.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
+    return desc;
+}
+
+D3D12_RAYTRACING_INSTANCE_DESC ToD3D12InstanceDesc(AccelerationStructureInstanceDesc const& instance)
+{
+    auto* bottom_level = dynamic_cast<D3D12AccelerationStructure*>(instance.bottom_level);
+    if (!bottom_level || bottom_level->GetType() != AccelerationStructureType::kBottomLevel)
+    {
+        throw std::runtime_error("D3D12CommandBuffer::BuildTopLevelAccelerationStructure: instance BLAS is invalid");
+    }
+
+    D3D12_RAYTRACING_INSTANCE_DESC desc = {};
+    std::memcpy(desc.Transform, instance.transform, sizeof(desc.Transform));
+    desc.InstanceID = instance.instance_id;
+    desc.InstanceMask = instance.instance_mask;
+    desc.InstanceContributionToHitGroupIndex = 0;
+    desc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
+    desc.AccelerationStructure = bottom_level->GetGpuAddress();
+    return desc;
+}
 
 }  // namespace
 
@@ -54,8 +96,8 @@ D3D12CommandBuffer::D3D12CommandBuffer(D3D12Device& device, D3D12Queue& queue,
 {
     auto d3d12_device = device_.GetD3D12Device();
     ThrowIfFailed(d3d12_device->CreateCommandAllocator(command_list_type_, IID_PPV_ARGS(&command_allocator_)));
-    ThrowIfFailed(d3d12_device->CreateCommandList(0, command_list_type_, command_allocator_.Get(),
-        nullptr, IID_PPV_ARGS(&cmd_list_)));
+    ThrowIfFailed(d3d12_device
+            ->CreateCommandList(0, command_list_type_, command_allocator_.Get(), nullptr, IID_PPV_ARGS(&cmd_list_)));
 }
 
 void D3D12CommandBuffer::SetVertexBuffer(BufferPtr buffer, size_t vertex_stride)
@@ -288,6 +330,134 @@ void D3D12CommandBuffer::StorageBarrier(BufferPtr buffer)
     cmd_list_->ResourceBarrier(1, &barrier);
 }
 
+void D3D12CommandBuffer::TransitionBuffer(D3D12Buffer& buffer, D3D12_RESOURCE_STATES state_after)
+{
+    D3D12_RESOURCE_STATES state_before = buffer.GetCurrentState();
+    if (state_before == state_after)
+    {
+        return;
+    }
+
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = buffer.GetResource();
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    barrier.Transition.StateBefore = state_before;
+    barrier.Transition.StateAfter = state_after;
+    cmd_list_->ResourceBarrier(1, &barrier);
+    buffer.SetCurrentState(state_after);
+}
+
+void D3D12CommandBuffer::BuildBottomLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
+    std::vector<AccelerationStructureGeometryDesc> const& geometries)
+{
+    auto* bottom_level = dynamic_cast<D3D12AccelerationStructure*>(&acceleration_structure);
+    if (!bottom_level || bottom_level->GetType() != AccelerationStructureType::kBottomLevel)
+    {
+        throw std::runtime_error(
+            "D3D12CommandBuffer::BuildBottomLevelAccelerationStructure: acceleration structure is not a D3D12 BLAS");
+    }
+    if (geometries.empty())
+    {
+        throw std::runtime_error("D3D12CommandBuffer::BuildBottomLevelAccelerationStructure: geometry list is empty");
+    }
+
+    BufferPtr scratch_buffer = device_.CreateBuffer(bottom_level->GetBuildScratchSize(),
+        1,
+        BufferFlags::kStorage | BufferFlags::kAccelerationStructureBuildInput);
+    auto* scratch = dynamic_cast<D3D12Buffer*>(scratch_buffer.get());
+    staging_buffers_.push_back(scratch_buffer);
+
+    std::vector<D3D12_RAYTRACING_GEOMETRY_DESC> d3d12_geometries;
+    d3d12_geometries.reserve(geometries.size());
+    for (AccelerationStructureGeometryDesc const& geometry : geometries)
+    {
+        auto* vertex_buffer = dynamic_cast<D3D12Buffer*>(geometry.vertex_buffer.get());
+        auto* index_buffer = dynamic_cast<D3D12Buffer*>(geometry.index_buffer.get());
+        if (!vertex_buffer || !index_buffer)
+        {
+            throw std::runtime_error(
+                "D3D12CommandBuffer::BuildBottomLevelAccelerationStructure: geometry buffers are invalid");
+        }
+
+        TransitionBuffer(*vertex_buffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        TransitionBuffer(*index_buffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        d3d12_geometries.push_back(ToD3D12GeometryDesc(geometry));
+    }
+    TransitionBuffer(*scratch, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC build_desc = {};
+    build_desc.DestAccelerationStructureData = bottom_level->GetGpuAddress();
+    build_desc.ScratchAccelerationStructureData = scratch->GetGPUVirtualAddress();
+    build_desc.Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+    build_desc.Inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+    build_desc.Inputs.NumDescs = static_cast<UINT>(d3d12_geometries.size());
+    build_desc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+    build_desc.Inputs.pGeometryDescs = d3d12_geometries.data();
+
+    ComPtr<ID3D12GraphicsCommandList4> rt_command_list;
+    ThrowIfFailed(cmd_list_.As(&rt_command_list));
+    rt_command_list->BuildRaytracingAccelerationStructure(&build_desc, 0, nullptr);
+    StorageBarrier(bottom_level->GetStorageBuffer());
+}
+
+void D3D12CommandBuffer::BuildTopLevelAccelerationStructure(AccelerationStructure& acceleration_structure,
+    std::vector<AccelerationStructureInstanceDesc> const& instances)
+{
+    auto* top_level = dynamic_cast<D3D12AccelerationStructure*>(&acceleration_structure);
+    if (!top_level || top_level->GetType() != AccelerationStructureType::kTopLevel)
+    {
+        throw std::runtime_error(
+            "D3D12CommandBuffer::BuildTopLevelAccelerationStructure: acceleration structure is not a D3D12 TLAS");
+    }
+    if (instances.empty())
+    {
+        throw std::runtime_error("D3D12CommandBuffer::BuildTopLevelAccelerationStructure: instance list is empty");
+    }
+
+    BufferPtr scratch_buffer = device_.CreateBuffer(top_level->GetBuildScratchSize(),
+        1,
+        BufferFlags::kStorage | BufferFlags::kAccelerationStructureBuildInput);
+    auto* scratch = dynamic_cast<D3D12Buffer*>(scratch_buffer.get());
+    staging_buffers_.push_back(scratch_buffer);
+
+    std::vector<D3D12_RAYTRACING_INSTANCE_DESC> d3d12_instances;
+    d3d12_instances.reserve(instances.size());
+    for (AccelerationStructureInstanceDesc const& instance : instances)
+    {
+        d3d12_instances.push_back(ToD3D12InstanceDesc(instance));
+    }
+
+    uint64_t instance_data_size = d3d12_instances.size() * sizeof(D3D12_RAYTRACING_INSTANCE_DESC);
+    BufferPtr upload_buffer = device_.CreateBuffer(instance_data_size, 1, BufferFlags::kCpuAccess);
+    std::memcpy(upload_buffer->Map(), d3d12_instances.data(), instance_data_size);
+    upload_buffer->Unmap();
+
+    BufferPtr instance_buffer = device_.CreateBuffer(instance_data_size,
+        1,
+        BufferFlags::kAccelerationStructureBuildInput);
+    CopyBuffer(upload_buffer, 0, instance_buffer, 0, instance_data_size);
+    staging_buffers_.push_back(upload_buffer);
+    staging_buffers_.push_back(instance_buffer);
+
+    auto* d3d12_instance_buffer = dynamic_cast<D3D12Buffer*>(instance_buffer.get());
+    TransitionBuffer(*d3d12_instance_buffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+    TransitionBuffer(*scratch, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC build_desc = {};
+    build_desc.DestAccelerationStructureData = top_level->GetGpuAddress();
+    build_desc.ScratchAccelerationStructureData = scratch->GetGPUVirtualAddress();
+    build_desc.Inputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
+    build_desc.Inputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+    build_desc.Inputs.NumDescs = static_cast<UINT>(d3d12_instances.size());
+    build_desc.Inputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+    build_desc.Inputs.InstanceDescs = d3d12_instance_buffer->GetGPUVirtualAddress();
+
+    ComPtr<ID3D12GraphicsCommandList4> rt_command_list;
+    ThrowIfFailed(cmd_list_.As(&rt_command_list));
+    rt_command_list->BuildRaytracingAccelerationStructure(&build_desc, 0, nullptr);
+    StorageBarrier(top_level->GetStorageBuffer());
+}
+
 void D3D12CommandBuffer::CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset,
     uint64_t size)
 {
@@ -295,7 +465,13 @@ void D3D12CommandBuffer::CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPt
     D3D12Buffer* d3d12_dst = static_cast<D3D12Buffer*>(dst.get());
     assert(d3d12_src && d3d12_dst && "D3D12CommandBuffer::CopyBuffer: src/dst must be D3D12Buffer");
 
+    if (d3d12_src->GetCurrentState() != D3D12_RESOURCE_STATE_GENERIC_READ)
+    {
+        TransitionBuffer(*d3d12_src, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    }
+    TransitionBuffer(*d3d12_dst, D3D12_RESOURCE_STATE_COPY_DEST);
     cmd_list_->CopyBufferRegion(d3d12_dst->GetResource(), dst_offset, d3d12_src->GetResource(), src_offset, size);
+    TransitionBuffer(*d3d12_dst, D3D12_RESOURCE_STATE_COMMON);
 }
 
 void D3D12CommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)
@@ -337,8 +513,8 @@ void D3D12CommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data
     UINT num_rows = 0;
     UINT64 row_size = 0;
     UINT64 total_size = 0;
-    device_.GetD3D12Device()->GetCopyableFootprints(&image_desc, 0, 1, 0,
-        &footprint, &num_rows, &row_size, &total_size);
+    device_.GetD3D12Device()
+        ->GetCopyableFootprints(&image_desc, 0, 1, 0, &footprint, &num_rows, &row_size, &total_size);
 
     const UINT64 required_source_size = row_size * num_rows;
     if (!data || data_size < required_source_size)

@@ -56,6 +56,7 @@ namespace
         case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
         case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
         case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+        case SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
         default:
             return ShaderDescriptorRangeType::kSRV;
         }
@@ -67,6 +68,8 @@ namespace
         {
         case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
             return ShaderResourceType::kSampler;
+        case SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+            return ShaderResourceType::kAccelerationStructure;
         case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
         case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
         case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:

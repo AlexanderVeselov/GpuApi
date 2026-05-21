@@ -1,5 +1,6 @@
 #include "vulkan_descriptor_set.hpp"
 
+#include "vulkan_acceleration_structure.hpp"
 #include "vulkan_buffer.hpp"
 #include "vulkan_device.hpp"
 #include "vulkan_exception.hpp"
@@ -13,20 +14,20 @@ namespace gpu
 {
 namespace
 {
-    std::string BindingName(uint32_t binding, uint32_t space)
+std::string BindingName(uint32_t binding, uint32_t space)
+{
+    return "(binding = " + std::to_string(binding) + ", space = " + std::to_string(space) + ")";
+}
+
+VkImageLayout GetDescriptorImageLayout(VulkanBinding const& binding)
+{
+    if (binding.vk_descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
     {
-        return "(binding = " + std::to_string(binding) + ", space = " + std::to_string(space) + ")";
+        return VK_IMAGE_LAYOUT_GENERAL;
     }
 
-    VkImageLayout GetDescriptorImageLayout(VulkanBinding const& binding)
-    {
-        if (binding.vk_descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
-        {
-            return VK_IMAGE_LAYOUT_GENERAL;
-        }
-
-        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    }
+    return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
 }  // namespace
 
 VulkanDescriptorSet::VulkanDescriptorSet(VulkanDevice& device, VulkanPipelineLayout const& layout)
@@ -177,6 +178,37 @@ void VulkanDescriptorSet::BindSampler(Sampler& sampler, uint32_t binding, uint32
     write.descriptorCount = 1;
     write.descriptorType = vulkan_binding.vk_descriptor_type;
     write.pImageInfo = &sampler_info;
+
+    vkUpdateDescriptorSets(device_.GetDevice(), 1, &write, 0, nullptr);
+}
+
+void VulkanDescriptorSet::BindAccelerationStructure(AccelerationStructure& acceleration_structure, uint32_t binding,
+    uint32_t space)
+{
+    auto* vulkan_acceleration_structure = dynamic_cast<VulkanAccelerationStructure*>(&acceleration_structure);
+    THROW_IF(!vulkan_acceleration_structure, "Acceleration structure does not belong to the Vulkan backend");
+
+    VulkanBinding const& vulkan_binding = FindBinding(binding, space);
+    if (vulkan_binding.resource_type != ShaderResourceType::kAccelerationStructure)
+    {
+        throw std::runtime_error("VulkanDescriptorSet::BindAccelerationStructure: pipeline binding "
+            + BindingName(binding, space) + " is not an acceleration-structure binding");
+    }
+
+    VkAccelerationStructureKHR handle = vulkan_acceleration_structure->GetHandle();
+    VkWriteDescriptorSetAccelerationStructureKHR acceleration_structure_info{};
+    acceleration_structure_info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+    acceleration_structure_info.accelerationStructureCount = 1;
+    acceleration_structure_info.pAccelerationStructures = &handle;
+
+    VkWriteDescriptorSet write = {};
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = &acceleration_structure_info;
+    write.dstSet = descriptor_sets_[vulkan_binding.set];
+    write.dstBinding = vulkan_binding.binding;
+    write.dstArrayElement = 0;
+    write.descriptorCount = 1;
+    write.descriptorType = vulkan_binding.vk_descriptor_type;
 
     vkUpdateDescriptorSets(device_.GetDevice(), 1, &write, 0, nullptr);
 }

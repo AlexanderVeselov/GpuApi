@@ -64,6 +64,8 @@ ShaderResourceType GetResourceType(D3D_SHADER_INPUT_TYPE type)
     {
     case D3D_SIT_SAMPLER:
         return ShaderResourceType::kSampler;
+    case D3D_SIT_RTACCELERATIONSTRUCTURE:
+        return ShaderResourceType::kAccelerationStructure;
     case D3D_SIT_TEXTURE:
     case D3D_SIT_UAV_RWTYPED:
         return ShaderResourceType::kImage;
@@ -112,7 +114,7 @@ ImageFormat GetInputFormat(D3D_REGISTER_COMPONENT_TYPE component_type, uint8_t c
 
     return ImageFormat::kUnknown;
 }
-} // namespace
+}  // namespace
 
 ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection)
 {
@@ -125,8 +127,7 @@ ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection)
     reflection->GetDesc(&shader_desc);
 
     ShaderReflection result;
-    result.stage = GetShaderStage(
-        static_cast<D3D12_SHADER_VERSION_TYPE>(D3D12_SHVER_GET_TYPE(shader_desc.Version)));
+    result.stage = GetShaderStage(static_cast<D3D12_SHADER_VERSION_TYPE>(D3D12_SHVER_GET_TYPE(shader_desc.Version)));
 
     uint32_t stage_mask = static_cast<uint32_t>(result.stage);
 
@@ -146,8 +147,7 @@ ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection)
 
         if (resource_desc.Type == D3D_SIT_CBUFFER && binding.name == "$Globals")
         {
-            ID3D12ShaderReflectionConstantBuffer* cb =
-                reflection->GetConstantBufferByName(binding.name.c_str());
+            ID3D12ShaderReflectionConstantBuffer* cb = reflection->GetConstantBufferByName(binding.name.c_str());
             assert(cb && "BuildD3D12ShaderReflection: $Globals constant buffer was not found");
 
             D3D12_SHADER_BUFFER_DESC buffer_desc = {};
@@ -181,4 +181,4 @@ ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection)
     return result;
 }
 
-} // namespace gpu
+}  // namespace gpu

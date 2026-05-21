@@ -10,17 +10,18 @@ class VulkanDevice;
 
 class VulkanMemoryManager
 {
-  public:
+public:
     explicit VulkanMemoryManager(VulkanDevice& device);
 
-    VkDeviceMemory AllocateMemory(
-        VkMemoryRequirements requirements, VkMemoryPropertyFlags properties);
+    VkDeviceMemory AllocateMemory(VkMemoryRequirements requirements, VkMemoryPropertyFlags properties);
+    VkDeviceMemory AllocateMemory(VkMemoryRequirements requirements, VkMemoryPropertyFlags properties,
+        VkMemoryAllocateFlags allocate_flags);
 
-  private:
+private:
     uint32_t FindMemoryTypeIndex(uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const;
 
-  private:
+private:
     VulkanDevice& device_;
 };
 
-} // namespace gpu
+}  // namespace gpu

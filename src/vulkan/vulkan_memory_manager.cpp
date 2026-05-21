@@ -5,12 +5,9 @@
 
 namespace gpu
 {
-VulkanMemoryManager::VulkanMemoryManager(VulkanDevice& device) : device_(device)
-{
-}
+VulkanMemoryManager::VulkanMemoryManager(VulkanDevice& device) : device_(device) {}
 
-uint32_t VulkanMemoryManager::FindMemoryTypeIndex(
-    uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const
+uint32_t VulkanMemoryManager::FindMemoryTypeIndex(uint32_t memory_type_bits, VkMemoryPropertyFlags properties) const
 {
     VkPhysicalDeviceMemoryProperties memory_properties{};
     vkGetPhysicalDeviceMemoryProperties(device_.GetPhysicalDevice(), &memory_properties);
@@ -18,8 +15,7 @@ uint32_t VulkanMemoryManager::FindMemoryTypeIndex(
     for (uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i)
     {
         bool supported = (memory_type_bits & (1u << i)) != 0;
-        bool has_properties =
-            (memory_properties.memoryTypes[i].propertyFlags & properties) == properties;
+        bool has_properties = (memory_properties.memoryTypes[i].propertyFlags & properties) == properties;
 
         if (supported && has_properties)
         {
@@ -30,21 +26,32 @@ uint32_t VulkanMemoryManager::FindMemoryTypeIndex(
     throw std::runtime_error("Failed to find suitable Vulkan memory type");
 }
 
-VkDeviceMemory VulkanMemoryManager::AllocateMemory(
-    VkMemoryRequirements requirements, VkMemoryPropertyFlags properties)
+VkDeviceMemory VulkanMemoryManager::AllocateMemory(VkMemoryRequirements requirements, VkMemoryPropertyFlags properties)
+{
+    return AllocateMemory(requirements, properties, 0);
+}
+
+VkDeviceMemory VulkanMemoryManager::AllocateMemory(VkMemoryRequirements requirements, VkMemoryPropertyFlags properties,
+    VkMemoryAllocateFlags allocate_flags)
 {
     VkMemoryAllocateInfo memory_allocate_info{};
     memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memory_allocate_info.allocationSize = requirements.size;
-    memory_allocate_info.memoryTypeIndex =
-        FindMemoryTypeIndex(requirements.memoryTypeBits, properties);
+    memory_allocate_info.memoryTypeIndex = FindMemoryTypeIndex(requirements.memoryTypeBits, properties);
+
+    VkMemoryAllocateFlagsInfo allocate_flags_info{};
+    if (allocate_flags != 0)
+    {
+        allocate_flags_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+        allocate_flags_info.flags = allocate_flags;
+        memory_allocate_info.pNext = &allocate_flags_info;
+    }
 
     VkDeviceMemory memory = VK_NULL_HANDLE;
-    VkResult status =
-        vkAllocateMemory(device_.GetDevice(), &memory_allocate_info, nullptr, &memory);
+    VkResult status = vkAllocateMemory(device_.GetDevice(), &memory_allocate_info, nullptr, &memory);
     VK_THROW_IF_FAILED(status, "Failed to allocate Vulkan memory");
 
     return memory;
 }
 
-} // namespace gpu
+}  // namespace gpu

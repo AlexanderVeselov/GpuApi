@@ -5,6 +5,8 @@ project(GpuApi)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(VULKAN_SOURCES
+    src/vulkan/vulkan_acceleration_structure.cpp
+    src/vulkan/vulkan_acceleration_structure.hpp
     src/vulkan/vulkan_api.cpp
     src/vulkan/vulkan_api.hpp
     src/vulkan/vulkan_buffer.cpp
@@ -41,6 +43,7 @@ set(VULKAN_SOURCES
 )
 
 set(INCLUDE_FILES
+    inc/gpu_acceleration_structure.hpp
     inc/gpu_api.hpp
     inc/gpu_buffer.hpp
     inc/gpu_command_buffer.hpp
@@ -56,6 +59,8 @@ set(INCLUDE_FILES
 )
 
 set(D3D12_FILES
+    src/d3d12/d3d12_acceleration_structure.cpp
+    src/d3d12/d3d12_acceleration_structure.hpp
     src/d3d12/d3d12_api.cpp
     src/d3d12/d3d12_api.hpp
     src/d3d12/d3d12_buffer.cpp
@@ -91,6 +96,7 @@ set(D3D12_FILES
 )
 
 set(COMMON_SOURCES
+    src/common/gpu_acceleration_structure.cpp
     src/common/gpu_api.cpp
     src/common/gpu_device.cpp
     src/common/gpu_pipeline.cpp

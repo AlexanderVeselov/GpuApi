@@ -28,7 +28,7 @@ void ThrowIfDxcFailed(HRESULT hr, char const* message)
         throw std::runtime_error(message);
     }
 }
-} // namespace
+}  // namespace
 
 VulkanShaderManager::VulkanShaderManager(char const* shader_path) : shader_path_(shader_path)
 {
@@ -92,6 +92,9 @@ VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const
     shader_args.push_back(w_shader_profile.c_str());
     shader_args.push_back(L"-spirv");
     shader_args.push_back(L"-fspv-target-env=vulkan1.2");
+    shader_args.push_back(L"-fspv-extension=SPV_EXT_descriptor_indexing");
+    shader_args.push_back(L"-fspv-extension=SPV_KHR_ray_query");
+    shader_args.push_back(L"-fspv-extension=SPV_KHR_ray_tracing");
     shader_args.push_back(L"-fvk-use-dx-layout");
     shader_args.push_back(L"-Zpr");
     shader_args.push_back(L"-D");
@@ -121,8 +124,10 @@ VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const
 #endif
 
     ComPtr<IDxcResult> dxc_result;
-    ThrowIfDxcFailed(dxc_compiler_->Compile(&shader_source, shader_args.data(),
-                         static_cast<UINT32>(shader_args.size()), dxc_include_handler_,
+    ThrowIfDxcFailed(dxc_compiler_->Compile(&shader_source,
+                         shader_args.data(),
+                         static_cast<UINT32>(shader_args.size()),
+                         dxc_include_handler_,
                          IID_PPV_ARGS(&dxc_result)),
         "VulkanShaderManager::CompileShader: DXC compile call failed");
 
@@ -154,4 +159,4 @@ VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const
     return shader;
 }
 
-} // namespace gpu
+}  // namespace gpu
