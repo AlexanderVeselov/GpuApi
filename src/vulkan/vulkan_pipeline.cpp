@@ -314,7 +314,7 @@ VulkanComputePipeline::VulkanComputePipeline(VulkanDevice& device, char const* c
 
 void VulkanComputePipeline::Reload()
 {
-    VulkanShader cs_shader = device_.GetApi().GetShaderManager().CompileShader(cs_filename_.c_str(), "main", "cs_6_0");
+    VulkanShader cs_shader = device_.GetApi().GetShaderManager().CompileShader(cs_filename_.c_str(), "main", "cs_6_5");
     if (pipeline_ == VK_NULL_HANDLE)
     {
         layout_.Build({&cs_shader.reflection});

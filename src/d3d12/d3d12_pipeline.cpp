@@ -280,7 +280,7 @@ void D3D12ComputePipeline::Reload()
     auto d3d12_device = device_.GetD3D12Device();
     D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
-    D3D12Shader cs_shader = shader_manager.CompileShader(cs_filename_.c_str(), "main", "cs_6_0");
+    D3D12Shader cs_shader = shader_manager.CompileShader(cs_filename_.c_str(), "main", "cs_6_5");
     D3D12_SHADER_BYTECODE cs_bytecode = {};
     cs_bytecode.BytecodeLength = cs_shader.dxc_blob->GetBufferSize();
     cs_bytecode.pShaderBytecode = cs_shader.dxc_blob->GetBufferPointer();
