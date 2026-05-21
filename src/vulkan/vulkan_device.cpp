@@ -1,5 +1,6 @@
 #include "vulkan_device.hpp"
 
+#include "vulkan_acceleration_structure.hpp"
 #include "vulkan_api.hpp"
 #include "vulkan_buffer.hpp"
 #include "vulkan_exception.hpp"
@@ -12,6 +13,9 @@
 
 #include <algorithm>
 #include <array>
+#include <cstring>
+#include <stdexcept>
+#include <utility>
 
 namespace gpu
 {
@@ -73,6 +77,52 @@ void VulkanDevice::FindQueueFamilyIndices()
     THROW_IF(transfer_queue_family_index_ == UINT32_MAX, "No Vulkan transfer queue family");
 }
 
+bool VulkanDevice::CheckRayQuerySupport() const
+{
+    uint32_t extension_count = 0;
+    VkResult status = vkEnumerateDeviceExtensionProperties(physical_device_, nullptr, &extension_count, nullptr);
+    VK_THROW_IF_FAILED(status, "Failed to enumerate Vulkan device extensions");
+
+    std::vector<VkExtensionProperties> extensions(extension_count);
+    status = vkEnumerateDeviceExtensionProperties(physical_device_, nullptr, &extension_count, extensions.data());
+    VK_THROW_IF_FAILED(status, "Failed to enumerate Vulkan device extensions");
+
+    auto has_extension = [&](char const* extension_name)
+    {
+        return std::find_if(extensions.begin(),
+                   extensions.end(),
+                   [&](VkExtensionProperties const& extension)
+                   { return std::strcmp(extension.extensionName, extension_name) == 0; })
+            != extensions.end();
+    };
+
+    if (!has_extension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME) || !has_extension(VK_KHR_RAY_QUERY_EXTENSION_NAME)
+        || !has_extension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
+        || !has_extension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME))
+    {
+        return false;
+    }
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR acceleration_structure_features{};
+    acceleration_structure_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+
+    VkPhysicalDeviceRayQueryFeaturesKHR ray_query_features{};
+    ray_query_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+    ray_query_features.pNext = &acceleration_structure_features;
+
+    VkPhysicalDeviceBufferDeviceAddressFeatures buffer_device_address_features{};
+    buffer_device_address_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    buffer_device_address_features.pNext = &ray_query_features;
+
+    VkPhysicalDeviceFeatures2 features2{};
+    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    features2.pNext = &buffer_device_address_features;
+    vkGetPhysicalDeviceFeatures2(physical_device_, &features2);
+
+    return acceleration_structure_features.accelerationStructure == VK_TRUE && ray_query_features.rayQuery == VK_TRUE
+        && buffer_device_address_features.bufferDeviceAddress == VK_TRUE;
+}
+
 void VulkanDevice::CreateLogicalDevice()
 {
     std::array<uint32_t, 3> raw_indices = {
@@ -104,10 +154,18 @@ void VulkanDevice::CreateLogicalDevice()
         queue_create_infos.push_back(queue_create_info);
     }
 
+    ray_query_supported_ = CheckRayQuerySupport();
+
     std::vector<char const*> extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
     };
+    if (ray_query_supported_)
+    {
+        extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+    }
 
     VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering_features{};
     dynamic_rendering_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
@@ -116,11 +174,22 @@ void VulkanDevice::CreateLogicalDevice()
     VkPhysicalDeviceBufferDeviceAddressFeatures buffer_device_address_features{};
     buffer_device_address_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
     buffer_device_address_features.pNext = &dynamic_rendering_features;
-    buffer_device_address_features.bufferDeviceAddress = VK_TRUE;
+    buffer_device_address_features.bufferDeviceAddress = ray_query_supported_ ? VK_TRUE : VK_FALSE;
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR acceleration_structure_features{};
+    acceleration_structure_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    acceleration_structure_features.pNext = &buffer_device_address_features;
+    acceleration_structure_features.accelerationStructure = ray_query_supported_ ? VK_TRUE : VK_FALSE;
+
+    VkPhysicalDeviceRayQueryFeaturesKHR ray_query_features{};
+    ray_query_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+    ray_query_features.pNext = &acceleration_structure_features;
+    ray_query_features.rayQuery = ray_query_supported_ ? VK_TRUE : VK_FALSE;
 
     VkPhysicalDeviceDescriptorIndexingFeatures descriptor_indexing_features{};
     descriptor_indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-    descriptor_indexing_features.pNext = &buffer_device_address_features;
+    descriptor_indexing_features.pNext = ray_query_supported_ ? static_cast<void*>(&ray_query_features)
+                                                              : static_cast<void*>(&dynamic_rendering_features);
     descriptor_indexing_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
 
     VkDeviceCreateInfo device_create_info{};
@@ -138,6 +207,56 @@ void VulkanDevice::CreateLogicalDevice()
 BufferPtr VulkanDevice::CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags)
 {
     return std::make_shared<VulkanBuffer>(*this, size, stride, flags);
+}
+
+AccelerationStructurePtr VulkanDevice::CreateAccelerationStructure(AccelerationStructureType type, uint64_t size)
+{
+    if (!SupportsRayQuery())
+    {
+        throw std::runtime_error("VulkanDevice::CreateAccelerationStructure: ray query is not supported");
+    }
+    if (size == 0)
+    {
+        throw std::runtime_error("VulkanDevice::CreateAccelerationStructure: size must be greater than zero");
+    }
+
+    BufferPtr storage_buffer = CreateBuffer(size, 1, BufferFlags::kAccelerationStructureStorage);
+    auto* vulkan_buffer = dynamic_cast<VulkanBuffer*>(storage_buffer.get());
+    THROW_IF(!vulkan_buffer, "VulkanDevice::CreateAccelerationStructure: storage buffer is not a Vulkan buffer");
+
+    VkAccelerationStructureCreateInfoKHR create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+    create_info.buffer = vulkan_buffer->GetBuffer();
+    create_info.offset = 0;
+    create_info.size = size;
+    create_info.type = type == AccelerationStructureType::kBottomLevel ? VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR
+                                                                       : VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+
+    auto vk_create_acceleration_structure = reinterpret_cast<
+        PFN_vkCreateAccelerationStructureKHR>(vkGetDeviceProcAddr(device_, "vkCreateAccelerationStructureKHR"));
+    THROW_IF(!vk_create_acceleration_structure,
+        "VulkanDevice::CreateAccelerationStructure: vkCreateAccelerationStructureKHR is unavailable");
+
+    VkAccelerationStructureKHR handle = VK_NULL_HANDLE;
+    VkResult status = vk_create_acceleration_structure(device_, &create_info, nullptr, &handle);
+    VK_THROW_IF_FAILED(status, "Failed to create Vulkan acceleration structure");
+
+    VkAccelerationStructureDeviceAddressInfoKHR address_info{};
+    address_info.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+    address_info.accelerationStructure = handle;
+
+    auto vk_get_acceleration_structure_device_address = reinterpret_cast<
+        PFN_vkGetAccelerationStructureDeviceAddressKHR>(vkGetDeviceProcAddr(device_,
+        "vkGetAccelerationStructureDeviceAddressKHR"));
+    THROW_IF(!vk_get_acceleration_structure_device_address,
+        "VulkanDevice::CreateAccelerationStructure: vkGetAccelerationStructureDeviceAddressKHR is unavailable");
+
+    uint64_t device_address = vk_get_acceleration_structure_device_address(device_, &address_info);
+    return std::make_shared<VulkanAccelerationStructure>(*this,
+        type,
+        std::move(storage_buffer),
+        handle,
+        device_address);
 }
 
 ImagePtr VulkanDevice::CreateImage(uint32_t width, uint32_t height, ImageFormat format, ImageFlags flags,

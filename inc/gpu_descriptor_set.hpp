@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gpu_acceleration_structure.hpp"
 #include "gpu_buffer.hpp"
 #include "gpu_image.hpp"
 #include "gpu_sampler.hpp"
@@ -32,6 +33,10 @@ public:
 
     /// Binds an array of image views to a shader register and register space.
     virtual void BindImageArray(std::vector<ImageDescriptor> const& images, uint32_t binding, uint32_t space = 0) = 0;
+
+    /// Binds a ray tracing acceleration structure to a shader register and register space.
+    virtual void BindAccelerationStructure(AccelerationStructure& acceleration_structure, uint32_t binding,
+        uint32_t space = 0) = 0;
 
     /// Binds a sampler to a shader register and register space.
     virtual void BindSampler(Sampler& sampler, uint32_t binding, uint32_t space = 0) = 0;

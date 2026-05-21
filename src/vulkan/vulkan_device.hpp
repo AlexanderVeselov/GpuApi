@@ -19,6 +19,7 @@ public:
     ~VulkanDevice() override;
 
     BufferPtr CreateBuffer(std::size_t size, std::uint32_t stride, BufferFlags flags) override;
+    AccelerationStructurePtr CreateAccelerationStructure(AccelerationStructureType type, uint64_t size) override;
     ImagePtr CreateImage(uint32_t width, uint32_t height, ImageFormat format, ImageFlags flags, uint32_t mip_count = 1,
         uint32_t array_size = 1) override;
 
@@ -31,6 +32,7 @@ public:
     SwapchainPtr CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height,
         std::uint32_t image_count) override;
     ImGuiRendererPtr CreateImGuiRenderer(void* glfw_window, Swapchain& swapchain) override;
+    bool SupportsRayQuery() const override { return ray_query_supported_; }
 
     VulkanApi& GetApi() const { return api_; }
     VkPhysicalDevice GetPhysicalDevice() const { return physical_device_; }
@@ -43,6 +45,7 @@ public:
 
 private:
     void FindQueueFamilyIndices();
+    bool CheckRayQuerySupport() const;
     void CreateLogicalDevice();
     SamplerPtr CreateSampler(SamplerDesc const& desc) override;
 
@@ -59,6 +62,7 @@ private:
     std::unique_ptr<Queue> graphics_queue_;
     std::unique_ptr<Queue> compute_queue_;
     std::unique_ptr<Queue> transfer_queue_;
+    bool ray_query_supported_ = false;
 };
 
 }  // namespace gpu

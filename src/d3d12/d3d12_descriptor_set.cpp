@@ -1,4 +1,5 @@
 #include "d3d12_descriptor_set.hpp"
+#include "d3d12_acceleration_structure.hpp"
 #include "d3d12_buffer.hpp"
 #include "d3d12_device.hpp"
 #include "d3d12_image.hpp"
@@ -82,6 +83,13 @@ void D3D12DescriptorSet::BindImage(Image& image, ImageView const& view, uint32_t
 void D3D12DescriptorSet::BindSampler(Sampler& sampler, uint32_t binding, uint32_t space)
 {
     BindSampler(CastResource<D3D12Sampler>(sampler, "D3D12DescriptorSet::BindSampler"), binding, space);
+}
+
+void D3D12DescriptorSet::BindAccelerationStructure(AccelerationStructure& acceleration_structure,
+    uint32_t binding, uint32_t space)
+{
+    BindAccelerationStructure(CastResource<D3D12AccelerationStructure>(acceleration_structure,
+        "D3D12DescriptorSet::BindAccelerationStructure"), binding, space);
 }
 
 void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint32_t space)
@@ -173,6 +181,25 @@ void D3D12DescriptorSet::BindSampler(D3D12Sampler& sampler, uint32_t binding, ui
     }
 
     BindDescriptor(d3d12_binding, sampler.GetDescriptor());
+}
+
+void D3D12DescriptorSet::BindAccelerationStructure(D3D12AccelerationStructure& acceleration_structure, uint32_t binding,
+    uint32_t space)
+{
+    D3D12Binding const& d3d12_binding = FindBinding(binding, space);
+    if (d3d12_binding.type != D3D12Binding::ResourceType::kAccelerationStructure)
+    {
+        throw std::runtime_error("D3D12DescriptorSet::BindAccelerationStructure: pipeline binding "
+            + BindingName(binding, space) + " is not an acceleration-structure binding");
+    }
+
+    if (d3d12_binding.range_type != D3D12_DESCRIPTOR_RANGE_TYPE_SRV)
+    {
+        throw std::runtime_error("D3D12DescriptorSet::BindAccelerationStructure: pipeline binding "
+            + BindingName(binding, space) + " is not an SRV binding");
+    }
+
+    BindDescriptor(d3d12_binding, acceleration_structure.GetSRV());
 }
 
 void D3D12DescriptorSet::Clear()

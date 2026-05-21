@@ -68,6 +68,8 @@ D3D12Binding::ResourceType GetResourceType(ShaderResourceType type)
         return D3D12Binding::ResourceType::kImage;
     case ShaderResourceType::kSampler:
         return D3D12Binding::ResourceType::kSampler;
+    case ShaderResourceType::kAccelerationStructure:
+        return D3D12Binding::ResourceType::kAccelerationStructure;
     default:
         return D3D12Binding::ResourceType::kBuffer;
     }

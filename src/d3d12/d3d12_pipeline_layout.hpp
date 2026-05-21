@@ -18,7 +18,8 @@ struct D3D12Binding
     {
         kBuffer,
         kImage,
-        kSampler
+        kSampler,
+        kAccelerationStructure
     };
 
     enum class DescriptorType

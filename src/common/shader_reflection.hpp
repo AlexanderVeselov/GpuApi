@@ -22,7 +22,8 @@ enum class ShaderResourceType
 {
     kBuffer,
     kImage,
-    kSampler
+    kSampler,
+    kAccelerationStructure
 };
 
 enum class ShaderDescriptorType
@@ -67,4 +68,4 @@ struct ShaderReflection
     std::vector<ShaderInputParameter> input_parameters;
 };
 
-} // namespace gpu
+}  // namespace gpu

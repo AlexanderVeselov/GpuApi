@@ -18,7 +18,13 @@ VulkanAccelerationStructure::~VulkanAccelerationStructure()
 {
     if (handle_ != VK_NULL_HANDLE)
     {
-        vkDestroyAccelerationStructureKHR(device_.GetDevice(), handle_, nullptr);
+        auto vk_destroy_acceleration_structure = reinterpret_cast<
+            PFN_vkDestroyAccelerationStructureKHR>(vkGetDeviceProcAddr(device_.GetDevice(),
+            "vkDestroyAccelerationStructureKHR"));
+        if (vk_destroy_acceleration_structure)
+        {
+            vk_destroy_acceleration_structure(device_.GetDevice(), handle_, nullptr);
+        }
     }
 }
 

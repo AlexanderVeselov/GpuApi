@@ -71,6 +71,11 @@ VkDescriptorType ToVkDescriptorType(ShaderResourceType resource_type, ShaderDesc
         return VK_DESCRIPTOR_TYPE_SAMPLER;
     }
 
+    if (resource_type == ShaderResourceType::kAccelerationStructure)
+    {
+        return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+    }
+
     switch (range_type)
     {
     case ShaderDescriptorRangeType::kSRV:

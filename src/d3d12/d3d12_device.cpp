@@ -1,4 +1,5 @@
 #include "d3d12_device.hpp"
+#include "d3d12_acceleration_structure.hpp"
 #include "d3d12_buffer.hpp"
 #include "d3d12_exception.hpp"
 #include "d3d12_image.hpp"
@@ -8,12 +9,23 @@
 #include "d3d12_swapchain.hpp"
 
 #include <cassert>
+#include <stdexcept>
+#include <utility>
 
 namespace gpu
 {
+namespace
+{
+uint64_t AlignUp(uint64_t value, uint64_t alignment)
+{
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+}  // namespace
+
 D3D12Device::D3D12Device(D3D12Api& gpu_api, IDXGIAdapter1* dxgi_adapter) : api_(gpu_api)
 {
     ThrowIfFailed(D3D12CreateDevice(dxgi_adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12_device_)));
+    CheckRayQuerySupport();
 
     descriptor_manager_ = std::make_unique<D3D12DescriptorManager>(*this);
 
@@ -28,6 +40,13 @@ D3D12Device::~D3D12Device()
     compute_queue_.reset();
     graphics_queue_.reset();
     descriptor_manager_.reset();
+}
+
+void D3D12Device::CheckRayQuerySupport()
+{
+    D3D12_FEATURE_DATA_D3D12_OPTIONS5 options5 = {};
+    HRESULT hr = d3d12_device_->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &options5, sizeof(options5));
+    ray_query_supported_ = SUCCEEDED(hr) && options5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1;
 }
 
 void D3D12Device::WaitIdle()
@@ -60,6 +79,23 @@ Queue& D3D12Device::GetQueue(QueueType queue_type)
 BufferPtr D3D12Device::CreateBuffer(size_t size, uint32_t stride, BufferFlags flags)
 {
     return std::make_shared<D3D12Buffer>(*this, size, stride, flags);
+}
+
+AccelerationStructurePtr D3D12Device::CreateAccelerationStructure(AccelerationStructureType type, uint64_t size)
+{
+    if (!SupportsRayQuery())
+    {
+        throw std::runtime_error("D3D12Device::CreateAccelerationStructure: ray query is not supported");
+    }
+    if (size == 0)
+    {
+        throw std::runtime_error("D3D12Device::CreateAccelerationStructure: size must be greater than zero");
+    }
+
+    size = AlignUp(size, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT);
+    BufferPtr storage_buffer = CreateBuffer(size, 1, BufferFlags::kAccelerationStructureStorage);
+    uint64_t gpu_address = storage_buffer->GetGpuAddress();
+    return std::make_shared<D3D12AccelerationStructure>(*this, type, std::move(storage_buffer), gpu_address);
 }
 
 ImagePtr D3D12Device::CreateImage(uint32_t width, uint32_t height, ImageFormat format, ImageFlags flags,
