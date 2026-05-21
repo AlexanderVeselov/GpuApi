@@ -106,15 +106,21 @@ void VulkanDevice::CreateLogicalDevice()
 
     std::vector<char const*> extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
     };
 
     VkPhysicalDeviceDynamicRenderingFeatures dynamic_rendering_features{};
     dynamic_rendering_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
     dynamic_rendering_features.dynamicRendering = VK_TRUE;
 
+    VkPhysicalDeviceBufferDeviceAddressFeatures buffer_device_address_features{};
+    buffer_device_address_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+    buffer_device_address_features.pNext = &dynamic_rendering_features;
+    buffer_device_address_features.bufferDeviceAddress = VK_TRUE;
+
     VkPhysicalDeviceDescriptorIndexingFeatures descriptor_indexing_features{};
     descriptor_indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-    descriptor_indexing_features.pNext = &dynamic_rendering_features;
+    descriptor_indexing_features.pNext = &buffer_device_address_features;
     descriptor_indexing_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
 
     VkDeviceCreateInfo device_create_info{};

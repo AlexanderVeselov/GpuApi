@@ -16,7 +16,11 @@ enum class BufferFlags : uint32_t
     /// Buffer can be read by shaders.
     kShaderResource = 1 << 2,
     /// Buffer can be read and written by shaders.
-    kStorage = 1 << 3
+    kStorage = 1 << 3,
+    /// Buffer can be used as geometry input when building an acceleration structure.
+    kAccelerationStructureBuildInput = 1 << 4,
+    /// Buffer can store an acceleration structure.
+    kAccelerationStructureStorage = 1 << 5
 };
 
 inline BufferFlags operator|(BufferFlags lhs, BufferFlags rhs)
@@ -43,17 +47,12 @@ inline bool HasFlag(BufferFlags flags, BufferFlags flag)
 /// Backend-independent buffer resource.
 class Buffer
 {
-  public:
-    explicit Buffer(uint64_t size) : size_(size)
-    {
-    }
+public:
+    explicit Buffer(uint64_t size) : size_(size) {}
 
     virtual ~Buffer() = default;
 
-    uint64_t GetSize() const
-    {
-        return size_;
-    }
+    uint64_t GetSize() const { return size_; }
 
     /// Maps the buffer for CPU access. The buffer must have BufferFlags::kCpuAccess.
     virtual void* Map() = 0;
@@ -61,8 +60,11 @@ class Buffer
     /// Unmaps a previously mapped buffer.
     virtual void Unmap() = 0;
 
-  protected:
+    /// Returns a backend GPU/device address for APIs that use explicit addresses.
+    virtual uint64_t GetGpuAddress() const = 0;
+
+protected:
     uint64_t size_ = 0;
 };
 
-} // namespace gpu
+}  // namespace gpu

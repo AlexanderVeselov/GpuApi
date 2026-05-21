@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gpu_acceleration_structure.hpp"
 #include "gpu_buffer.hpp"
 #include "gpu_image.hpp"
 #include "gpu_imgui.hpp"
