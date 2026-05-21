@@ -22,6 +22,7 @@ reflected with SPIRV-Reflect.
 - Command buffers for draw, dispatch, copies, clears, barriers, render target binding, viewport and scissor
 - Runtime pipeline hot reload through `Device::ReloadPipelines`
 - Hardware ray tracing support through Ray Query acceleration structures
+- [Dear ImGui](https://github.com/ocornut/imgui) integration for both backends
 
 ## Repository Layout
 
