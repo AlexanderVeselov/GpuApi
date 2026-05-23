@@ -56,6 +56,7 @@ public:
 
     bool HasBinding(uint32_t binding, uint32_t space) const;
     D3D12Binding const& FindBinding(uint32_t binding, uint32_t space) const;
+    D3D12Binding const& FindRootConstants() const;
 
 private:
     void AddShaderReflection(ShaderReflection const& reflection);

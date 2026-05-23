@@ -51,7 +51,8 @@ public:
     virtual GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) = 0;
 
     /// Creates a compute pipeline from a compute shader path.
-    virtual ComputePipelinePtr CreateComputePipeline(char const* cs_filename) = 0;
+    virtual ComputePipelinePtr CreateComputePipeline(char const* cs_filename,
+        char const* root_constants_name = "g_RootConstants") = 0;
 
     /// Attempts to reload all pipelines. A pipeline keeps its old state if compilation fails or its shader layout
     /// changes.

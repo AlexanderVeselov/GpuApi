@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <string_view>
 
 namespace gpu
 {
@@ -114,13 +115,18 @@ ImageFormat GetInputFormat(D3D_REGISTER_COMPONENT_TYPE component_type, uint8_t c
 
     return ImageFormat::kUnknown;
 }
+
 }  // namespace
 
-ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection)
+ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection, char const* root_constants_name)
 {
     if (!reflection)
     {
         throw std::runtime_error("BuildD3D12ShaderReflection: reflection is null");
+    }
+    if (!root_constants_name || root_constants_name[0] == '\0')
+    {
+        throw std::runtime_error("BuildD3D12ShaderReflection: root constants name must not be empty");
     }
 
     D3D12_SHADER_DESC shader_desc = {};
@@ -145,16 +151,25 @@ ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection)
         binding.descriptor_count = resource_desc.BindCount;
         binding.stage_mask = stage_mask;
 
-        if (resource_desc.Type == D3D_SIT_CBUFFER && binding.name == "$Globals")
+        std::string_view const resource_desc_name = resource_desc.Name ? resource_desc.Name : "";
+        if (resource_desc.Type == D3D_SIT_CBUFFER && resource_desc_name == root_constants_name)
         {
             ID3D12ShaderReflectionConstantBuffer* cb = reflection->GetConstantBufferByName(binding.name.c_str());
-            assert(cb && "BuildD3D12ShaderReflection: $Globals constant buffer was not found");
+            if (!cb)
+            {
+                throw std::runtime_error("BuildD3D12ShaderReflection: root constant buffer '" + binding.name
+                    + "' was not found");
+            }
 
             D3D12_SHADER_BUFFER_DESC buffer_desc = {};
             cb->GetDesc(&buffer_desc);
+            if (buffer_desc.Size == 0 || (buffer_desc.Size % sizeof(uint32_t)) != 0)
+            {
+                throw std::runtime_error("BuildD3D12ShaderReflection: root constants must be 32-bit aligned");
+            }
 
             binding.descriptor_type = ShaderDescriptorType::kRootConstant;
-            binding.num_32bit_values = buffer_desc.Size / 4;
+            binding.num_32bit_values = buffer_desc.Size / sizeof(uint32_t);
         }
         else
         {

@@ -196,9 +196,9 @@ GraphicsPipelinePtr D3D12Device::CreateGraphicsPipeline(GraphicsPipelineDesc con
     return pipeline;
 }
 
-ComputePipelinePtr D3D12Device::CreateComputePipeline(char const* cs_filename)
+ComputePipelinePtr D3D12Device::CreateComputePipeline(char const* cs_filename, char const* root_constants_name)
 {
-    auto pipeline = std::make_unique<D3D12ComputePipeline>(*this, cs_filename);
+    auto pipeline = std::make_unique<D3D12ComputePipeline>(*this, cs_filename, root_constants_name);
     RegisterPipeline(pipeline.get());
     return pipeline;
 }

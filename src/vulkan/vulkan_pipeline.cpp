@@ -167,8 +167,10 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanDevice& device, GraphicsPip
 void VulkanGraphicsPipeline::Reload()
 {
     VulkanShaderManager& shader_manager = device_.GetApi().GetShaderManager();
-    VulkanShader vs_shader = shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(), "main", "vs_6_0");
-    VulkanShader ps_shader = shader_manager.CompileShader(pipeline_desc_.ps_filename.c_str(), "main", "ps_6_0");
+    VulkanShader vs_shader = shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(), "main", "vs_6_0", {},
+        pipeline_desc_.root_constants_name.c_str());
+    VulkanShader ps_shader = shader_manager.CompileShader(pipeline_desc_.ps_filename.c_str(), "main", "ps_6_0", {},
+        pipeline_desc_.root_constants_name.c_str());
 
     if (pipeline_ == VK_NULL_HANDLE)
     {
@@ -306,15 +308,17 @@ void VulkanGraphicsPipeline::Reload()
     pipeline_ = new_pipeline;
 }
 
-VulkanComputePipeline::VulkanComputePipeline(VulkanDevice& device, char const* cs_filename)
-    : ComputePipeline(cs_filename), VulkanPipeline(device)
+VulkanComputePipeline::VulkanComputePipeline(VulkanDevice& device, char const* cs_filename,
+    char const* root_constants_name)
+    : ComputePipeline(cs_filename, root_constants_name), VulkanPipeline(device)
 {
     Reload();
 }
 
 void VulkanComputePipeline::Reload()
 {
-    VulkanShader cs_shader = device_.GetApi().GetShaderManager().CompileShader(cs_filename_.c_str(), "main", "cs_6_5");
+    VulkanShader cs_shader = device_.GetApi().GetShaderManager().CompileShader(cs_filename_.c_str(), "main", "cs_6_5",
+        {}, root_constants_name_.c_str());
     if (pipeline_ == VK_NULL_HANDLE)
     {
         layout_.Build({&cs_shader.reflection});

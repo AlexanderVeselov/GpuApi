@@ -228,7 +228,8 @@ VulkanBinding const& VulkanDescriptorSet::FindBinding(uint32_t binding, uint32_t
 {
     for (VulkanBinding const& vulkan_binding : layout_.GetBindings())
     {
-        if (vulkan_binding.binding == binding && vulkan_binding.set == space)
+        if (vulkan_binding.binding == binding && vulkan_binding.set == space
+            && vulkan_binding.descriptor_type == ShaderDescriptorType::kDescriptorTable)
         {
             return vulkan_binding;
         }

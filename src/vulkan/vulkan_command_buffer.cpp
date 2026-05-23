@@ -9,6 +9,7 @@
 #include "vulkan_pipeline.hpp"
 
 #include <cstring>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -212,6 +213,7 @@ void VulkanCommandBuffer::BindPipeline(GraphicsPipelinePtr const& pipeline)
         "Current vertex buffer stride does not match the Vulkan graphics pipeline input layout");
 
     current_graphics_pipeline_ = vulkan_pipeline;
+    current_compute_pipeline_ = nullptr;
     current_pipeline_bind_point_ = VK_PIPELINE_BIND_POINT_GRAPHICS;
     vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan_pipeline->GetPipeline());
 }
@@ -222,6 +224,7 @@ void VulkanCommandBuffer::BindPipeline(ComputePipelinePtr const& pipeline)
     THROW_IF(!vulkan_pipeline, "Compute pipeline does not belong to the Vulkan backend");
 
     current_compute_pipeline_ = vulkan_pipeline;
+    current_graphics_pipeline_ = nullptr;
     current_pipeline_bind_point_ = VK_PIPELINE_BIND_POINT_COMPUTE;
     vkCmdBindPipeline(command_buffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vulkan_pipeline->GetPipeline());
 }
@@ -261,6 +264,46 @@ void VulkanCommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_s
 
     THROW_IF(current_pipeline_bind_point_ == VK_PIPELINE_BIND_POINT_MAX_ENUM,
         "A Vulkan pipeline must be bound before binding descriptor sets");
+}
+
+void VulkanCommandBuffer::SetRootConstants(void const* data, size_t data_size, size_t dst_offset)
+{
+    THROW_IF(!data || data_size == 0, "Root-constant data is empty");
+    THROW_IF((data_size % sizeof(uint32_t)) != 0 || (dst_offset % sizeof(uint32_t)) != 0,
+        "Root-constant data size and offset must be 32-bit aligned");
+    THROW_IF(current_pipeline_bind_point_ == VK_PIPELINE_BIND_POINT_MAX_ENUM,
+        "A Vulkan pipeline must be bound before setting root constants");
+
+    VulkanPipelineLayout const* layout = nullptr;
+    VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
+    if (current_pipeline_bind_point_ == VK_PIPELINE_BIND_POINT_GRAPHICS)
+    {
+        THROW_IF(!current_graphics_pipeline_, "No Vulkan graphics pipeline is currently bound");
+        layout = &current_graphics_pipeline_->GetLayout();
+        pipeline_layout = current_graphics_pipeline_->GetPipelineLayout();
+    }
+    else
+    {
+        THROW_IF(!current_compute_pipeline_, "No Vulkan compute pipeline is currently bound");
+        layout = &current_compute_pipeline_->GetLayout();
+        pipeline_layout = current_compute_pipeline_->GetPipelineLayout();
+    }
+
+    VulkanBinding const& root_constant = layout->FindRootConstants();
+
+    constexpr uint32_t kMaxUInt32 = (std::numeric_limits<uint32_t>::max)();
+    THROW_IF(data_size > kMaxUInt32, "Root-constant data size exceeds Vulkan uint32_t range");
+    THROW_IF(dst_offset > kMaxUInt32, "Root-constant destination offset exceeds Vulkan uint32_t range");
+    THROW_IF(dst_offset > kMaxUInt32 - root_constant.push_constant_offset,
+        "Root-constant destination offset overflows push-constant range");
+
+    uint32_t const write_size = static_cast<uint32_t>(data_size);
+    uint32_t const write_offset = root_constant.push_constant_offset + static_cast<uint32_t>(dst_offset);
+    THROW_IF(write_size > kMaxUInt32 - write_offset, "Root-constant write range overflows Vulkan uint32_t range");
+    THROW_IF(write_offset + write_size > root_constant.push_constant_offset + root_constant.push_constant_size,
+        "Root-constant write range exceeds push-constant size");
+
+    vkCmdPushConstants(command_buffer_, pipeline_layout, root_constant.stage_flags, write_offset, write_size, data);
 }
 
 void VulkanCommandBuffer::SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment)

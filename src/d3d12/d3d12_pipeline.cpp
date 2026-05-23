@@ -163,12 +163,14 @@ void D3D12GraphicsPipeline::Reload()
 
     D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
-    D3D12Shader vs_shader = shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(), "main", "vs_6_0");
+    D3D12Shader vs_shader = shader_manager.CompileShader(pipeline_desc_.vs_filename.c_str(), "main", "vs_6_0", {},
+        pipeline_desc_.root_constants_name.c_str());
     D3D12_SHADER_BYTECODE vs_bytecode = {};
     vs_bytecode.BytecodeLength = vs_shader.dxc_blob->GetBufferSize();
     vs_bytecode.pShaderBytecode = vs_shader.dxc_blob->GetBufferPointer();
 
-    D3D12Shader ps_shader = shader_manager.CompileShader(pipeline_desc_.ps_filename.c_str(), "main", "ps_6_0");
+    D3D12Shader ps_shader = shader_manager.CompileShader(pipeline_desc_.ps_filename.c_str(), "main", "ps_6_0", {},
+        pipeline_desc_.root_constants_name.c_str());
     D3D12_SHADER_BYTECODE ps_bytecode = {};
     ps_bytecode.BytecodeLength = ps_shader.dxc_blob->GetBufferSize();
     ps_bytecode.pShaderBytecode = ps_shader.dxc_blob->GetBufferPointer();
@@ -245,7 +247,7 @@ void D3D12GraphicsPipeline::Reload()
     pipeline_state_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
     // Color attachments
-    pipeline_state_desc.NumRenderTargets = pipeline_desc_.color_attachment_formats.size();
+    pipeline_state_desc.NumRenderTargets = static_cast<UINT>(pipeline_desc_.color_attachment_formats.size());
     assert(pipeline_state_desc.NumRenderTargets < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT);
 
     for (uint32_t rt_index = 0; rt_index < pipeline_desc_.color_attachment_formats.size(); ++rt_index)
@@ -269,8 +271,9 @@ void D3D12GraphicsPipeline::Reload()
     pipeline_state_ = std::move(new_pipeline_state);
 }
 
-D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_filename)
-    : ComputePipeline(cs_filename), D3D12Pipeline(device)
+D3D12ComputePipeline::D3D12ComputePipeline(D3D12Device& device, char const* cs_filename,
+    char const* root_constants_name)
+    : ComputePipeline(cs_filename, root_constants_name), D3D12Pipeline(device)
 {
     Reload();
 }
@@ -280,7 +283,8 @@ void D3D12ComputePipeline::Reload()
     auto d3d12_device = device_.GetD3D12Device();
     D3D12ShaderManager& shader_manager = device_.GetD3D12Api().GetShaderManager();
 
-    D3D12Shader cs_shader = shader_manager.CompileShader(cs_filename_.c_str(), "main", "cs_6_5");
+    D3D12Shader cs_shader = shader_manager.CompileShader(cs_filename_.c_str(), "main", "cs_6_5", {},
+        root_constants_name_.c_str());
     D3D12_SHADER_BYTECODE cs_bytecode = {};
     cs_bytecode.BytecodeLength = cs_shader.dxc_blob->GetBufferSize();
     cs_bytecode.pShaderBytecode = cs_shader.dxc_blob->GetBufferPointer();

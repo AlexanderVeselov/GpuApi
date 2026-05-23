@@ -25,7 +25,8 @@ public:
     D3D12ShaderManager(char const* shader_path);
     void SetShaderPath(char const* shader_path);
     D3D12Shader CompileShader(char const* filename, char const* entry_point, char const* shader_profile,
-        std::vector<char const*> const& definitions = std::vector<char const*>());
+        std::vector<char const*> const& definitions = std::vector<char const*>(),
+        char const* root_constants_name = "g_RootConstants");
 
 private:
     std::string shader_path_;

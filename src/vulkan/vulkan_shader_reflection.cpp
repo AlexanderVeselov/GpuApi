@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <vector>
 
 namespace gpu
@@ -125,8 +127,13 @@ uint32_t GetDescriptorCount(SpvReflectDescriptorBinding const& binding)
 }
 }  // namespace
 
-ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv)
+ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv, char const* root_constants_name)
 {
+    if (!root_constants_name || root_constants_name[0] == '\0')
+    {
+        throw std::runtime_error("BuildVulkanShaderReflection: root constants name must not be empty");
+    }
+
     SpvReflectShaderModule module = {};
     ThrowIfSpvReflectFailed(spvReflectCreateShaderModule(spirv.size() * sizeof(uint32_t), spirv.data(), &module),
         "BuildVulkanShaderReflection: failed to create SPIR-V reflection module");
@@ -153,6 +160,50 @@ ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv)
         binding.descriptor_type = ShaderDescriptorType::kDescriptorTable;
         binding.range_type = ToRangeType(spv_binding->descriptor_type);
         binding.descriptor_count = GetDescriptorCount(*spv_binding);
+        binding.stage_mask = stage_mask;
+        reflection.bindings.push_back(binding);
+    }
+
+    uint32_t push_constant_count = 0;
+    ThrowIfSpvReflectFailed(spvReflectEnumeratePushConstantBlocks(&module, &push_constant_count, nullptr),
+        "BuildVulkanShaderReflection: failed to enumerate push constant count");
+    if (push_constant_count > 1)
+    {
+        spvReflectDestroyShaderModule(&module);
+        throw std::runtime_error("BuildVulkanShaderReflection: multiple push-constant blocks are not supported");
+    }
+
+    if (push_constant_count == 1)
+    {
+        SpvReflectBlockVariable* push_constant = nullptr;
+        ThrowIfSpvReflectFailed(spvReflectEnumeratePushConstantBlocks(&module, &push_constant_count, &push_constant),
+            "BuildVulkanShaderReflection: failed to enumerate push constant block");
+
+        std::string_view const push_constant_name = push_constant->name ? push_constant->name : "";
+        if (push_constant_name != root_constants_name)
+        {
+            std::string error = "BuildVulkanShaderReflection: push constant block name '";
+            error += push_constant_name;
+            error += "' does not match expected root constants name '";
+            error += root_constants_name;
+            error += "'";
+            spvReflectDestroyShaderModule(&module);
+            throw std::runtime_error(error);
+        }
+
+        if (push_constant->size == 0 || (push_constant->size % sizeof(uint32_t)) != 0)
+        {
+            spvReflectDestroyShaderModule(&module);
+            throw std::runtime_error("BuildVulkanShaderReflection: push constant block size must be 32-bit aligned");
+        }
+
+        ShaderBinding binding;
+        binding.name = root_constants_name;
+        binding.resource_type = ShaderResourceType::kBuffer;
+        binding.descriptor_type = ShaderDescriptorType::kRootConstant;
+        binding.range_type = ShaderDescriptorRangeType::kCBV;
+        binding.descriptor_count = 1;
+        binding.num_32bit_values = push_constant->size / sizeof(uint32_t);
         binding.stage_mask = stage_mask;
         reflection.bindings.push_back(binding);
     }

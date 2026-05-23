@@ -23,7 +23,7 @@ void D3D12ShaderManager::SetShaderPath(char const* shader_path)
 }
 
 D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* entry_point, char const* shader_profile,
-    std::vector<char const*> const& definitions)
+    std::vector<char const*> const& definitions, char const* root_constants_name)
 {
     ComPtr<IDxcBlobEncoding> dxc_source = nullptr;
     std::filesystem::path shader_file = filename;
@@ -53,6 +53,10 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
     shader_args.push_back(L"-Zpr");
     shader_args.push_back(L"-D");
     shader_args.push_back(L"IMAGE_FORMAT(format)=");
+    shader_args.push_back(L"-D");
+    shader_args.push_back(L"ROOT_CONSTANTS=");
+    shader_args.push_back(L"-D");
+    shader_args.push_back(L"D3D12=1");
 
     std::wstring w_shader_path;
     if (!shader_path_.empty())
@@ -110,7 +114,7 @@ D3D12Shader D3D12ShaderManager::CompileShader(char const* filename, char const* 
 
     ComPtr<ID3D12ShaderReflection> d3d12_reflection;
     dxc_utils_->CreateReflection(&reflection_buffer, IID_PPV_ARGS(&d3d12_reflection));
-    shader.reflection = BuildD3D12ShaderReflection(d3d12_reflection.Get());
+    shader.reflection = BuildD3D12ShaderReflection(d3d12_reflection.Get(), root_constants_name);
 
     return shader;
 }
