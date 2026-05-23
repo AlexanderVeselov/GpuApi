@@ -9,6 +9,7 @@
 #include "vulkan_pipeline.hpp"
 
 #include <cstring>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -290,8 +291,15 @@ void VulkanCommandBuffer::SetRootConstants(void const* data, size_t data_size, s
 
     VulkanBinding const& root_constant = layout->FindRootConstant();
 
+    constexpr uint32_t kMaxUInt32 = (std::numeric_limits<uint32_t>::max)();
+    THROW_IF(data_size > kMaxUInt32, "Root-constant data size exceeds Vulkan uint32_t range");
+    THROW_IF(dst_offset > kMaxUInt32, "Root-constant destination offset exceeds Vulkan uint32_t range");
+    THROW_IF(dst_offset > kMaxUInt32 - root_constant.push_constant_offset,
+        "Root-constant destination offset overflows push-constant range");
+
     uint32_t const write_size = static_cast<uint32_t>(data_size);
     uint32_t const write_offset = root_constant.push_constant_offset + static_cast<uint32_t>(dst_offset);
+    THROW_IF(write_size > kMaxUInt32 - write_offset, "Root-constant write range overflows Vulkan uint32_t range");
     THROW_IF(write_offset + write_size > root_constant.push_constant_offset + root_constant.push_constant_size,
         "Root-constant write range exceeds push-constant size");
 

@@ -127,6 +127,11 @@ uint32_t GetDescriptorCount(SpvReflectDescriptorBinding const& binding)
 
 ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv, char const* root_constants_name)
 {
+    if (!root_constants_name || root_constants_name[0] == '\0')
+    {
+        throw std::runtime_error("BuildVulkanShaderReflection: root constants name must not be empty");
+    }
+
     SpvReflectShaderModule module = {};
     ThrowIfSpvReflectFailed(spvReflectCreateShaderModule(spirv.size() * sizeof(uint32_t), spirv.data(), &module),
         "BuildVulkanShaderReflection: failed to create SPIR-V reflection module");
@@ -172,13 +177,19 @@ ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv,
         ThrowIfSpvReflectFailed(spvReflectEnumeratePushConstantBlocks(&module, &push_constant_count, &push_constant),
             "BuildVulkanShaderReflection: failed to enumerate push constant block");
 
+        if (push_constant->size == 0 || (push_constant->size % sizeof(uint32_t)) != 0)
+        {
+            spvReflectDestroyShaderModule(&module);
+            throw std::runtime_error("BuildVulkanShaderReflection: push constant block size must be 32-bit aligned");
+        }
+
         ShaderBinding binding;
-        binding.name = root_constants_name && root_constants_name[0] != '\0' ? root_constants_name : "$PushConstants";
+        binding.name = root_constants_name;
         binding.resource_type = ShaderResourceType::kBuffer;
         binding.descriptor_type = ShaderDescriptorType::kRootConstant;
         binding.range_type = ShaderDescriptorRangeType::kCBV;
         binding.descriptor_count = 1;
-        binding.num_32bit_values = (push_constant->size + sizeof(uint32_t) - 1) / sizeof(uint32_t);
+        binding.num_32bit_values = push_constant->size / sizeof(uint32_t);
         binding.stage_mask = stage_mask;
         reflection.bindings.push_back(binding);
     }

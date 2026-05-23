@@ -119,8 +119,7 @@ ImageFormat GetInputFormat(D3D_REGISTER_COMPONENT_TYPE component_type, uint8_t c
 bool IsRootConstantBuffer(char const* name, char const* root_constants_name)
 {
     std::string_view const buffer_name = name ? name : "";
-    std::string_view const expected_name = root_constants_name ? root_constants_name : "";
-    return !expected_name.empty() && buffer_name == expected_name;
+    return buffer_name == root_constants_name;
 }
 }  // namespace
 
@@ -129,6 +128,10 @@ ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection, 
     if (!reflection)
     {
         throw std::runtime_error("BuildD3D12ShaderReflection: reflection is null");
+    }
+    if (!root_constants_name || root_constants_name[0] == '\0')
+    {
+        throw std::runtime_error("BuildD3D12ShaderReflection: root constants name must not be empty");
     }
 
     D3D12_SHADER_DESC shader_desc = {};
@@ -156,7 +159,11 @@ ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection, 
         if (resource_desc.Type == D3D_SIT_CBUFFER && IsRootConstantBuffer(resource_desc.Name, root_constants_name))
         {
             ID3D12ShaderReflectionConstantBuffer* cb = reflection->GetConstantBufferByName(binding.name.c_str());
-            assert(cb && "BuildD3D12ShaderReflection: root constant buffer was not found");
+            if (!cb)
+            {
+                throw std::runtime_error("BuildD3D12ShaderReflection: root constant buffer '" + binding.name
+                    + "' was not found");
+            }
 
             D3D12_SHADER_BUFFER_DESC buffer_desc = {};
             cb->GetDesc(&buffer_desc);

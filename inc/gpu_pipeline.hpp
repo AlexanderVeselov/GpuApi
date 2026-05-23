@@ -3,6 +3,8 @@
 #include "gpu_descriptor_set.hpp"
 #include "gpu_types.hpp"
 
+#include <stdexcept>
+
 namespace gpu
 {
 /// Base class for graphics and compute pipelines.
@@ -22,7 +24,13 @@ public:
 class GraphicsPipeline : virtual public Pipeline
 {
 public:
-    explicit GraphicsPipeline(GraphicsPipelineDesc const& desc) : pipeline_desc_(desc) {}
+    explicit GraphicsPipeline(GraphicsPipelineDesc const& desc) : pipeline_desc_(desc)
+    {
+        if (pipeline_desc_.root_constants_name.empty())
+        {
+            throw std::runtime_error("GraphicsPipeline root constants name must not be empty");
+        }
+    }
 
     GraphicsPipelineDesc const& GetDesc() const { return pipeline_desc_; }
 
@@ -35,8 +43,12 @@ class ComputePipeline : virtual public Pipeline
 {
 public:
     explicit ComputePipeline(char const* cs_filename, char const* root_constants_name = "g_RootConstants")
-        : cs_filename_(cs_filename), root_constants_name_(root_constants_name ? root_constants_name : "")
+        : cs_filename_(cs_filename), root_constants_name_(root_constants_name)
     {
+        if (root_constants_name_.empty())
+        {
+            throw std::runtime_error("ComputePipeline root constants name must not be empty");
+        }
     }
 
     std::string const& GetCSFilename() const { return cs_filename_; }
