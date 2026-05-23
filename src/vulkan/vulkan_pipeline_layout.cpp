@@ -203,7 +203,7 @@ VulkanBinding const& VulkanPipelineLayout::FindBinding(uint32_t binding, uint32_
         + std::to_string(binding) + ", set = " + std::to_string(set) + ")");
 }
 
-VulkanBinding const& VulkanPipelineLayout::FindRootConstant() const
+VulkanBinding const& VulkanPipelineLayout::FindRootConstants() const
 {
     VulkanBinding const* result = nullptr;
     for (VulkanBinding const& vulkan_binding : bindings_)
@@ -212,7 +212,7 @@ VulkanBinding const& VulkanPipelineLayout::FindRootConstant() const
         {
             if (result)
             {
-                throw std::runtime_error("VulkanPipelineLayout::FindRootConstant: multiple root constants found");
+                throw std::runtime_error("VulkanPipelineLayout::FindRootConstants: multiple root constants found");
             }
             result = &vulkan_binding;
         }
@@ -220,7 +220,7 @@ VulkanBinding const& VulkanPipelineLayout::FindRootConstant() const
 
     if (!result)
     {
-        throw std::runtime_error("VulkanPipelineLayout::FindRootConstant: root constant was not found");
+        throw std::runtime_error("VulkanPipelineLayout::FindRootConstants: root constant was not found");
     }
     return *result;
 }

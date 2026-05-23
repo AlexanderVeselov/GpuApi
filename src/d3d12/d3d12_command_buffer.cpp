@@ -204,7 +204,7 @@ void D3D12CommandBuffer::SetRootConstants(void const* data, size_t data_size, si
         throw std::runtime_error("D3D12CommandBuffer::SetRootConstants: no pipeline is currently bound");
     }
 
-    D3D12Binding const& root_constant = layout->FindRootConstant();
+    D3D12Binding const& root_constant = layout->FindRootConstants();
     size_t const root_constant_size = static_cast<size_t>(root_constant.num_32bit_values) * sizeof(uint32_t);
     if (dst_offset + data_size > root_constant_size)
     {

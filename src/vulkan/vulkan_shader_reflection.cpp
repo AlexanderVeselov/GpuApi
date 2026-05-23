@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <vector>
 
 namespace gpu
@@ -176,6 +178,18 @@ ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv,
         SpvReflectBlockVariable* push_constant = nullptr;
         ThrowIfSpvReflectFailed(spvReflectEnumeratePushConstantBlocks(&module, &push_constant_count, &push_constant),
             "BuildVulkanShaderReflection: failed to enumerate push constant block");
+
+        std::string_view const push_constant_name = push_constant->name ? push_constant->name : "";
+        if (push_constant_name != root_constants_name)
+        {
+            std::string error = "BuildVulkanShaderReflection: push constant block name '";
+            error += push_constant_name;
+            error += "' does not match expected root constants name '";
+            error += root_constants_name;
+            error += "'";
+            spvReflectDestroyShaderModule(&module);
+            throw std::runtime_error(error);
+        }
 
         if (push_constant->size == 0 || (push_constant->size % sizeof(uint32_t)) != 0)
         {

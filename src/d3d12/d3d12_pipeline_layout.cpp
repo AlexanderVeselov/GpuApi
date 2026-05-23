@@ -188,7 +188,7 @@ D3D12Binding const& D3D12PipelineLayout::FindBinding(uint32_t binding, uint32_t 
         + ", space = " + std::to_string(space) + ") was not found");
 }
 
-D3D12Binding const& D3D12PipelineLayout::FindRootConstant() const
+D3D12Binding const& D3D12PipelineLayout::FindRootConstants() const
 {
     D3D12Binding const* result = nullptr;
     for (D3D12Binding const& d3d12_binding : bindings_)
@@ -197,7 +197,7 @@ D3D12Binding const& D3D12PipelineLayout::FindRootConstant() const
         {
             if (result)
             {
-                throw std::runtime_error("D3D12PipelineLayout::FindRootConstant: multiple root constants found");
+                throw std::runtime_error("D3D12PipelineLayout::FindRootConstants: multiple root constants found");
             }
             result = &d3d12_binding;
         }
@@ -205,7 +205,7 @@ D3D12Binding const& D3D12PipelineLayout::FindRootConstant() const
 
     if (!result)
     {
-        throw std::runtime_error("D3D12PipelineLayout::FindRootConstant: root constant was not found");
+        throw std::runtime_error("D3D12PipelineLayout::FindRootConstants: root constant was not found");
     }
     return *result;
 }

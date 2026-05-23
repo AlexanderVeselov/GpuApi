@@ -289,7 +289,7 @@ void VulkanCommandBuffer::SetRootConstants(void const* data, size_t data_size, s
         pipeline_layout = current_compute_pipeline_->GetPipelineLayout();
     }
 
-    VulkanBinding const& root_constant = layout->FindRootConstant();
+    VulkanBinding const& root_constant = layout->FindRootConstants();
 
     constexpr uint32_t kMaxUInt32 = (std::numeric_limits<uint32_t>::max)();
     THROW_IF(data_size > kMaxUInt32, "Root-constant data size exceeds Vulkan uint32_t range");

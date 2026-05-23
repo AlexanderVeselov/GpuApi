@@ -116,11 +116,6 @@ ImageFormat GetInputFormat(D3D_REGISTER_COMPONENT_TYPE component_type, uint8_t c
     return ImageFormat::kUnknown;
 }
 
-bool IsRootConstantBuffer(char const* name, char const* root_constants_name)
-{
-    std::string_view const buffer_name = name ? name : "";
-    return buffer_name == root_constants_name;
-}
 }  // namespace
 
 ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection, char const* root_constants_name)
@@ -156,7 +151,8 @@ ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection, 
         binding.descriptor_count = resource_desc.BindCount;
         binding.stage_mask = stage_mask;
 
-        if (resource_desc.Type == D3D_SIT_CBUFFER && IsRootConstantBuffer(resource_desc.Name, root_constants_name))
+        std::string_view const resource_desc_name = resource_desc.Name ? resource_desc.Name : "";
+        if (resource_desc.Type == D3D_SIT_CBUFFER && resource_desc_name == root_constants_name)
         {
             ID3D12ShaderReflectionConstantBuffer* cb = reflection->GetConstantBufferByName(binding.name.c_str());
             if (!cb)
