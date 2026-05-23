@@ -7,5 +7,5 @@
 
 namespace gpu
 {
-ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv);
+ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv, char const* root_constants_name);
 }

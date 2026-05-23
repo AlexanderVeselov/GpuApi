@@ -147,6 +147,7 @@ void D3D12CommandBuffer::BindPipeline(GraphicsPipelinePtr const& pipeline)
     }
 
     current_graphics_pipeline_ = d3d12_pipeline;
+    current_compute_pipeline_ = nullptr;
     cmd_list_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     cmd_list_->SetPipelineState(d3d12_pipeline->GetPipelineState());
     cmd_list_->SetGraphicsRootSignature(d3d12_pipeline->GetRootSignature());
@@ -158,6 +159,7 @@ void D3D12CommandBuffer::BindPipeline(ComputePipelinePtr const& pipeline)
     assert(d3d12_pipeline && "D3D12CommandBuffer::BindPipeline: pipeline is not a D3D12ComputePipeline");
 
     current_compute_pipeline_ = d3d12_pipeline;
+    current_graphics_pipeline_ = nullptr;
     cmd_list_->SetPipelineState(d3d12_pipeline->GetPipelineState());
     cmd_list_->SetComputeRootSignature(d3d12_pipeline->GetRootSignature());
 }
@@ -173,6 +175,54 @@ void D3D12CommandBuffer::BindDescriptorSet(DescriptorSetPtr const& descriptor_se
     }
 
     current_descriptor_set_ = d3d12_descriptor_set;
+}
+
+void D3D12CommandBuffer::SetRootConstants(void const* data, size_t data_size, size_t dst_offset)
+{
+    if (!data || data_size == 0)
+    {
+        throw std::runtime_error("D3D12CommandBuffer::SetRootConstants: constant data is empty");
+    }
+    if ((data_size % sizeof(uint32_t)) != 0 || (dst_offset % sizeof(uint32_t)) != 0)
+    {
+        throw std::runtime_error("D3D12CommandBuffer::SetRootConstants: data size and offset must be 32-bit aligned");
+    }
+
+    D3D12PipelineLayout const* layout = nullptr;
+    bool is_compute = false;
+    if (current_compute_pipeline_)
+    {
+        layout = &current_compute_pipeline_->GetLayout();
+        is_compute = true;
+    }
+    else if (current_graphics_pipeline_)
+    {
+        layout = &current_graphics_pipeline_->GetLayout();
+    }
+    else
+    {
+        throw std::runtime_error("D3D12CommandBuffer::SetRootConstants: no pipeline is currently bound");
+    }
+
+    D3D12Binding const& root_constant = layout->FindRootConstant();
+    size_t const root_constant_size = static_cast<size_t>(root_constant.num_32bit_values) * sizeof(uint32_t);
+    if (dst_offset + data_size > root_constant_size)
+    {
+        throw std::runtime_error("D3D12CommandBuffer::SetRootConstants: write range exceeds root-constant size");
+    }
+
+    uint32_t const num_32bit_values = static_cast<uint32_t>(data_size / sizeof(uint32_t));
+    uint32_t const dst_offset_32bit = static_cast<uint32_t>(dst_offset / sizeof(uint32_t));
+    if (is_compute)
+    {
+        cmd_list_->SetComputeRoot32BitConstants(root_constant.root_parameter_index, num_32bit_values, data,
+            dst_offset_32bit);
+    }
+    else
+    {
+        cmd_list_->SetGraphicsRoot32BitConstants(root_constant.root_parameter_index, num_32bit_values, data,
+            dst_offset_32bit);
+    }
 }
 
 void D3D12CommandBuffer::Dispatch(uint32_t num_groups_x, uint32_t num_groups_y, uint32_t num_groups_z)

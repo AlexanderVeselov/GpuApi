@@ -29,6 +29,7 @@ public:
     void BindPipeline(GraphicsPipelinePtr const& pipeline) override;
     void BindPipeline(ComputePipelinePtr const& pipeline) override;
     void BindDescriptorSet(DescriptorSetPtr const& descriptor_set) override;
+    void SetRootConstants(void const* data, size_t data_size, size_t dst_offset = 0) override;
     void Dispatch(uint32_t num_groups_x, uint32_t num_groups_y, uint32_t num_groups_z) override;
     void Draw(uint32_t vertex_count, uint32_t instance_count = 1, uint32_t first_vertex = 0,
         uint32_t first_instance = 0) override;

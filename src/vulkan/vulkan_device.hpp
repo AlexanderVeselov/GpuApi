@@ -28,7 +28,8 @@ public:
     Queue& GetQueue(QueueType queue_type) override;
 
     GraphicsPipelinePtr CreateGraphicsPipeline(GraphicsPipelineDesc const& pipeline_desc) override;
-    ComputePipelinePtr CreateComputePipeline(char const* cs_filename) override;
+    ComputePipelinePtr CreateComputePipeline(char const* cs_filename,
+        char const* root_constants_name = "g_RootConstants") override;
     void WaitIdle() override;
 
     SwapchainPtr CreateSwapchain(void* window_native_handle, std::uint32_t width, std::uint32_t height,

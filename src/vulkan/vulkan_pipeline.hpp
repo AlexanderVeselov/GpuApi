@@ -47,7 +47,7 @@ class VulkanComputePipeline final
     , public VulkanPipeline
 {
 public:
-    VulkanComputePipeline(VulkanDevice& device, char const* cs_filename);
+    VulkanComputePipeline(VulkanDevice& device, char const* cs_filename, char const* root_constants_name);
     void Reload() override;
 };
 

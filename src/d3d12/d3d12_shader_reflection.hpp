@@ -6,5 +6,5 @@ struct ID3D12ShaderReflection;
 
 namespace gpu
 {
-ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection);
+ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection, char const* root_constants_name);
 }

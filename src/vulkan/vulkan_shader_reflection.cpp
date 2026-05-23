@@ -125,7 +125,7 @@ uint32_t GetDescriptorCount(SpvReflectDescriptorBinding const& binding)
 }
 }  // namespace
 
-ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv)
+ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv, char const* root_constants_name)
 {
     SpvReflectShaderModule module = {};
     ThrowIfSpvReflectFailed(spvReflectCreateShaderModule(spirv.size() * sizeof(uint32_t), spirv.data(), &module),
@@ -153,6 +153,32 @@ ShaderReflection BuildVulkanShaderReflection(std::vector<uint32_t> const& spirv)
         binding.descriptor_type = ShaderDescriptorType::kDescriptorTable;
         binding.range_type = ToRangeType(spv_binding->descriptor_type);
         binding.descriptor_count = GetDescriptorCount(*spv_binding);
+        binding.stage_mask = stage_mask;
+        reflection.bindings.push_back(binding);
+    }
+
+    uint32_t push_constant_count = 0;
+    ThrowIfSpvReflectFailed(spvReflectEnumeratePushConstantBlocks(&module, &push_constant_count, nullptr),
+        "BuildVulkanShaderReflection: failed to enumerate push constant count");
+    if (push_constant_count > 1)
+    {
+        spvReflectDestroyShaderModule(&module);
+        throw std::runtime_error("BuildVulkanShaderReflection: multiple push-constant blocks are not supported");
+    }
+
+    if (push_constant_count == 1)
+    {
+        SpvReflectBlockVariable* push_constant = nullptr;
+        ThrowIfSpvReflectFailed(spvReflectEnumeratePushConstantBlocks(&module, &push_constant_count, &push_constant),
+            "BuildVulkanShaderReflection: failed to enumerate push constant block");
+
+        ShaderBinding binding;
+        binding.name = root_constants_name && root_constants_name[0] != '\0' ? root_constants_name : "$PushConstants";
+        binding.resource_type = ShaderResourceType::kBuffer;
+        binding.descriptor_type = ShaderDescriptorType::kRootConstant;
+        binding.range_type = ShaderDescriptorRangeType::kCBV;
+        binding.descriptor_count = 1;
+        binding.num_32bit_values = (push_constant->size + sizeof(uint32_t) - 1) / sizeof(uint32_t);
         binding.stage_mask = stage_mask;
         reflection.bindings.push_back(binding);
     }

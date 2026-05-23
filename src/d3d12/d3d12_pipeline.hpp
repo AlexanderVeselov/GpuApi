@@ -43,7 +43,7 @@ class D3D12ComputePipeline
     , public D3D12Pipeline
 {
 public:
-    D3D12ComputePipeline(D3D12Device& device, char const* cs_filename);
+    D3D12ComputePipeline(D3D12Device& device, char const* cs_filename, char const* root_constants_name);
     void Reload() override;
 };
 

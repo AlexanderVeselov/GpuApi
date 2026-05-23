@@ -64,7 +64,7 @@ void VulkanShaderManager::SetShaderPath(char const* shader_path)
 }
 
 VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const* entry_point,
-    char const* shader_profile, std::vector<char const*> const& definitions)
+    char const* shader_profile, std::vector<char const*> const& definitions, char const* root_constants_name)
 {
     ComPtr<IDxcBlobEncoding> dxc_source = nullptr;
     std::filesystem::path shader_file = filename;
@@ -99,6 +99,10 @@ VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const
     shader_args.push_back(L"-Zpr");
     shader_args.push_back(L"-D");
     shader_args.push_back(L"IMAGE_FORMAT(format)=[[vk::image_format(format)]]");
+    shader_args.push_back(L"-D");
+    shader_args.push_back(L"ROOT_CONSTANTS=[[vk::push_constant]]");
+    shader_args.push_back(L"-D");
+    shader_args.push_back(L"VULKAN=1");
 
     std::wstring w_shader_path;
     if (!shader_path_.empty())
@@ -151,7 +155,7 @@ VulkanShader VulkanShaderManager::CompileShader(char const* filename, char const
     VulkanShader shader;
     shader.spirv.resize(dxc_object->GetBufferSize() / sizeof(uint32_t));
     std::memcpy(shader.spirv.data(), dxc_object->GetBufferPointer(), dxc_object->GetBufferSize());
-    shader.reflection = BuildVulkanShaderReflection(shader.spirv);
+    shader.reflection = BuildVulkanShaderReflection(shader.spirv, root_constants_name);
 
     return shader;
 }

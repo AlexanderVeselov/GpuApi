@@ -3,6 +3,8 @@
 #include "gpu_acceleration_structure.hpp"
 #include "gpu_types.hpp"
 
+#include <cstddef>
+
 namespace gpu
 {
 /// Records rendering, compute, copy, and resource barrier commands for a Queue.
@@ -36,6 +38,9 @@ public:
 
     /// Binds resource descriptors for subsequent draw or dispatch calls.
     virtual void BindDescriptorSet(DescriptorSetPtr const& descriptor_set) = 0;
+
+    /// Writes root constants / push constants to the currently bound pipeline layout.
+    virtual void SetRootConstants(void const* data, size_t data_size, size_t dst_offset = 0) = 0;
 
     /// Sets one color attachment and an optional depth attachment.
     virtual void SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment) = 0;

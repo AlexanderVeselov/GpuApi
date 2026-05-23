@@ -45,6 +45,7 @@ public:
 
     bool HasBinding(uint32_t binding, uint32_t set) const;
     VulkanBinding const& FindBinding(uint32_t binding, uint32_t set) const;
+    VulkanBinding const& FindRootConstant() const;
 
 private:
     void AddShaderReflection(ShaderReflection const& reflection);

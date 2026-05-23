@@ -34,6 +34,7 @@ public:
     void BindPipeline(GraphicsPipelinePtr const& pipeline) override;
     void BindPipeline(ComputePipelinePtr const& pipeline) override;
     void BindDescriptorSet(DescriptorSetPtr const& descriptor_set) override;
+    void SetRootConstants(void const* data, size_t data_size, size_t dst_offset = 0) override;
 
     void SetRenderTarget(ImagePtr color_attachment, ImagePtr depth_attachment) override;
     void SetRenderTargets(std::vector<ImagePtr> const& color_attachments, ImagePtr depth_attachment) override;

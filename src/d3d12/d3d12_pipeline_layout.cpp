@@ -163,7 +163,8 @@ bool D3D12PipelineLayout::HasBinding(uint32_t binding, uint32_t space) const
 {
     for (D3D12Binding const& d3d12_binding : bindings_)
     {
-        if (d3d12_binding.binding == binding && d3d12_binding.space == space)
+        if (d3d12_binding.binding == binding && d3d12_binding.space == space
+            && d3d12_binding.descriptor_type == D3D12Binding::DescriptorType::kDescriptorTable)
         {
             return true;
         }
@@ -176,7 +177,8 @@ D3D12Binding const& D3D12PipelineLayout::FindBinding(uint32_t binding, uint32_t 
 {
     for (D3D12Binding const& d3d12_binding : bindings_)
     {
-        if (d3d12_binding.binding == binding && d3d12_binding.space == space)
+        if (d3d12_binding.binding == binding && d3d12_binding.space == space
+            && d3d12_binding.descriptor_type == D3D12Binding::DescriptorType::kDescriptorTable)
         {
             return d3d12_binding;
         }
@@ -184,6 +186,28 @@ D3D12Binding const& D3D12PipelineLayout::FindBinding(uint32_t binding, uint32_t 
 
     throw std::runtime_error("D3D12PipelineLayout::FindBinding: binding (binding = " + std::to_string(binding)
         + ", space = " + std::to_string(space) + ") was not found");
+}
+
+D3D12Binding const& D3D12PipelineLayout::FindRootConstant() const
+{
+    D3D12Binding const* result = nullptr;
+    for (D3D12Binding const& d3d12_binding : bindings_)
+    {
+        if (d3d12_binding.descriptor_type == D3D12Binding::DescriptorType::kRootConstant)
+        {
+            if (result)
+            {
+                throw std::runtime_error("D3D12PipelineLayout::FindRootConstant: multiple root constants found");
+            }
+            result = &d3d12_binding;
+        }
+    }
+
+    if (!result)
+    {
+        throw std::runtime_error("D3D12PipelineLayout::FindRootConstant: root constant was not found");
+    }
+    return *result;
 }
 
 void D3D12PipelineLayout::AddShaderReflection(ShaderReflection const& reflection)
@@ -209,13 +233,14 @@ void D3D12PipelineLayout::AddOrMergeBinding(D3D12Binding const& binding)
 {
     for (D3D12Binding& existing : bindings_)
     {
-        if (existing.binding != binding.binding || existing.space != binding.space)
+        if (existing.binding != binding.binding || existing.space != binding.space
+            || existing.descriptor_type != binding.descriptor_type)
         {
             continue;
         }
 
-        if (existing.type != binding.type || existing.descriptor_type != binding.descriptor_type
-            || existing.range_type != binding.range_type || existing.descriptor_count != binding.descriptor_count
+        if (existing.type != binding.type || existing.range_type != binding.range_type
+            || existing.descriptor_count != binding.descriptor_count
             || existing.num_32bit_values != binding.num_32bit_values)
         {
             throw std::runtime_error("D3D12PipelineLayout: incompatible shader bindings for " + BindingName(binding));

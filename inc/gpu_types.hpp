@@ -132,6 +132,7 @@ struct GraphicsPipelineDesc
 {
     std::string vs_filename;
     std::string ps_filename;
+    std::string root_constants_name = "g_RootConstants";
     bool depth_enabled = false;
     DepthFunc depth_func = DepthFunc::kLess;
     std::vector<ImageFormat> color_attachment_formats;

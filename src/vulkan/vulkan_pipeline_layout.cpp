@@ -178,7 +178,8 @@ bool VulkanPipelineLayout::HasBinding(uint32_t binding, uint32_t set) const
 {
     for (VulkanBinding const& vulkan_binding : bindings_)
     {
-        if (vulkan_binding.binding == binding && vulkan_binding.set == set)
+        if (vulkan_binding.binding == binding && vulkan_binding.set == set
+            && vulkan_binding.descriptor_type == ShaderDescriptorType::kDescriptorTable)
         {
             return true;
         }
@@ -191,7 +192,8 @@ VulkanBinding const& VulkanPipelineLayout::FindBinding(uint32_t binding, uint32_
 {
     for (VulkanBinding const& vulkan_binding : bindings_)
     {
-        if (vulkan_binding.binding == binding && vulkan_binding.set == set)
+        if (vulkan_binding.binding == binding && vulkan_binding.set == set
+            && vulkan_binding.descriptor_type == ShaderDescriptorType::kDescriptorTable)
         {
             return vulkan_binding;
         }
@@ -199,6 +201,28 @@ VulkanBinding const& VulkanPipelineLayout::FindBinding(uint32_t binding, uint32_
 
     throw std::runtime_error("VulkanPipelineLayout::FindBinding: binding was not found (binding = "
         + std::to_string(binding) + ", set = " + std::to_string(set) + ")");
+}
+
+VulkanBinding const& VulkanPipelineLayout::FindRootConstant() const
+{
+    VulkanBinding const* result = nullptr;
+    for (VulkanBinding const& vulkan_binding : bindings_)
+    {
+        if (vulkan_binding.descriptor_type == ShaderDescriptorType::kRootConstant)
+        {
+            if (result)
+            {
+                throw std::runtime_error("VulkanPipelineLayout::FindRootConstant: multiple root constants found");
+            }
+            result = &vulkan_binding;
+        }
+    }
+
+    if (!result)
+    {
+        throw std::runtime_error("VulkanPipelineLayout::FindRootConstant: root constant was not found");
+    }
+    return *result;
 }
 
 void VulkanPipelineLayout::AddShaderReflection(ShaderReflection const& reflection)
@@ -229,13 +253,14 @@ void VulkanPipelineLayout::AddOrMergeBinding(VulkanBinding const& binding)
 {
     for (VulkanBinding& existing : bindings_)
     {
-        if (existing.binding != binding.binding || existing.set != binding.set)
+        if (existing.binding != binding.binding || existing.set != binding.set
+            || existing.descriptor_type != binding.descriptor_type)
         {
             continue;
         }
 
-        if (existing.resource_type != binding.resource_type || existing.descriptor_type != binding.descriptor_type
-            || existing.range_type != binding.range_type || existing.vk_descriptor_type != binding.vk_descriptor_type
+        if (existing.resource_type != binding.resource_type || existing.range_type != binding.range_type
+            || existing.vk_descriptor_type != binding.vk_descriptor_type
             || existing.descriptor_count != binding.descriptor_count
             || existing.push_constant_size != binding.push_constant_size)
         {

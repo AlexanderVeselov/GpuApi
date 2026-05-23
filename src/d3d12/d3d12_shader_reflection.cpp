@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <string_view>
 
 namespace gpu
 {
@@ -114,9 +115,16 @@ ImageFormat GetInputFormat(D3D_REGISTER_COMPONENT_TYPE component_type, uint8_t c
 
     return ImageFormat::kUnknown;
 }
+
+bool IsRootConstantBuffer(char const* name, char const* root_constants_name)
+{
+    std::string_view const buffer_name = name ? name : "";
+    std::string_view const expected_name = root_constants_name ? root_constants_name : "";
+    return !expected_name.empty() && buffer_name == expected_name;
+}
 }  // namespace
 
-ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection)
+ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection, char const* root_constants_name)
 {
     if (!reflection)
     {
@@ -145,16 +153,20 @@ ShaderReflection BuildD3D12ShaderReflection(ID3D12ShaderReflection* reflection)
         binding.descriptor_count = resource_desc.BindCount;
         binding.stage_mask = stage_mask;
 
-        if (resource_desc.Type == D3D_SIT_CBUFFER && binding.name == "$Globals")
+        if (resource_desc.Type == D3D_SIT_CBUFFER && IsRootConstantBuffer(resource_desc.Name, root_constants_name))
         {
             ID3D12ShaderReflectionConstantBuffer* cb = reflection->GetConstantBufferByName(binding.name.c_str());
-            assert(cb && "BuildD3D12ShaderReflection: $Globals constant buffer was not found");
+            assert(cb && "BuildD3D12ShaderReflection: root constant buffer was not found");
 
             D3D12_SHADER_BUFFER_DESC buffer_desc = {};
             cb->GetDesc(&buffer_desc);
+            if (buffer_desc.Size == 0 || (buffer_desc.Size % sizeof(uint32_t)) != 0)
+            {
+                throw std::runtime_error("BuildD3D12ShaderReflection: root constants must be 32-bit aligned");
+            }
 
             binding.descriptor_type = ShaderDescriptorType::kRootConstant;
-            binding.num_32bit_values = buffer_desc.Size / 4;
+            binding.num_32bit_values = buffer_desc.Size / sizeof(uint32_t);
         }
         else
         {

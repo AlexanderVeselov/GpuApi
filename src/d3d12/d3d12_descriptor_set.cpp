@@ -89,7 +89,8 @@ void D3D12DescriptorSet::BindAccelerationStructure(AccelerationStructure& accele
     uint32_t space)
 {
     BindAccelerationStructure(CastResource<D3D12AccelerationStructure>(acceleration_structure,
-        "D3D12DescriptorSet::BindAccelerationStructure"), binding, space);
+                                  "D3D12DescriptorSet::BindAccelerationStructure"),
+        binding, space);
 }
 
 void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint32_t space)
@@ -224,7 +225,8 @@ D3D12Binding const& D3D12DescriptorSet::FindBinding(uint32_t binding, uint32_t s
 {
     for (D3D12Binding const& d3d12_binding : layout_.GetBindings())
     {
-        if (d3d12_binding.binding == binding && d3d12_binding.space == space)
+        if (d3d12_binding.binding == binding && d3d12_binding.space == space
+            && d3d12_binding.descriptor_type == D3D12Binding::DescriptorType::kDescriptorTable)
         {
             return d3d12_binding;
         }
