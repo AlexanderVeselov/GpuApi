@@ -4,6 +4,9 @@ project(GpuApi)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+option(GPU_API_BUILD_VULKAN "Build the Vulkan backend" ON)
+option(GPU_API_BUILD_SAMPLES "Build GpuApi samples" ON)
+
 set(VULKAN_SOURCES
     src/vulkan/vulkan_acceleration_structure.cpp
     src/vulkan/vulkan_acceleration_structure.hpp
@@ -125,6 +128,9 @@ set(IMGUI_SOURCES
     third_party/imgui/backends/imgui_impl_dx12.h
     third_party/imgui/backends/imgui_impl_glfw.cpp
     third_party/imgui/backends/imgui_impl_glfw.h
+)
+
+set(IMGUI_VULKAN_SOURCES
     third_party/imgui/backends/imgui_impl_vulkan.cpp
     third_party/imgui/backends/imgui_impl_vulkan.h
 )
@@ -137,14 +143,24 @@ set_target_properties(dxcompiler PROPERTIES
     IMPORTED_IMPLIB ${DXC_PATH}/lib/x64/dxcompiler.lib
 )
 
-find_package(Vulkan REQUIRED)
+if(GPU_API_BUILD_VULKAN)
+    find_package(Vulkan REQUIRED)
+    list(APPEND IMGUI_SOURCES ${IMGUI_VULKAN_SOURCES})
+else()
+    set(VULKAN_SOURCES)
+    set(SPIRV_REFLECT_SOURCES)
+endif()
+
 if(NOT TARGET imgui)
     add_library(imgui STATIC ${IMGUI_SOURCES})
     target_compile_features(imgui PUBLIC cxx_std_17)
     target_include_directories(imgui PUBLIC third_party/imgui)
     target_include_directories(imgui PRIVATE third_party/glfw/include)
-    target_compile_definitions(imgui PRIVATE VK_USE_PLATFORM_WIN32_KHR)
-    target_link_libraries(imgui PRIVATE d3d12.lib dxgi.lib d3dcompiler.lib Vulkan::Vulkan)
+    target_link_libraries(imgui PRIVATE d3d12.lib dxgi.lib d3dcompiler.lib)
+    if(GPU_API_BUILD_VULKAN)
+        target_compile_definitions(imgui PRIVATE VK_USE_PLATFORM_WIN32_KHR)
+        target_link_libraries(imgui PRIVATE Vulkan::Vulkan)
+    endif()
     if(TARGET glfw3::glfw3)
         target_link_libraries(imgui PUBLIC glfw3::glfw3)
     else()
@@ -168,11 +184,20 @@ target_compile_features(GpuApi PUBLIC cxx_std_17)
 target_include_directories(GpuApi PUBLIC inc)
 target_include_directories(GpuApi PRIVATE ${DXC_PATH}/inc)
 target_include_directories(GpuApi PRIVATE src/third_party_compat)
-target_include_directories(GpuApi PRIVATE third_party/SPIRV-Reflect)
-target_compile_definitions(GpuApi PRIVATE VK_USE_PLATFORM_WIN32_KHR)
+target_include_directories(GpuApi PRIVATE third_party/glfw/include)
+target_include_directories(GpuApi PRIVATE third_party/imgui)
+if(GPU_API_BUILD_VULKAN)
+    target_include_directories(GpuApi PRIVATE third_party/SPIRV-Reflect)
+    target_compile_definitions(GpuApi PRIVATE VK_USE_PLATFORM_WIN32_KHR GPU_API_HAS_VULKAN=1)
+else()
+    target_compile_definitions(GpuApi PRIVATE GPU_API_HAS_VULKAN=0)
+endif()
 target_link_libraries(GpuApi PUBLIC imgui)
-target_link_libraries(GpuApi PRIVATE d3d12.lib dxgi.lib dxcompiler Vulkan::Vulkan)
-option(GPU_API_BUILD_SAMPLES "Build GpuApi samples" ON)
+target_link_libraries(GpuApi PRIVATE d3d12.lib dxgi.lib dxcompiler)
+if(GPU_API_BUILD_VULKAN)
+    target_link_libraries(GpuApi PRIVATE Vulkan::Vulkan)
+endif()
+
 if(GPU_API_BUILD_SAMPLES)
     add_subdirectory(samples)
 endif()

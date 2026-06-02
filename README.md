@@ -42,8 +42,10 @@ third_party/             Bundled DXC, GLFW binaries and SPIRV-Reflect
 - Windows
 - CMake 3.22 or newer
 - A C++17-capable MSVC toolchain
-- Vulkan SDK available to CMake through `find_package(Vulkan)`
 - GLFW discoverable by `find_package(glfw3)`
+
+If you keep the default `GPU_API_BUILD_VULKAN=ON`, Vulkan SDK must be available
+to CMake through `find_package(Vulkan)`.
 
 DXC and SPIRV-Reflect are included under `third_party/`.
 
@@ -51,6 +53,13 @@ DXC and SPIRV-Reflect are included under `third_party/`.
 
 ```powershell
 cmake -S . -B build
+cmake --build build --config Debug
+```
+
+To build only the D3D12 backend:
+
+```powershell
+cmake -S . -B build -DGPU_API_BUILD_VULKAN=OFF
 cmake --build build --config Debug
 ```
 
