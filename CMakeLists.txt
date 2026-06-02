@@ -7,6 +7,12 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 option(GPU_API_BUILD_VULKAN "Build the Vulkan backend" ON)
 option(GPU_API_BUILD_SAMPLES "Build GpuApi samples" ON)
 
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(GPU_API_ARCH_DIR x64)
+else()
+    set(GPU_API_ARCH_DIR x86)
+endif()
+
 set(VULKAN_SOURCES
     src/vulkan/vulkan_acceleration_structure.cpp
     src/vulkan/vulkan_acceleration_structure.hpp
@@ -136,11 +142,14 @@ set(IMGUI_VULKAN_SOURCES
 )
 
 set(DXC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc_2022_12_16)
+set(GPU_API_DXC_BIN_DIR ${DXC_PATH}/bin/${GPU_API_ARCH_DIR})
+set(GPU_API_DXC_LIB_DIR ${DXC_PATH}/lib/${GPU_API_ARCH_DIR})
+set(GPU_API_GLFW_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/glfw/lib/${GPU_API_ARCH_DIR})
 
 add_library(dxcompiler SHARED IMPORTED)
 set_target_properties(dxcompiler PROPERTIES
-    IMPORTED_LOCATION ${DXC_PATH}/bin/x64/dxcompiler.dll
-    IMPORTED_IMPLIB ${DXC_PATH}/lib/x64/dxcompiler.lib
+    IMPORTED_LOCATION ${GPU_API_DXC_BIN_DIR}/dxcompiler.dll
+    IMPORTED_IMPLIB ${GPU_API_DXC_LIB_DIR}/dxcompiler.lib
 )
 
 if(GPU_API_BUILD_VULKAN)
@@ -149,6 +158,24 @@ if(GPU_API_BUILD_VULKAN)
 else()
     set(VULKAN_SOURCES)
     set(SPIRV_REFLECT_SOURCES)
+endif()
+
+find_package(glfw3 CONFIG QUIET)
+if(NOT TARGET glfw3::glfw3)
+    if(EXISTS ${GPU_API_GLFW_LIB_DIR}/glfw3.lib)
+        add_library(glfw3::glfw3 STATIC IMPORTED GLOBAL)
+        set_target_properties(glfw3::glfw3 PROPERTIES
+            IMPORTED_LOCATION_DEBUG ${GPU_API_GLFW_LIB_DIR}/glfw3.lib
+            IMPORTED_LOCATION_RELEASE ${GPU_API_GLFW_LIB_DIR}/glfw3.lib
+            IMPORTED_LOCATION_MINSIZEREL ${GPU_API_GLFW_LIB_DIR}/glfw3.lib
+            IMPORTED_LOCATION_RELWITHDEBINFO ${GPU_API_GLFW_LIB_DIR}/glfw3.lib
+            INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/third_party/glfw/include
+        )
+    else()
+        message(FATAL_ERROR
+            "GpuApi requires glfw3 for ImGui support, but no ${GPU_API_ARCH_DIR} GLFW library was found. "
+            "Install a matching glfw3 package or add bundled libs under third_party/glfw/lib/${GPU_API_ARCH_DIR}.")
+    endif()
 endif()
 
 if(NOT TARGET imgui)
@@ -161,14 +188,7 @@ if(NOT TARGET imgui)
         target_compile_definitions(imgui PRIVATE VK_USE_PLATFORM_WIN32_KHR)
         target_link_libraries(imgui PRIVATE Vulkan::Vulkan)
     endif()
-    if(TARGET glfw3::glfw3)
-        target_link_libraries(imgui PUBLIC glfw3::glfw3)
-    else()
-        target_link_libraries(imgui PUBLIC
-            debug ${CMAKE_CURRENT_SOURCE_DIR}/third_party/glfw/lib/x64/Debug/glfw3.lib
-            optimized ${CMAKE_CURRENT_SOURCE_DIR}/third_party/glfw/lib/x64/Release/glfw3.lib
-        )
-    endif()
+    target_link_libraries(imgui PUBLIC glfw3::glfw3)
 endif()
 
 source_group("vulkan" FILES ${VULKAN_SOURCES})
