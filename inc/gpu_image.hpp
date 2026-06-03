@@ -58,7 +58,10 @@ struct ImageViewHash
 {
     size_t operator()(ImageView const& view) const
     {
-        return (static_cast<size_t>(view.mip) << 32) ^ static_cast<size_t>(view.mip_count);
+        size_t hash = static_cast<size_t>(view.mip);
+        hash ^= static_cast<size_t>(view.mip_count) + static_cast<size_t>(0x9e3779b9u)
+            + (hash << 6) + (hash >> 2);
+        return hash;
     }
 };
 

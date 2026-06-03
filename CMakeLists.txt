@@ -4,6 +4,10 @@ project(GpuApi)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 option(GPU_API_BUILD_VULKAN "Build the Vulkan backend" ON)
 option(GPU_API_BUILD_SAMPLES "Build GpuApi samples" ON)
 
@@ -162,13 +166,13 @@ endif()
 
 find_package(glfw3 CONFIG QUIET)
 if(NOT TARGET glfw3::glfw3)
-    if(EXISTS ${GPU_API_GLFW_LIB_DIR}/glfw3.lib)
+    if(EXISTS ${GPU_API_GLFW_LIB_DIR}/glfw3_mt.lib)
         add_library(glfw3::glfw3 STATIC IMPORTED GLOBAL)
         set_target_properties(glfw3::glfw3 PROPERTIES
-            IMPORTED_LOCATION_DEBUG ${GPU_API_GLFW_LIB_DIR}/glfw3.lib
-            IMPORTED_LOCATION_RELEASE ${GPU_API_GLFW_LIB_DIR}/glfw3.lib
-            IMPORTED_LOCATION_MINSIZEREL ${GPU_API_GLFW_LIB_DIR}/glfw3.lib
-            IMPORTED_LOCATION_RELWITHDEBINFO ${GPU_API_GLFW_LIB_DIR}/glfw3.lib
+            IMPORTED_LOCATION_DEBUG ${GPU_API_GLFW_LIB_DIR}/glfw3_mt.lib
+            IMPORTED_LOCATION_RELEASE ${GPU_API_GLFW_LIB_DIR}/glfw3_mt.lib
+            IMPORTED_LOCATION_MINSIZEREL ${GPU_API_GLFW_LIB_DIR}/glfw3_mt.lib
+            IMPORTED_LOCATION_RELWITHDEBINFO ${GPU_API_GLFW_LIB_DIR}/glfw3_mt.lib
             INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/third_party/glfw/include
         )
     else()
@@ -184,6 +188,14 @@ if(NOT TARGET imgui)
     target_include_directories(imgui PUBLIC third_party/imgui)
     target_include_directories(imgui PRIVATE third_party/glfw/include)
     target_link_libraries(imgui PRIVATE d3d12.lib dxgi.lib d3dcompiler.lib)
+    if(MSVC)
+        target_compile_definitions(imgui PRIVATE
+            $<$<CONFIG:Debug>:_HAS_ITERATOR_DEBUGGING=0>
+            _ALLOW_RUNTIME_LIBRARY_MISMATCH
+            _ALLOW_ITERATOR_DEBUG_LEVEL_MISMATCH
+            _ALLOW_MSC_VER_MISMATCH
+        )
+    endif()
     if(GPU_API_BUILD_VULKAN)
         target_compile_definitions(imgui PRIVATE VK_USE_PLATFORM_WIN32_KHR)
         target_link_libraries(imgui PRIVATE Vulkan::Vulkan)
@@ -206,6 +218,14 @@ target_include_directories(GpuApi PRIVATE ${DXC_PATH}/inc)
 target_include_directories(GpuApi PRIVATE src/third_party_compat)
 target_include_directories(GpuApi PRIVATE third_party/glfw/include)
 target_include_directories(GpuApi PRIVATE third_party/imgui)
+if(MSVC)
+    target_compile_definitions(GpuApi PRIVATE
+        $<$<CONFIG:Debug>:_HAS_ITERATOR_DEBUGGING=0>
+        _ALLOW_RUNTIME_LIBRARY_MISMATCH
+        _ALLOW_ITERATOR_DEBUG_LEVEL_MISMATCH
+        _ALLOW_MSC_VER_MISMATCH
+    )
+endif()
 if(GPU_API_BUILD_VULKAN)
     target_include_directories(GpuApi PRIVATE third_party/SPIRV-Reflect)
     target_compile_definitions(GpuApi PRIVATE VK_USE_PLATFORM_WIN32_KHR GPU_API_HAS_VULKAN=1)

@@ -108,6 +108,25 @@ DevicePtr D3D12Api::CreateDevice()
     return std::make_unique<D3D12Device>(*this, dxgi_adapters_.front().Get());
 }
 
+DevicePtr D3D12Api::CreateDevice(uint32_t adapter_index)
+{
+    ComPtr<IDXGIAdapter1> dxgi_adapter;
+    HRESULT status = dxgi_factory_->EnumAdapters1(adapter_index, &dxgi_adapter);
+    if (status == DXGI_ERROR_NOT_FOUND)
+    {
+        throw std::runtime_error("Requested DXGI adapter index was not found");
+    }
+
+    ThrowIfFailed(status);
+
+    if (!IsHardwareAdapter(dxgi_adapter.Get()) || !SupportsD3D12(dxgi_adapter.Get()))
+    {
+        throw std::runtime_error("Requested DXGI adapter does not support D3D12");
+    }
+
+    return std::make_unique<D3D12Device>(*this, dxgi_adapter.Get());
+}
+
 void D3D12Api::SetShaderPath(char const* shader_path)
 {
     shader_manager_.SetShaderPath(shader_path);

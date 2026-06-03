@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 
 namespace gpu
@@ -52,11 +53,18 @@ struct SamplerDescHash
 {
     std::size_t operator()(SamplerDesc const& desc) const
     {
-        std::size_t hash = 1469598103934665603ull;
-        auto combine = [&hash](auto value)
+        constexpr std::size_t kFnvOffsetBasis = sizeof(std::size_t) == sizeof(std::uint64_t)
+            ? static_cast<std::size_t>(1469598103934665603ull)
+            : static_cast<std::size_t>(2166136261u);
+        constexpr std::size_t kFnvPrime = sizeof(std::size_t) == sizeof(std::uint64_t)
+            ? static_cast<std::size_t>(1099511628211ull)
+            : static_cast<std::size_t>(16777619u);
+
+        std::size_t hash = kFnvOffsetBasis;
+        auto combine = [&hash, kFnvPrime](auto value)
         {
             hash ^= static_cast<std::size_t>(value);
-            hash *= 1099511628211ull;
+            hash *= kFnvPrime;
         };
 
         combine(desc.min_filter);
@@ -66,7 +74,7 @@ struct SamplerDescHash
         combine(desc.address_w);
         combine(desc.comparison_func);
         hash ^= std::hash<float>{}(desc.mip_lod_bias);
-        hash *= 1099511628211ull;
+        hash *= kFnvPrime;
         return hash;
     }
 };
