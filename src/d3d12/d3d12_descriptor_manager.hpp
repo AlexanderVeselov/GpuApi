@@ -81,6 +81,8 @@ public:
     D3D12Descriptor CopyToGPUSampler(D3D12Descriptor src);
     std::vector<D3D12Descriptor> CopyToGPUCBVSRVUAV(std::vector<D3D12Descriptor> const& src);
     std::vector<D3D12Descriptor> CopyToGPUSampler(std::vector<D3D12Descriptor> const& src);
+    void CopyToExistingGPUCBVSRVUAV(std::vector<D3D12Descriptor> const& dst, std::vector<D3D12Descriptor> const& src);
+    void CopyToExistingGPUSampler(std::vector<D3D12Descriptor> const& dst, std::vector<D3D12Descriptor> const& src);
 
     ID3D12DescriptorHeap* GetGPUCBVSRVUAVHeap() const;
     ID3D12DescriptorHeap* GetGPUSamplerHeap() const;

@@ -284,6 +284,42 @@ std::vector<D3D12Descriptor> D3D12DescriptorManager::CopyToGPUSampler(std::vecto
     return dst;
 }
 
+void D3D12DescriptorManager::CopyToExistingGPUCBVSRVUAV(std::vector<D3D12Descriptor> const& dst,
+    std::vector<D3D12Descriptor> const& src)
+{
+    assert(dst.size() == src.size()
+        && "D3D12DescriptorManager::CopyToExistingGPUCBVSRVUAV: source and destination descriptor counts must match");
+
+    for (size_t i = 0; i < src.size(); ++i)
+    {
+        assert(dst[i].IsValid() && src[i].IsValid()
+            && "D3D12DescriptorManager::CopyToExistingGPUCBVSRVUAV: descriptors must be valid");
+        assert(dst[i].heap == D3D12DescriptorHeapId::GPU_CBV_SRV_UAV
+            && src[i].heap == D3D12DescriptorHeapId::CPU_CBV_SRV_UAV
+            && "D3D12DescriptorManager::CopyToExistingGPUCBVSRVUAV: invalid descriptor heaps");
+        device_.GetD3D12Device()->CopyDescriptorsSimple(1, GetCPU(dst[i]), GetCPU(src[i]),
+            D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    }
+}
+
+void D3D12DescriptorManager::CopyToExistingGPUSampler(std::vector<D3D12Descriptor> const& dst,
+    std::vector<D3D12Descriptor> const& src)
+{
+    assert(dst.size() == src.size()
+        && "D3D12DescriptorManager::CopyToExistingGPUSampler: source and destination descriptor counts must match");
+
+    for (size_t i = 0; i < src.size(); ++i)
+    {
+        assert(dst[i].IsValid() && src[i].IsValid()
+            && "D3D12DescriptorManager::CopyToExistingGPUSampler: descriptors must be valid");
+        assert(dst[i].heap == D3D12DescriptorHeapId::GPU_SAMPLER
+            && src[i].heap == D3D12DescriptorHeapId::CPU_SAMPLER
+            && "D3D12DescriptorManager::CopyToExistingGPUSampler: invalid descriptor heaps");
+        device_.GetD3D12Device()->CopyDescriptorsSimple(1, GetCPU(dst[i]), GetCPU(src[i]),
+            D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    }
+}
+
 ID3D12DescriptorHeap* D3D12DescriptorManager::GetGPUCBVSRVUAVHeap() const
 {
     return gpu_cbv_srv_uav_.Heap();

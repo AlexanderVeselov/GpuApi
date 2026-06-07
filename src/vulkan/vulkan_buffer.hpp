@@ -4,9 +4,12 @@
 
 #include <vulkan/vulkan.h>
 
+#include <vector>
+
 namespace gpu
 {
 class VulkanDevice;
+class VulkanDescriptorSet;
 
 class VulkanBuffer final : public Buffer
 {
@@ -19,8 +22,16 @@ public:
     BufferFlags GetFlags() const { return flags_; }
     uint64_t GetGpuAddress() const override;
 
+    void Resize(uint64_t new_size) override;
     void* Map() override;
     void Unmap() override;
+
+    void RegisterDescriptorSet(VulkanDescriptorSet& descriptor_set);
+    void UnregisterDescriptorSet(VulkanDescriptorSet& descriptor_set);
+
+private:
+    void CreateBufferResource();
+    void DestroyBufferResource();
 
 private:
     VulkanDevice& device_;
@@ -29,6 +40,7 @@ private:
     BufferFlags flags_ = BufferFlags::kNone;
     uint32_t stride_ = 0;
     bool mapped_ = false;
+    std::vector<VulkanDescriptorSet*> descriptor_sets_;
 };
 
 }  // namespace gpu

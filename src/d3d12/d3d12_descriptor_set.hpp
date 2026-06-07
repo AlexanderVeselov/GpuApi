@@ -28,6 +28,7 @@ public:
 
         std::vector<D3D12Descriptor> cpu_descriptors;
         std::vector<D3D12Descriptor> gpu_descriptors;
+        std::vector<D3D12Buffer*> buffers;
     };
 
     D3D12DescriptorSet(D3D12Device& device, D3D12PipelineLayout const& layout);
@@ -36,8 +37,8 @@ public:
     D3D12DescriptorSet(D3D12DescriptorSet const&) = delete;
     D3D12DescriptorSet& operator=(D3D12DescriptorSet const&) = delete;
 
-    D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept;
-    D3D12DescriptorSet& operator=(D3D12DescriptorSet&& other) noexcept;
+    D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept = delete;
+    D3D12DescriptorSet& operator=(D3D12DescriptorSet&& other) noexcept = delete;
 
     void BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space) override;
     void BindImage(Image& image, uint32_t binding, uint32_t space) override;
@@ -53,6 +54,8 @@ public:
     void BindAccelerationStructure(D3D12AccelerationStructure& acceleration_structure, uint32_t binding,
         uint32_t space);
     void BindSampler(D3D12Sampler& sampler, uint32_t binding, uint32_t space);
+    void OnBufferResized(D3D12Buffer& buffer);
+    void OnBufferDestroyed(D3D12Buffer& buffer);
 
     D3D12PipelineLayout const& GetLayout() const { return layout_; }
     std::vector<BoundDescriptor> const& GetBoundDescriptors() const { return descriptors_; }
@@ -60,11 +63,13 @@ public:
     void Clear() override;
 
 private:
+    void UnregisterBuffers(BoundDescriptor& descriptor);
     void FreeGpuDescriptors(BoundDescriptor& descriptor);
     D3D12Binding const& FindBinding(uint32_t binding, uint32_t space) const;
     BoundDescriptor& FindOrCreateBoundDescriptor(D3D12Binding const& binding);
     void BindDescriptor(D3D12Binding const& binding, D3D12Descriptor cpu_descriptor);
     void BindDescriptors(D3D12Binding const& binding, std::vector<D3D12Descriptor> cpu_descriptors);
+    void RefreshDescriptors(BoundDescriptor const& descriptor);
 
 private:
     D3D12DescriptorManager& descriptor_manager_;

@@ -5,10 +5,12 @@
 #include "gpu_buffer.hpp"
 
 #include <cstdint>
+#include <vector>
 
 namespace gpu
 {
 class D3D12Device;
+class D3D12DescriptorSet;
 
 class D3D12Buffer final : public Buffer
 {
@@ -31,10 +33,18 @@ public:
 
     void SetCurrentState(D3D12_RESOURCE_STATES state) { current_state_ = state; }
 
+    void Resize(uint64_t new_size) override;
     void* Map() override;
     void Unmap() override;
 
+    void RegisterDescriptorSet(D3D12DescriptorSet& descriptor_set);
+    void UnregisterDescriptorSet(D3D12DescriptorSet& descriptor_set);
+
 private:
+    void CreateResource();
+    void WriteCBV(D3D12Descriptor descriptor);
+    void WriteSRV(D3D12Descriptor descriptor);
+    void WriteUAV(D3D12Descriptor descriptor);
     D3D12Descriptor CreateCBV();
     D3D12Descriptor CreateSRV();
     D3D12Descriptor CreateUAV();
@@ -51,6 +61,7 @@ private:
     D3D12Descriptor cbv_;
     D3D12Descriptor srv_;
     D3D12Descriptor uav_;
+    std::vector<D3D12DescriptorSet*> descriptor_sets_;
 };
 
 }  // namespace gpu

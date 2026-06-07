@@ -7,6 +7,7 @@
 #include "vulkan_image.hpp"
 #include "vulkan_sampler.hpp"
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 
@@ -69,6 +70,64 @@ void VulkanDescriptorSet::BindBuffer(Buffer& buffer, uint32_t binding, uint32_t 
     write.pBufferInfo = &buffer_info;
 
     vkUpdateDescriptorSets(device_.GetDevice(), 1, &write, 0, nullptr);
+
+    bool found = false;
+    for (BufferBinding& buffer_binding : buffer_bindings_)
+    {
+        if (buffer_binding.binding == binding && buffer_binding.space == space)
+        {
+            if (buffer_binding.buffer && buffer_binding.buffer != vulkan_buffer)
+            {
+                VulkanBuffer* old_buffer = buffer_binding.buffer;
+                bool still_bound = false;
+                for (BufferBinding const& other : buffer_bindings_)
+                {
+                    if (other.binding == binding && other.space == space)
+                    {
+                        continue;
+                    }
+                    if (other.buffer == old_buffer)
+                    {
+                        still_bound = true;
+                        break;
+                    }
+                }
+                if (!still_bound)
+                {
+                    old_buffer->UnregisterDescriptorSet(*this);
+                }
+            }
+            buffer_binding.buffer = vulkan_buffer;
+            found = true;
+            break;
+        }
+    }
+    if (!found)
+    {
+        buffer_bindings_.push_back({vulkan_buffer, binding, space});
+    }
+    vulkan_buffer->RegisterDescriptorSet(*this);
+}
+
+void VulkanDescriptorSet::OnBufferResized(VulkanBuffer& buffer)
+{
+    for (BufferBinding const& buffer_binding : buffer_bindings_)
+    {
+        if (buffer_binding.buffer == &buffer)
+        {
+            BindBuffer(buffer, buffer_binding.binding, buffer_binding.space);
+        }
+    }
+}
+
+void VulkanDescriptorSet::OnBufferDestroyed(VulkanBuffer& buffer)
+{
+    buffer_bindings_.erase(std::remove_if(buffer_bindings_.begin(), buffer_bindings_.end(),
+                              [&buffer](BufferBinding const& binding)
+                              {
+                                  return binding.buffer == &buffer;
+                              }),
+        buffer_bindings_.end());
 }
 
 void VulkanDescriptorSet::BindImage(Image& image, uint32_t binding, uint32_t space)
@@ -215,6 +274,7 @@ void VulkanDescriptorSet::BindAccelerationStructure(AccelerationStructure& accel
 
 void VulkanDescriptorSet::Clear()
 {
+    UnregisterBuffers();
     descriptor_sets_.clear();
 
     if (descriptor_pool_ != VK_NULL_HANDLE)
@@ -222,6 +282,35 @@ void VulkanDescriptorSet::Clear()
         vkDestroyDescriptorPool(device_.GetDevice(), descriptor_pool_, nullptr);
         descriptor_pool_ = VK_NULL_HANDLE;
     }
+}
+
+void VulkanDescriptorSet::UnregisterBuffers()
+{
+    for (size_t binding_index = 0; binding_index < buffer_bindings_.size(); ++binding_index)
+    {
+        BufferBinding const& buffer_binding = buffer_bindings_[binding_index];
+        if (buffer_binding.buffer)
+        {
+            bool still_bound = false;
+            for (size_t other_index = 0; other_index < buffer_bindings_.size(); ++other_index)
+            {
+                if (other_index == binding_index)
+                {
+                    continue;
+                }
+                if (buffer_bindings_[other_index].buffer == buffer_binding.buffer)
+                {
+                    still_bound = true;
+                    break;
+                }
+            }
+            if (!still_bound)
+            {
+                buffer_binding.buffer->UnregisterDescriptorSet(*this);
+            }
+        }
+    }
+    buffer_bindings_.clear();
 }
 
 VulkanBinding const& VulkanDescriptorSet::FindBinding(uint32_t binding, uint32_t space) const

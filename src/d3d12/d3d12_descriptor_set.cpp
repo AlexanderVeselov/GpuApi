@@ -6,6 +6,7 @@
 #include "d3d12_sampler.hpp"
 
 #include <cassert>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -40,29 +41,6 @@ D3D12DescriptorSet::D3D12DescriptorSet(D3D12Device& device, D3D12PipelineLayout 
 D3D12DescriptorSet::~D3D12DescriptorSet()
 {
     Clear();
-}
-
-D3D12DescriptorSet::D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept
-    : descriptor_manager_(other.descriptor_manager_)
-    , layout_(other.layout_)
-    , descriptors_(std::move(other.descriptors_))
-{
-}
-
-D3D12DescriptorSet& D3D12DescriptorSet::operator=(D3D12DescriptorSet&& other) noexcept
-{
-    assert(&layout_ == &other.layout_
-        && "D3D12DescriptorSet::operator=: descriptor sets must use the same pipeline layout");
-
-    if (this != &other)
-    {
-        Clear();
-        assert(&descriptor_manager_ == &other.descriptor_manager_
-            && "D3D12DescriptorSet::operator=: descriptor sets must use the same descriptor manager");
-        descriptors_ = std::move(other.descriptors_);
-    }
-
-    return *this;
 }
 
 void D3D12DescriptorSet::BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space)
@@ -102,6 +80,7 @@ void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint3
             + " is not a buffer binding");
     }
 
+    BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(d3d12_binding);
     if (d3d12_binding.range_type == D3D12_DESCRIPTOR_RANGE_TYPE_SRV)
     {
         BindDescriptor(d3d12_binding, buffer.GetSRV());
@@ -113,6 +92,38 @@ void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint3
     else
     {
         BindDescriptor(d3d12_binding, buffer.GetCBV());
+    }
+
+    if (descriptor.buffers.size() == 1 && descriptor.buffers.front() == &buffer)
+    {
+        return;
+    }
+
+    UnregisterBuffers(descriptor);
+    descriptor.buffers = {&buffer};
+    buffer.RegisterDescriptorSet(*this);
+}
+
+void D3D12DescriptorSet::OnBufferResized(D3D12Buffer& buffer)
+{
+    for (BoundDescriptor const& descriptor : descriptors_)
+    {
+        for (D3D12Buffer* bound_buffer : descriptor.buffers)
+        {
+            if (bound_buffer == &buffer)
+            {
+                RefreshDescriptors(descriptor);
+                break;
+            }
+        }
+    }
+}
+
+void D3D12DescriptorSet::OnBufferDestroyed(D3D12Buffer& buffer)
+{
+    for (BoundDescriptor& descriptor : descriptors_)
+    {
+        descriptor.buffers.erase(std::remove(descriptor.buffers.begin(), descriptor.buffers.end(), &buffer), descriptor.buffers.end());
     }
 }
 
@@ -207,9 +218,48 @@ void D3D12DescriptorSet::Clear()
 {
     for (BoundDescriptor& descriptor : descriptors_)
     {
+        UnregisterBuffers(descriptor);
         FreeGpuDescriptors(descriptor);
     }
     descriptors_.clear();
+}
+
+void D3D12DescriptorSet::UnregisterBuffers(BoundDescriptor& descriptor)
+{
+    for (D3D12Buffer* buffer : descriptor.buffers)
+    {
+        if (buffer)
+        {
+            bool still_bound = false;
+            for (BoundDescriptor const& other_descriptor : descriptors_)
+            {
+                if (&other_descriptor == &descriptor)
+                {
+                    continue;
+                }
+
+                for (D3D12Buffer* other_buffer : other_descriptor.buffers)
+                {
+                    if (other_buffer == buffer)
+                    {
+                        still_bound = true;
+                        break;
+                    }
+                }
+
+                if (still_bound)
+                {
+                    break;
+                }
+            }
+
+            if (!still_bound)
+            {
+                buffer->UnregisterDescriptorSet(*this);
+            }
+        }
+    }
+    descriptor.buffers.clear();
 }
 
 void D3D12DescriptorSet::FreeGpuDescriptors(BoundDescriptor& descriptor)
@@ -281,19 +331,43 @@ void D3D12DescriptorSet::BindDescriptors(D3D12Binding const& binding, std::vecto
     assert(binding.descriptor_type == D3D12Binding::DescriptorType::kDescriptorTable
         && "D3D12DescriptorSet::BindDescriptors: only descriptor-table bindings are supported");
 
-    BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(binding);
-    FreeGpuDescriptors(descriptor);
-    descriptor.cpu_descriptors = std::move(cpu_descriptors);
-    switch (descriptor.cpu_descriptors.front().heap)
+    std::vector<D3D12Descriptor> gpu_descriptors;
+    switch (cpu_descriptors.front().heap)
     {
     case D3D12DescriptorHeapId::CPU_CBV_SRV_UAV:
-        descriptor.gpu_descriptors = descriptor_manager_.CopyToGPUCBVSRVUAV(descriptor.cpu_descriptors);
+        gpu_descriptors = descriptor_manager_.CopyToGPUCBVSRVUAV(cpu_descriptors);
         break;
     case D3D12DescriptorHeapId::CPU_SAMPLER:
-        descriptor.gpu_descriptors = descriptor_manager_.CopyToGPUSampler(descriptor.cpu_descriptors);
+        gpu_descriptors = descriptor_manager_.CopyToGPUSampler(cpu_descriptors);
         break;
     default:
         assert(false && "D3D12DescriptorSet::BindDescriptors: source descriptor heap is not shader-visible-copyable");
+        break;
+    }
+
+    BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(binding);
+    FreeGpuDescriptors(descriptor);
+    descriptor.cpu_descriptors = std::move(cpu_descriptors);
+    descriptor.gpu_descriptors = std::move(gpu_descriptors);
+}
+
+void D3D12DescriptorSet::RefreshDescriptors(BoundDescriptor const& descriptor)
+{
+    if (descriptor.cpu_descriptors.empty() || descriptor.gpu_descriptors.empty())
+    {
+        return;
+    }
+
+    switch (descriptor.cpu_descriptors.front().heap)
+    {
+    case D3D12DescriptorHeapId::CPU_CBV_SRV_UAV:
+        descriptor_manager_.CopyToExistingGPUCBVSRVUAV(descriptor.gpu_descriptors, descriptor.cpu_descriptors);
+        break;
+    case D3D12DescriptorHeapId::CPU_SAMPLER:
+        descriptor_manager_.CopyToExistingGPUSampler(descriptor.gpu_descriptors, descriptor.cpu_descriptors);
+        break;
+    default:
+        assert(false && "D3D12DescriptorSet::RefreshDescriptors: unsupported descriptor heap");
         break;
     }
 }
