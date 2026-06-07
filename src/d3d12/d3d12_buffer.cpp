@@ -1,7 +1,9 @@
 #include "d3d12_buffer.hpp"
+#include "d3d12_descriptor_set.hpp"
 #include "d3d12_device.hpp"
 #include "d3d12_exception.hpp"
 
+#include <algorithm>
 #include <cassert>
 
 namespace gpu
@@ -83,28 +85,23 @@ D3D12Buffer::D3D12Buffer(D3D12Device& device, uint64_t size, uint32_t stride, Bu
     assert(size_ > 0 && "D3D12Buffer: size must be greater than zero");
     assert(stride_ > 0 && "D3D12Buffer: stride must be greater than zero");
     assert(size_ % stride_ == 0 && "D3D12Buffer: size must be divisible by stride");
-
-    auto d3d12_device = device.GetD3D12Device();
-
-    D3D12_HEAP_PROPERTIES heap_properties = {};
-    heap_properties.Type = ToHeapType(flags_);
-    heap_properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    heap_properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-    D3D12_RESOURCE_DESC resource_desc = CreateBufferDesc(size_, flags_);
-
-    ThrowIfFailed(d3d12_device->CreateCommittedResource(&heap_properties, D3D12_HEAP_FLAG_NONE, &resource_desc,
-        current_state_, nullptr, IID_PPV_ARGS(&resource_)));
+    CreateResource();
 }
 
 D3D12Buffer::~D3D12Buffer()
 {
-    // TODO: do not wait for the device to be idle here, but instead track resource usage and defer
-    // descriptor freeing until it's safe
     device_.WaitIdle();
 
-    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
+    for (D3D12DescriptorSet* descriptor_set : descriptor_sets_)
+    {
+        if (descriptor_set)
+        {
+            descriptor_set->OnBufferDestroyed(*this);
+        }
+    }
+    descriptor_sets_.clear();
 
+    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
     descriptor_manager.Free(cbv_);
     descriptor_manager.Free(srv_);
     descriptor_manager.Free(uav_);
@@ -140,6 +137,44 @@ D3D12Descriptor const& D3D12Buffer::GetUAV()
     return uav_;
 }
 
+void D3D12Buffer::Resize(uint64_t new_size)
+{
+    assert(new_size > 0 && "D3D12Buffer::Resize: size must be greater than zero");
+    assert(new_size % stride_ == 0 && "D3D12Buffer::Resize: size must be divisible by stride");
+    assert(!mapped_ && "D3D12Buffer::Resize: buffer must not be resized while mapped");
+    if (new_size == size_)
+    {
+        return;
+    }
+
+    device_.WaitIdle();
+    size_ = new_size;
+    current_state_ = GetInitialState(flags_);
+    resource_.Reset();
+    CreateResource();
+
+    if (cbv_.IsValid())
+    {
+        WriteCBV(cbv_);
+    }
+    if (srv_.IsValid())
+    {
+        WriteSRV(srv_);
+    }
+    if (uav_.IsValid())
+    {
+        WriteUAV(uav_);
+    }
+
+    for (D3D12DescriptorSet* descriptor_set : descriptor_sets_)
+    {
+        if (descriptor_set)
+        {
+            descriptor_set->OnBufferResized(*this);
+        }
+    }
+}
+
 void* D3D12Buffer::Map()
 {
     assert(HasFlag(flags_, BufferFlags::kCpuAccess) && "D3D12Buffer::Map: buffer was not created with CPU access");
@@ -165,15 +200,8 @@ D3D12Descriptor D3D12Buffer::CreateCBV()
     assert(HasFlag(flags_, BufferFlags::kConstant)
         && "D3D12Buffer::CreateCBV: buffer was not created with constant-buffer support");
 
-    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
-    D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
-
-    D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_desc = {};
-    cbv_desc.BufferLocation = resource_->GetGPUVirtualAddress();
-    cbv_desc.SizeInBytes = static_cast<UINT>(AlignUp(size_, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
-
-    device_.GetD3D12Device()->CreateConstantBufferView(&cbv_desc, descriptor_manager.GetCPU(descriptor));
-
+    D3D12Descriptor descriptor = device_.GetDescriptorManager().AllocateCPUCBVSRVUAV();
+    WriteCBV(descriptor);
     return descriptor;
 }
 
@@ -182,21 +210,8 @@ D3D12Descriptor D3D12Buffer::CreateSRV()
     assert(HasFlag(flags_, BufferFlags::kShaderResource)
         && "D3D12Buffer::CreateSRV: buffer was not created with shader-resource support");
 
-    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
-    D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
-
-    D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
-    srv_desc.Format = DXGI_FORMAT_UNKNOWN;
-    srv_desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-    srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-    srv_desc.Buffer.FirstElement = 0;
-    srv_desc.Buffer.NumElements = static_cast<UINT>(size_ / stride_);
-    srv_desc.Buffer.StructureByteStride = stride_;
-    srv_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-
-    device_.GetD3D12Device()->CreateShaderResourceView(resource_.Get(), &srv_desc,
-        descriptor_manager.GetCPU(descriptor));
-
+    D3D12Descriptor descriptor = device_.GetDescriptorManager().AllocateCPUCBVSRVUAV();
+    WriteSRV(descriptor);
     return descriptor;
 }
 
@@ -205,9 +220,63 @@ D3D12Descriptor D3D12Buffer::CreateUAV()
     assert(HasFlag(flags_, BufferFlags::kStorage)
         && "D3D12Buffer::CreateUAV: buffer was not created with storage/UAV support");
 
-    D3D12DescriptorManager& descriptor_manager = device_.GetDescriptorManager();
-    D3D12Descriptor descriptor = descriptor_manager.AllocateCPUCBVSRVUAV();
+    D3D12Descriptor descriptor = device_.GetDescriptorManager().AllocateCPUCBVSRVUAV();
+    WriteUAV(descriptor);
+    return descriptor;
+}
 
+void D3D12Buffer::RegisterDescriptorSet(D3D12DescriptorSet& descriptor_set)
+{
+    if (std::find(descriptor_sets_.begin(), descriptor_sets_.end(), &descriptor_set) == descriptor_sets_.end())
+    {
+        descriptor_sets_.push_back(&descriptor_set);
+    }
+}
+
+void D3D12Buffer::UnregisterDescriptorSet(D3D12DescriptorSet& descriptor_set)
+{
+    descriptor_sets_.erase(std::remove(descriptor_sets_.begin(), descriptor_sets_.end(), &descriptor_set), descriptor_sets_.end());
+}
+
+void D3D12Buffer::CreateResource()
+{
+    auto d3d12_device = device_.GetD3D12Device();
+
+    D3D12_HEAP_PROPERTIES heap_properties = {};
+    heap_properties.Type = ToHeapType(flags_);
+    heap_properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heap_properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+    D3D12_RESOURCE_DESC resource_desc = CreateBufferDesc(size_, flags_);
+
+    ThrowIfFailed(d3d12_device->CreateCommittedResource(&heap_properties, D3D12_HEAP_FLAG_NONE, &resource_desc,
+        current_state_, nullptr, IID_PPV_ARGS(&resource_)));
+}
+
+void D3D12Buffer::WriteCBV(D3D12Descriptor descriptor)
+{
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_desc = {};
+    cbv_desc.BufferLocation = resource_->GetGPUVirtualAddress();
+    cbv_desc.SizeInBytes = static_cast<UINT>(AlignUp(size_, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT));
+    device_.GetD3D12Device()->CreateConstantBufferView(&cbv_desc, device_.GetDescriptorManager().GetCPU(descriptor));
+}
+
+void D3D12Buffer::WriteSRV(D3D12Descriptor descriptor)
+{
+    D3D12_SHADER_RESOURCE_VIEW_DESC srv_desc = {};
+    srv_desc.Format = DXGI_FORMAT_UNKNOWN;
+    srv_desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+    srv_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srv_desc.Buffer.FirstElement = 0;
+    srv_desc.Buffer.NumElements = static_cast<UINT>(size_ / stride_);
+    srv_desc.Buffer.StructureByteStride = stride_;
+    srv_desc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+    device_.GetD3D12Device()->CreateShaderResourceView(resource_.Get(), &srv_desc,
+        device_.GetDescriptorManager().GetCPU(descriptor));
+}
+
+void D3D12Buffer::WriteUAV(D3D12Descriptor descriptor)
+{
     D3D12_UNORDERED_ACCESS_VIEW_DESC uav_desc = {};
     uav_desc.Format = DXGI_FORMAT_UNKNOWN;
     uav_desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
@@ -216,11 +285,8 @@ D3D12Descriptor D3D12Buffer::CreateUAV()
     uav_desc.Buffer.StructureByteStride = stride_;
     uav_desc.Buffer.CounterOffsetInBytes = 0;
     uav_desc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
-
     device_.GetD3D12Device()->CreateUnorderedAccessView(resource_.Get(), nullptr, &uav_desc,
-        descriptor_manager.GetCPU(descriptor));
-
-    return descriptor;
+        device_.GetDescriptorManager().GetCPU(descriptor));
 }
 
 }  // namespace gpu

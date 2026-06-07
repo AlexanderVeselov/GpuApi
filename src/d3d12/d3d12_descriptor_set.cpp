@@ -6,6 +6,7 @@
 #include "d3d12_sampler.hpp"
 
 #include <cassert>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -102,6 +103,11 @@ void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint3
             + " is not a buffer binding");
     }
 
+    BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(d3d12_binding);
+    UnregisterBuffers(descriptor);
+    descriptor.buffers = {&buffer};
+    buffer.RegisterDescriptorSet(*this);
+
     if (d3d12_binding.range_type == D3D12_DESCRIPTOR_RANGE_TYPE_SRV)
     {
         BindDescriptor(d3d12_binding, buffer.GetSRV());
@@ -113,6 +119,29 @@ void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint3
     else
     {
         BindDescriptor(d3d12_binding, buffer.GetCBV());
+    }
+}
+
+void D3D12DescriptorSet::OnBufferResized(D3D12Buffer& buffer)
+{
+    for (BoundDescriptor const& descriptor : descriptors_)
+    {
+        for (D3D12Buffer* bound_buffer : descriptor.buffers)
+        {
+            if (bound_buffer == &buffer)
+            {
+                RefreshDescriptors(descriptor);
+                break;
+            }
+        }
+    }
+}
+
+void D3D12DescriptorSet::OnBufferDestroyed(D3D12Buffer& buffer)
+{
+    for (BoundDescriptor& descriptor : descriptors_)
+    {
+        descriptor.buffers.erase(std::remove(descriptor.buffers.begin(), descriptor.buffers.end(), &buffer), descriptor.buffers.end());
     }
 }
 
@@ -207,9 +236,22 @@ void D3D12DescriptorSet::Clear()
 {
     for (BoundDescriptor& descriptor : descriptors_)
     {
+        UnregisterBuffers(descriptor);
         FreeGpuDescriptors(descriptor);
     }
     descriptors_.clear();
+}
+
+void D3D12DescriptorSet::UnregisterBuffers(BoundDescriptor& descriptor)
+{
+    for (D3D12Buffer* buffer : descriptor.buffers)
+    {
+        if (buffer)
+        {
+            buffer->UnregisterDescriptorSet(*this);
+        }
+    }
+    descriptor.buffers.clear();
 }
 
 void D3D12DescriptorSet::FreeGpuDescriptors(BoundDescriptor& descriptor)
@@ -294,6 +336,27 @@ void D3D12DescriptorSet::BindDescriptors(D3D12Binding const& binding, std::vecto
         break;
     default:
         assert(false && "D3D12DescriptorSet::BindDescriptors: source descriptor heap is not shader-visible-copyable");
+        break;
+    }
+}
+
+void D3D12DescriptorSet::RefreshDescriptors(BoundDescriptor const& descriptor)
+{
+    if (descriptor.cpu_descriptors.empty() || descriptor.gpu_descriptors.empty())
+    {
+        return;
+    }
+
+    switch (descriptor.cpu_descriptors.front().heap)
+    {
+    case D3D12DescriptorHeapId::CPU_CBV_SRV_UAV:
+        descriptor_manager_.CopyToExistingGPUCBVSRVUAV(descriptor.gpu_descriptors, descriptor.cpu_descriptors);
+        break;
+    case D3D12DescriptorHeapId::CPU_SAMPLER:
+        descriptor_manager_.CopyToExistingGPUSampler(descriptor.gpu_descriptors, descriptor.cpu_descriptors);
+        break;
+    default:
+        assert(false && "D3D12DescriptorSet::RefreshDescriptors: unsupported descriptor heap");
         break;
     }
 }

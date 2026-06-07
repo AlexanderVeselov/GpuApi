@@ -54,6 +54,9 @@ public:
 
     uint64_t GetSize() const { return size_; }
 
+    /// Resizes the buffer while preserving its usage flags and stride. Contents are undefined after resize.
+    virtual void Resize(uint64_t new_size) = 0;
+
     /// Maps the buffer for CPU access. The buffer must have BufferFlags::kCpuAccess.
     virtual void* Map() = 0;
 
