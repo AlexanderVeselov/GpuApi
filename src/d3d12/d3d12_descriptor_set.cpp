@@ -331,21 +331,24 @@ void D3D12DescriptorSet::BindDescriptors(D3D12Binding const& binding, std::vecto
     assert(binding.descriptor_type == D3D12Binding::DescriptorType::kDescriptorTable
         && "D3D12DescriptorSet::BindDescriptors: only descriptor-table bindings are supported");
 
-    BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(binding);
-    FreeGpuDescriptors(descriptor);
-    descriptor.cpu_descriptors = std::move(cpu_descriptors);
-    switch (descriptor.cpu_descriptors.front().heap)
+    std::vector<D3D12Descriptor> gpu_descriptors;
+    switch (cpu_descriptors.front().heap)
     {
     case D3D12DescriptorHeapId::CPU_CBV_SRV_UAV:
-        descriptor.gpu_descriptors = descriptor_manager_.CopyToGPUCBVSRVUAV(descriptor.cpu_descriptors);
+        gpu_descriptors = descriptor_manager_.CopyToGPUCBVSRVUAV(cpu_descriptors);
         break;
     case D3D12DescriptorHeapId::CPU_SAMPLER:
-        descriptor.gpu_descriptors = descriptor_manager_.CopyToGPUSampler(descriptor.cpu_descriptors);
+        gpu_descriptors = descriptor_manager_.CopyToGPUSampler(cpu_descriptors);
         break;
     default:
         assert(false && "D3D12DescriptorSet::BindDescriptors: source descriptor heap is not shader-visible-copyable");
         break;
     }
+
+    BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(binding);
+    FreeGpuDescriptors(descriptor);
+    descriptor.cpu_descriptors = std::move(cpu_descriptors);
+    descriptor.gpu_descriptors = std::move(gpu_descriptors);
 }
 
 void D3D12DescriptorSet::RefreshDescriptors(BoundDescriptor const& descriptor)

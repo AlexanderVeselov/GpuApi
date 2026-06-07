@@ -55,6 +55,9 @@ static VkBufferUsageFlags ToVkBufferUsage(BufferFlags flags)
 VulkanBuffer::VulkanBuffer(VulkanDevice& device, uint64_t size, uint32_t stride, BufferFlags flags)
     : Buffer(size), device_(device), flags_(flags), stride_(stride)
 {
+    THROW_IF(size_ == 0, "VulkanBuffer: size must be greater than zero");
+    THROW_IF(stride_ == 0, "VulkanBuffer: stride must be greater than zero");
+    THROW_IF((size_ % stride_) != 0, "VulkanBuffer: size must be divisible by stride");
     THROW_IF(RequiresDeviceAddress(flags) && !device_.SupportsRayQuery(),
         "Vulkan acceleration-structure buffers require ray query / buffer device address support");
     CreateBufferResource();
@@ -62,6 +65,8 @@ VulkanBuffer::VulkanBuffer(VulkanDevice& device, uint64_t size, uint32_t stride,
 
 VulkanBuffer::~VulkanBuffer()
 {
+    device_.WaitIdle();
+
     for (VulkanDescriptorSet* descriptor_set : descriptor_sets_)
     {
         if (descriptor_set)
@@ -180,16 +185,16 @@ void VulkanBuffer::DestroyBufferResource()
 {
     VkDevice logical_device = device_.GetDevice();
 
-    if (memory_ != VK_NULL_HANDLE)
-    {
-        vkFreeMemory(logical_device, memory_, nullptr);
-        memory_ = VK_NULL_HANDLE;
-    }
-
     if (buffer_ != VK_NULL_HANDLE)
     {
         vkDestroyBuffer(logical_device, buffer_, nullptr);
         buffer_ = VK_NULL_HANDLE;
+    }
+
+    if (memory_ != VK_NULL_HANDLE)
+    {
+        vkFreeMemory(logical_device, memory_, nullptr);
+        memory_ = VK_NULL_HANDLE;
     }
 }
 
