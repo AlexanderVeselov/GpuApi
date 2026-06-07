@@ -78,7 +78,24 @@ void VulkanDescriptorSet::BindBuffer(Buffer& buffer, uint32_t binding, uint32_t 
         {
             if (buffer_binding.buffer && buffer_binding.buffer != vulkan_buffer)
             {
-                buffer_binding.buffer->UnregisterDescriptorSet(*this);
+                VulkanBuffer* old_buffer = buffer_binding.buffer;
+                bool still_bound = false;
+                for (BufferBinding const& other : buffer_bindings_)
+                {
+                    if (other.binding == binding && other.space == space)
+                    {
+                        continue;
+                    }
+                    if (other.buffer == old_buffer)
+                    {
+                        still_bound = true;
+                        break;
+                    }
+                }
+                if (!still_bound)
+                {
+                    old_buffer->UnregisterDescriptorSet(*this);
+                }
             }
             buffer_binding.buffer = vulkan_buffer;
             found = true;
@@ -269,11 +286,28 @@ void VulkanDescriptorSet::Clear()
 
 void VulkanDescriptorSet::UnregisterBuffers()
 {
-    for (BufferBinding const& buffer_binding : buffer_bindings_)
+    for (size_t binding_index = 0; binding_index < buffer_bindings_.size(); ++binding_index)
     {
+        BufferBinding const& buffer_binding = buffer_bindings_[binding_index];
         if (buffer_binding.buffer)
         {
-            buffer_binding.buffer->UnregisterDescriptorSet(*this);
+            bool still_bound = false;
+            for (size_t other_index = 0; other_index < buffer_bindings_.size(); ++other_index)
+            {
+                if (other_index == binding_index)
+                {
+                    continue;
+                }
+                if (buffer_bindings_[other_index].buffer == buffer_binding.buffer)
+                {
+                    still_bound = true;
+                    break;
+                }
+            }
+            if (!still_bound)
+            {
+                buffer_binding.buffer->UnregisterDescriptorSet(*this);
+            }
         }
     }
     buffer_bindings_.clear();

@@ -104,7 +104,41 @@ void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint3
     }
 
     BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(d3d12_binding);
-    UnregisterBuffers(descriptor);
+    for (D3D12Buffer* bound_buffer : descriptor.buffers)
+    {
+        if (bound_buffer && bound_buffer != &buffer)
+        {
+            D3D12Buffer* old_buffer = bound_buffer;
+            bool still_bound = false;
+            for (BoundDescriptor const& other_descriptor : descriptors_)
+            {
+                if (&other_descriptor == &descriptor)
+                {
+                    continue;
+                }
+
+                for (D3D12Buffer* other_buffer : other_descriptor.buffers)
+                {
+                    if (other_buffer == old_buffer)
+                    {
+                        still_bound = true;
+                        break;
+                    }
+                }
+
+                if (still_bound)
+                {
+                    break;
+                }
+            }
+
+            if (!still_bound)
+            {
+                old_buffer->UnregisterDescriptorSet(*this);
+            }
+        }
+    }
+    descriptor.buffers.clear();
     descriptor.buffers = {&buffer};
     buffer.RegisterDescriptorSet(*this);
 
@@ -248,7 +282,33 @@ void D3D12DescriptorSet::UnregisterBuffers(BoundDescriptor& descriptor)
     {
         if (buffer)
         {
-            buffer->UnregisterDescriptorSet(*this);
+            bool still_bound = false;
+            for (BoundDescriptor const& other_descriptor : descriptors_)
+            {
+                if (&other_descriptor == &descriptor)
+                {
+                    continue;
+                }
+
+                for (D3D12Buffer* other_buffer : other_descriptor.buffers)
+                {
+                    if (other_buffer == buffer)
+                    {
+                        still_bound = true;
+                        break;
+                    }
+                }
+
+                if (still_bound)
+                {
+                    break;
+                }
+            }
+
+            if (!still_bound)
+            {
+                buffer->UnregisterDescriptorSet(*this);
+            }
         }
     }
     descriptor.buffers.clear();
