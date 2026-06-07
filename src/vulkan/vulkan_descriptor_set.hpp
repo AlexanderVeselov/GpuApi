@@ -21,6 +21,8 @@ public:
 
     VulkanDescriptorSet(VulkanDescriptorSet const&) = delete;
     VulkanDescriptorSet& operator=(VulkanDescriptorSet const&) = delete;
+    VulkanDescriptorSet(VulkanDescriptorSet&&) = delete;
+    VulkanDescriptorSet& operator=(VulkanDescriptorSet&&) = delete;
 
     void BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space) override;
     void BindImage(Image& image, uint32_t binding, uint32_t space) override;

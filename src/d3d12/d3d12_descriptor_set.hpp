@@ -37,8 +37,8 @@ public:
     D3D12DescriptorSet(D3D12DescriptorSet const&) = delete;
     D3D12DescriptorSet& operator=(D3D12DescriptorSet const&) = delete;
 
-    D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept;
-    D3D12DescriptorSet& operator=(D3D12DescriptorSet&& other) noexcept;
+    D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept = delete;
+    D3D12DescriptorSet& operator=(D3D12DescriptorSet&& other) noexcept = delete;
 
     void BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space) override;
     void BindImage(Image& image, uint32_t binding, uint32_t space) override;

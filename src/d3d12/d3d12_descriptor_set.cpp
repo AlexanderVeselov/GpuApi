@@ -43,29 +43,6 @@ D3D12DescriptorSet::~D3D12DescriptorSet()
     Clear();
 }
 
-D3D12DescriptorSet::D3D12DescriptorSet(D3D12DescriptorSet&& other) noexcept
-    : descriptor_manager_(other.descriptor_manager_)
-    , layout_(other.layout_)
-    , descriptors_(std::move(other.descriptors_))
-{
-}
-
-D3D12DescriptorSet& D3D12DescriptorSet::operator=(D3D12DescriptorSet&& other) noexcept
-{
-    assert(&layout_ == &other.layout_
-        && "D3D12DescriptorSet::operator=: descriptor sets must use the same pipeline layout");
-
-    if (this != &other)
-    {
-        Clear();
-        assert(&descriptor_manager_ == &other.descriptor_manager_
-            && "D3D12DescriptorSet::operator=: descriptor sets must use the same descriptor manager");
-        descriptors_ = std::move(other.descriptors_);
-    }
-
-    return *this;
-}
-
 void D3D12DescriptorSet::BindBuffer(Buffer& buffer, uint32_t binding, uint32_t space)
 {
     BindBuffer(CastResource<D3D12Buffer>(buffer, "D3D12DescriptorSet::BindBuffer"), binding, space);
@@ -104,44 +81,6 @@ void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint3
     }
 
     BoundDescriptor& descriptor = FindOrCreateBoundDescriptor(d3d12_binding);
-    for (D3D12Buffer* bound_buffer : descriptor.buffers)
-    {
-        if (bound_buffer && bound_buffer != &buffer)
-        {
-            D3D12Buffer* old_buffer = bound_buffer;
-            bool still_bound = false;
-            for (BoundDescriptor const& other_descriptor : descriptors_)
-            {
-                if (&other_descriptor == &descriptor)
-                {
-                    continue;
-                }
-
-                for (D3D12Buffer* other_buffer : other_descriptor.buffers)
-                {
-                    if (other_buffer == old_buffer)
-                    {
-                        still_bound = true;
-                        break;
-                    }
-                }
-
-                if (still_bound)
-                {
-                    break;
-                }
-            }
-
-            if (!still_bound)
-            {
-                old_buffer->UnregisterDescriptorSet(*this);
-            }
-        }
-    }
-    descriptor.buffers.clear();
-    descriptor.buffers = {&buffer};
-    buffer.RegisterDescriptorSet(*this);
-
     if (d3d12_binding.range_type == D3D12_DESCRIPTOR_RANGE_TYPE_SRV)
     {
         BindDescriptor(d3d12_binding, buffer.GetSRV());
@@ -154,6 +93,15 @@ void D3D12DescriptorSet::BindBuffer(D3D12Buffer& buffer, uint32_t binding, uint3
     {
         BindDescriptor(d3d12_binding, buffer.GetCBV());
     }
+
+    if (descriptor.buffers.size() == 1 && descriptor.buffers.front() == &buffer)
+    {
+        return;
+    }
+
+    UnregisterBuffers(descriptor);
+    descriptor.buffers = {&buffer};
+    buffer.RegisterDescriptorSet(*this);
 }
 
 void D3D12DescriptorSet::OnBufferResized(D3D12Buffer& buffer)
