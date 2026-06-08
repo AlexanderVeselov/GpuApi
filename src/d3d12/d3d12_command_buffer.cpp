@@ -8,6 +8,7 @@
 #include "d3d12_pipeline.hpp"
 #include "d3d12_queue.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <stdexcept>
@@ -548,17 +549,18 @@ void D3D12CommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)
     cmd_list_->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
 }
 
-void D3D12CommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data_size)
+void D3D12CommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data_size, uint32_t mip_level)
 {
     D3D12Image* d3d12_dst = static_cast<D3D12Image*>(dst.get());
     assert(d3d12_dst && "D3D12CommandBuffer::UploadImage: dst must be D3D12Image");
+    assert(mip_level < dst->GetMipCount() && "D3D12CommandBuffer::UploadImage: mip level is out of range");
 
     D3D12_RESOURCE_DESC image_desc = d3d12_dst->GetResource()->GetDesc();
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
     UINT num_rows = 0;
     UINT64 row_size = 0;
     UINT64 total_size = 0;
-    device_.GetD3D12Device()->GetCopyableFootprints(&image_desc, 0, 1, 0, &footprint, &num_rows, &row_size,
+    device_.GetD3D12Device()->GetCopyableFootprints(&image_desc, mip_level, 1, 0, &footprint, &num_rows, &row_size,
         &total_size);
 
     const UINT64 required_source_size = row_size * num_rows;
@@ -582,7 +584,7 @@ void D3D12CommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data
     D3D12_TEXTURE_COPY_LOCATION dst_location = {};
     dst_location.pResource = d3d12_dst->GetResource();
     dst_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    dst_location.SubresourceIndex = 0;
+    dst_location.SubresourceIndex = mip_level;
 
     D3D12_TEXTURE_COPY_LOCATION src_location = {};
     src_location.pResource = d3d12_src->GetResource();

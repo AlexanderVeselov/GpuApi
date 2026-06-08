@@ -8,6 +8,7 @@
 #include "vulkan_image.hpp"
 #include "vulkan_pipeline.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <limits>
 #include <stdexcept>
@@ -15,6 +16,10 @@
 
 namespace gpu
 {
+namespace
+{
+}
+
 static bool IsDepthImage(Image const& image)
 {
     return HasFlag(image.GetFlags(), ImageFlags::kDepthStencil) || image.GetFormat() == ImageFormat::kD32_Float
@@ -733,13 +738,14 @@ void VulkanCommandBuffer::CopyBufferToImage(ImagePtr dst, BufferPtr src)
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-void VulkanCommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data_size)
+void VulkanCommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t data_size, uint32_t mip_level)
 {
     EndRendering();
 
     auto* vulkan_dst = dynamic_cast<VulkanImage*>(dst.get());
     THROW_IF(!vulkan_dst, "Image does not belong to the Vulkan backend");
     THROW_IF(!data || data_size == 0, "Image upload data is empty");
+    THROW_IF(mip_level >= dst->GetMipCount(), "Image upload mip level is out of range");
 
     BufferPtr staging_buffer = device_.CreateBuffer(data_size, 1, BufferFlags::kCpuAccess);
     void* mapped_data = staging_buffer->Map();
@@ -750,10 +756,10 @@ void VulkanCommandBuffer::UploadImage(ImagePtr dst, void const* data, size_t dat
 
     VkBufferImageCopy region{};
     region.imageSubresource.aspectMask = GetImageAspect(*dst);
-    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.mipLevel = mip_level;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
-    region.imageExtent = {vulkan_dst->GetWidth(), vulkan_dst->GetHeight(), 1};
+    region.imageExtent = {MipExtent(vulkan_dst->GetWidth(), mip_level), MipExtent(vulkan_dst->GetHeight(), mip_level), 1};
 
     vkCmdCopyBufferToImage(command_buffer_, vulkan_src->GetBuffer(), vulkan_dst->GetImage(),
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);

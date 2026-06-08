@@ -7,7 +7,6 @@
 #include "d3d12_pipeline.hpp"
 #include "d3d12_sampler.hpp"
 #include "d3d12_swapchain.hpp"
-
 #include <cassert>
 #include <stdexcept>
 #include <utility>

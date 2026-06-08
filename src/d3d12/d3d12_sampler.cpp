@@ -2,6 +2,7 @@
 
 #include "d3d12_device.hpp"
 
+#include <algorithm>
 #include <cfloat>
 
 namespace gpu
@@ -48,8 +49,14 @@ D3D12_COMPARISON_FUNC ToD3D12ComparisonFunc(SamplerComparisonFunc func)
     return D3D12_COMPARISON_FUNC_ALWAYS;
 }
 
-D3D12_FILTER ToD3D12Filter(SamplerFilter min_filter, SamplerFilter mag_filter, bool comparison_enabled)
+D3D12_FILTER ToD3D12Filter(SamplerFilter min_filter, SamplerFilter mag_filter, bool comparison_enabled,
+    uint32_t max_anisotropy)
 {
+    if (max_anisotropy > 1)
+    {
+        return comparison_enabled ? D3D12_FILTER_COMPARISON_ANISOTROPIC : D3D12_FILTER_ANISOTROPIC;
+    }
+
     if (min_filter == SamplerFilter::kNearest && mag_filter == SamplerFilter::kNearest)
     {
         return comparison_enabled ? D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT : D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -78,12 +85,12 @@ D3D12Sampler::D3D12Sampler(D3D12Device& device, SamplerDesc const& desc) : Sampl
 
     D3D12_SAMPLER_DESC sampler_desc = {};
     bool const comparison_enabled = desc.comparison_func != SamplerComparisonFunc::kNone;
-    sampler_desc.Filter = ToD3D12Filter(desc.min_filter, desc.mag_filter, comparison_enabled);
+    sampler_desc.Filter = ToD3D12Filter(desc.min_filter, desc.mag_filter, comparison_enabled, desc.max_anisotropy);
     sampler_desc.AddressU = ToD3D12AddressMode(desc.address_u);
     sampler_desc.AddressV = ToD3D12AddressMode(desc.address_v);
     sampler_desc.AddressW = ToD3D12AddressMode(desc.address_w);
     sampler_desc.MipLODBias = desc.mip_lod_bias;
-    sampler_desc.MaxAnisotropy = 1;
+    sampler_desc.MaxAnisotropy = (std::max)(1u, (std::min)(desc.max_anisotropy, 16u));
     sampler_desc.ComparisonFunc = ToD3D12ComparisonFunc(desc.comparison_func);
     sampler_desc.MinLOD = 0.0f;
     sampler_desc.MaxLOD = FLT_MAX;
