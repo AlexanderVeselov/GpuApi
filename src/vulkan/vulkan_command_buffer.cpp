@@ -18,6 +18,10 @@ namespace gpu
 {
 namespace
 {
+uint32_t MipExtent(uint32_t base_extent, uint32_t mip_level)
+{
+    return (std::max)(1u, base_extent >> mip_level);
+}
 }
 
 static bool IsDepthImage(Image const& image)
