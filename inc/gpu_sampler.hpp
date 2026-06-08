@@ -40,13 +40,15 @@ struct SamplerDesc
     SamplerAddressMode address_w = SamplerAddressMode::kRepeat;
     SamplerComparisonFunc comparison_func = SamplerComparisonFunc::kNone;
     float mip_lod_bias = 0.0f;
+    uint32_t max_anisotropy = 1;
 };
 
 inline bool operator==(SamplerDesc const& lhs, SamplerDesc const& rhs)
 {
     return lhs.min_filter == rhs.min_filter && lhs.mag_filter == rhs.mag_filter && lhs.address_u == rhs.address_u
         && lhs.address_v == rhs.address_v && lhs.address_w == rhs.address_w
-        && lhs.comparison_func == rhs.comparison_func && lhs.mip_lod_bias == rhs.mip_lod_bias;
+        && lhs.comparison_func == rhs.comparison_func && lhs.mip_lod_bias == rhs.mip_lod_bias
+        && lhs.max_anisotropy == rhs.max_anisotropy;
 }
 
 struct SamplerDescHash
@@ -75,6 +77,7 @@ struct SamplerDescHash
         combine(desc.comparison_func);
         hash ^= std::hash<float>{}(desc.mip_lod_bias);
         hash *= kFnvPrime;
+        combine(desc.max_anisotropy);
         return hash;
     }
 };

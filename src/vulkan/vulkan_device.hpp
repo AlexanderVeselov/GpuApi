@@ -41,6 +41,8 @@ public:
     VkPhysicalDevice GetPhysicalDevice() const { return physical_device_; }
     VkDevice GetDevice() const { return device_; }
     VulkanMemoryManager& GetMemoryManager() { return memory_manager_; }
+    bool SupportsSamplerAnisotropy() const { return sampler_anisotropy_supported_; }
+    float GetMaxSamplerAnisotropy() const { return max_sampler_anisotropy_; }
 
     uint32_t GetGraphicsQueueFamilyIndex() const { return graphics_queue_family_index_; }
     uint32_t GetComputeQueueFamilyIndex() const { return compute_queue_family_index_; }
@@ -68,6 +70,8 @@ private:
     std::unique_ptr<Queue> compute_queue_;
     std::unique_ptr<Queue> transfer_queue_;
     bool ray_query_supported_ = false;
+    bool sampler_anisotropy_supported_ = false;
+    float max_sampler_anisotropy_ = 1.0f;
 };
 
 }  // namespace gpu

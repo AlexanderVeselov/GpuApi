@@ -58,7 +58,7 @@ public:
 
     void CopyBuffer(BufferPtr src, uint64_t src_offset, BufferPtr dst, uint64_t dst_offset, uint64_t size) override;
     void CopyBufferToImage(ImagePtr dst, BufferPtr src) override;
-    void UploadImage(ImagePtr dst, void const* data, size_t data_size) override;
+    void UploadImage(ImagePtr dst, void const* data, size_t data_size, uint32_t mip_level = 0) override;
     void CopyImage(ImagePtr dst, ImagePtr src) override;
 
     void Close();

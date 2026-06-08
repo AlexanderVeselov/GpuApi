@@ -10,7 +10,6 @@
 #include "vulkan_queue.hpp"
 #include "vulkan_sampler.hpp"
 #include "vulkan_swapchain.hpp"
-
 #include <algorithm>
 #include <array>
 #include <cstring>
@@ -192,6 +191,16 @@ void VulkanDevice::CreateLogicalDevice()
 
     ray_query_supported_ = CheckRayQuerySupport();
 
+    VkPhysicalDeviceProperties physical_device_properties{};
+    vkGetPhysicalDeviceProperties(physical_device_, &physical_device_properties);
+
+    VkPhysicalDeviceFeatures supported_features{};
+    vkGetPhysicalDeviceFeatures(physical_device_, &supported_features);
+    sampler_anisotropy_supported_ = supported_features.samplerAnisotropy == VK_TRUE;
+    max_sampler_anisotropy_ = sampler_anisotropy_supported_
+        ? physical_device_properties.limits.maxSamplerAnisotropy
+        : 1.0f;
+
     std::vector<char const*> extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
@@ -235,6 +244,10 @@ void VulkanDevice::CreateLogicalDevice()
     device_create_info.pQueueCreateInfos = queue_create_infos.data();
     device_create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     device_create_info.ppEnabledExtensionNames = extensions.data();
+
+    VkPhysicalDeviceFeatures enabled_features{};
+    enabled_features.samplerAnisotropy = sampler_anisotropy_supported_ ? VK_TRUE : VK_FALSE;
+    device_create_info.pEnabledFeatures = &enabled_features;
 
     VkResult status = vkCreateDevice(physical_device_, &device_create_info, nullptr, &device_);
     VK_THROW_IF_FAILED(status, "Failed to create Vulkan device");

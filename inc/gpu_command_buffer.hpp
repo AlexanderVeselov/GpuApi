@@ -87,8 +87,8 @@ public:
     /// Copies a linear buffer into an image.
     virtual void CopyBufferToImage(ImagePtr dst, BufferPtr src) = 0;
 
-    /// Uploads tightly packed CPU image data into an image.
-    virtual void UploadImage(ImagePtr dst, void const* data, size_t data_size) = 0;
+    /// Uploads tightly packed CPU image data into one mip level of an image.
+    virtual void UploadImage(ImagePtr dst, void const* data, size_t data_size, uint32_t mip_level = 0) = 0;
 
     /// Copies the contents of one image into another compatible image.
     virtual void CopyImage(ImagePtr dst, ImagePtr src) = 0;

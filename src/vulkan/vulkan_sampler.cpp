@@ -3,6 +3,8 @@
 #include "vulkan_device.hpp"
 #include "vulkan_exception.hpp"
 
+#include <algorithm>
+
 namespace gpu
 {
 namespace
@@ -72,8 +74,11 @@ VulkanSampler::VulkanSampler(VulkanDevice& device, SamplerDesc const& desc) : Sa
     create_info.addressModeV = ToVkAddressMode(desc.address_v);
     create_info.addressModeW = ToVkAddressMode(desc.address_w);
     create_info.mipLodBias = desc.mip_lod_bias;
-    create_info.anisotropyEnable = VK_FALSE;
-    create_info.maxAnisotropy = 1.0f;
+    float const requested_anisotropy = static_cast<float>((std::max)(1u, desc.max_anisotropy));
+    create_info.anisotropyEnable = device_.SupportsSamplerAnisotropy() && requested_anisotropy > 1.0f ? VK_TRUE : VK_FALSE;
+    create_info.maxAnisotropy = create_info.anisotropyEnable
+        ? (std::min)(requested_anisotropy, device_.GetMaxSamplerAnisotropy())
+        : 1.0f;
     create_info.compareEnable = desc.comparison_func != SamplerComparisonFunc::kNone ? VK_TRUE : VK_FALSE;
     create_info.compareOp = ToVkCompareOp(desc.comparison_func);
     create_info.minLod = 0.0f;
