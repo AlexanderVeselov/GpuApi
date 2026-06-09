@@ -107,6 +107,41 @@ enum class DepthFunc
     kAlways
 };
 
+enum class BlendFactor
+{
+    kZero,
+    kOne,
+    kSrcAlpha,
+    kOneMinusSrcAlpha
+};
+
+enum class BlendOp
+{
+    kAdd
+};
+
+enum ColorWriteMask : uint8_t
+{
+    kColorWriteNone = 0,
+    kColorWriteR = 1 << 0,
+    kColorWriteG = 1 << 1,
+    kColorWriteB = 1 << 2,
+    kColorWriteA = 1 << 3,
+    kColorWriteRGBA = kColorWriteR | kColorWriteG | kColorWriteB | kColorWriteA
+};
+
+struct ColorBlendAttachmentDesc
+{
+    bool blend_enabled = false;
+    BlendFactor src_color_blend_factor = BlendFactor::kOne;
+    BlendFactor dst_color_blend_factor = BlendFactor::kZero;
+    BlendOp color_blend_op = BlendOp::kAdd;
+    BlendFactor src_alpha_blend_factor = BlendFactor::kOne;
+    BlendFactor dst_alpha_blend_factor = BlendFactor::kZero;
+    BlendOp alpha_blend_op = BlendOp::kAdd;
+    uint8_t color_write_mask = kColorWriteRGBA;
+};
+
 /// Raster viewport in floating-point pixels.
 struct Viewport
 {
@@ -134,8 +169,10 @@ struct GraphicsPipelineDesc
     std::string ps_filename;
     std::string root_constants_name = "g_RootConstants";
     bool depth_enabled = false;
+    bool depth_write_enabled = true;
     DepthFunc depth_func = DepthFunc::kLess;
     std::vector<ImageFormat> color_attachment_formats;
+    std::vector<ColorBlendAttachmentDesc> color_blend_attachments;
     ImageFormat depth_attachment_format = ImageFormat::kUnknown;
 };
 

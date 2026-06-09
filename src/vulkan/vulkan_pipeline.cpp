@@ -15,6 +15,58 @@ namespace gpu
 {
 namespace
 {
+VkBlendFactor BlendFactorToVk(BlendFactor factor)
+{
+    switch (factor)
+    {
+    case BlendFactor::kZero:
+        return VK_BLEND_FACTOR_ZERO;
+    case BlendFactor::kOne:
+        return VK_BLEND_FACTOR_ONE;
+    case BlendFactor::kSrcAlpha:
+        return VK_BLEND_FACTOR_SRC_ALPHA;
+    case BlendFactor::kOneMinusSrcAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    default:
+        assert(false && "BlendFactorToVk: unknown blend factor");
+        return VK_BLEND_FACTOR_ONE;
+    }
+}
+
+VkBlendOp BlendOpToVk(BlendOp op)
+{
+    switch (op)
+    {
+    case BlendOp::kAdd:
+        return VK_BLEND_OP_ADD;
+    default:
+        assert(false && "BlendOpToVk: unknown blend op");
+        return VK_BLEND_OP_ADD;
+    }
+}
+
+VkColorComponentFlags ColorWriteMaskToVk(uint8_t mask)
+{
+    VkColorComponentFlags flags = 0;
+    if ((mask & kColorWriteR) != 0)
+    {
+        flags |= VK_COLOR_COMPONENT_R_BIT;
+    }
+    if ((mask & kColorWriteG) != 0)
+    {
+        flags |= VK_COLOR_COMPONENT_G_BIT;
+    }
+    if ((mask & kColorWriteB) != 0)
+    {
+        flags |= VK_COLOR_COMPONENT_B_BIT;
+    }
+    if ((mask & kColorWriteA) != 0)
+    {
+        flags |= VK_COLOR_COMPONENT_A_BIT;
+    }
+    return flags;
+}
+
 class VulkanShaderModule
 {
 public:
@@ -235,18 +287,30 @@ void VulkanGraphicsPipeline::Reload()
     VkPipelineDepthStencilStateCreateInfo depth_stencil_state = {};
     depth_stencil_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depth_stencil_state.depthTestEnable = pipeline_desc_.depth_enabled;
-    depth_stencil_state.depthWriteEnable = pipeline_desc_.depth_enabled;
+    depth_stencil_state.depthWriteEnable = pipeline_desc_.depth_enabled && pipeline_desc_.depth_write_enabled;
     depth_stencil_state.depthCompareOp = DepthFuncToVkCompareOp(pipeline_desc_.depth_func);
     depth_stencil_state.depthBoundsTestEnable = VK_FALSE;
     depth_stencil_state.stencilTestEnable = VK_FALSE;
 
     std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachments(pipeline_desc_.color_attachment_formats
             .size());
-    for (VkPipelineColorBlendAttachmentState& attachment : color_blend_attachments)
+    for (size_t attachment_index = 0; attachment_index < color_blend_attachments.size(); ++attachment_index)
     {
-        attachment.blendEnable = VK_FALSE;
-        attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT
-            | VK_COLOR_COMPONENT_A_BIT;
+        ColorBlendAttachmentDesc blend_desc = {};
+        if (attachment_index < pipeline_desc_.color_blend_attachments.size())
+        {
+            blend_desc = pipeline_desc_.color_blend_attachments[attachment_index];
+        }
+
+        VkPipelineColorBlendAttachmentState& attachment = color_blend_attachments[attachment_index];
+        attachment.blendEnable = blend_desc.blend_enabled ? VK_TRUE : VK_FALSE;
+        attachment.srcColorBlendFactor = BlendFactorToVk(blend_desc.src_color_blend_factor);
+        attachment.dstColorBlendFactor = BlendFactorToVk(blend_desc.dst_color_blend_factor);
+        attachment.colorBlendOp = BlendOpToVk(blend_desc.color_blend_op);
+        attachment.srcAlphaBlendFactor = BlendFactorToVk(blend_desc.src_alpha_blend_factor);
+        attachment.dstAlphaBlendFactor = BlendFactorToVk(blend_desc.dst_alpha_blend_factor);
+        attachment.alphaBlendOp = BlendOpToVk(blend_desc.alpha_blend_op);
+        attachment.colorWriteMask = ColorWriteMaskToVk(blend_desc.color_write_mask);
     }
 
     VkPipelineColorBlendStateCreateInfo color_blend_state = {};
