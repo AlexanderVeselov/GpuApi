@@ -45,7 +45,8 @@ D3D12_BLEND_OP BlendOpToD3D12(BlendOp op)
 
 D3D12_COLOR_WRITE_ENABLE ColorWriteMaskToD3D12(uint8_t mask)
 {
-    return static_cast<D3D12_COLOR_WRITE_ENABLE>(mask);
+    uint8_t valid_mask = mask & static_cast<uint8_t>(kColorWriteRGBA);
+    return static_cast<D3D12_COLOR_WRITE_ENABLE>(valid_mask);
 }
 
 D3D12_COMPARISON_FUNC DepthFuncToD3D12(DepthFunc depth_func)
