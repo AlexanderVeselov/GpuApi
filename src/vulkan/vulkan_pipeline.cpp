@@ -292,7 +292,7 @@ void VulkanGraphicsPipeline::Reload()
     rasterization_state.rasterizerDiscardEnable = VK_FALSE;
     rasterization_state.polygonMode = VK_POLYGON_MODE_FILL;
     rasterization_state.cullMode = CullModeToVk(pipeline_desc_.cull_mode);
-    rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterization_state.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterization_state.depthBiasEnable = VK_FALSE;
     rasterization_state.lineWidth = 1.0f;
 
