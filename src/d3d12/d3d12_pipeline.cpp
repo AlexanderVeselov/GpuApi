@@ -76,6 +76,22 @@ D3D12_COMPARISON_FUNC DepthFuncToD3D12(DepthFunc depth_func)
     }
 }
 
+D3D12_CULL_MODE CullModeToD3D12(CullMode cull_mode)
+{
+    switch (cull_mode)
+    {
+    case CullMode::kNone:
+        return D3D12_CULL_MODE_NONE;
+    case CullMode::kFront:
+        return D3D12_CULL_MODE_FRONT;
+    case CullMode::kBack:
+        return D3D12_CULL_MODE_BACK;
+    default:
+        assert(!"CullModeToD3D12: unknown cull mode");
+        return D3D12_CULL_MODE_NONE;
+    }
+}
+
 DXGI_FORMAT VertexInputFormatToDXGI(ImageFormat format)
 {
     switch (format)
@@ -251,7 +267,7 @@ void D3D12GraphicsPipeline::Reload()
 
     D3D12_RASTERIZER_DESC rasterizer_state = {};
     rasterizer_state.FillMode = D3D12_FILL_MODE_SOLID;
-    rasterizer_state.CullMode = D3D12_CULL_MODE_NONE;
+    rasterizer_state.CullMode = CullModeToD3D12(pipeline_desc_.cull_mode);
     rasterizer_state.FrontCounterClockwise = FALSE;
     rasterizer_state.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
     rasterizer_state.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;

@@ -124,6 +124,22 @@ VkCompareOp DepthFuncToVkCompareOp(DepthFunc depth_func)
     }
 }
 
+VkCullModeFlags CullModeToVk(CullMode cull_mode)
+{
+    switch (cull_mode)
+    {
+    case CullMode::kNone:
+        return VK_CULL_MODE_NONE;
+    case CullMode::kFront:
+        return VK_CULL_MODE_FRONT_BIT;
+    case CullMode::kBack:
+        return VK_CULL_MODE_BACK_BIT;
+    default:
+        assert(false && "CullModeToVk: unknown cull mode");
+        return VK_CULL_MODE_NONE;
+    }
+}
+
 uint32_t FormatSize(ImageFormat format)
 {
     switch (format)
@@ -275,7 +291,7 @@ void VulkanGraphicsPipeline::Reload()
     rasterization_state.depthClampEnable = VK_FALSE;
     rasterization_state.rasterizerDiscardEnable = VK_FALSE;
     rasterization_state.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterization_state.cullMode = VK_CULL_MODE_NONE;
+    rasterization_state.cullMode = CullModeToVk(pipeline_desc_.cull_mode);
     rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterization_state.depthBiasEnable = VK_FALSE;
     rasterization_state.lineWidth = 1.0f;

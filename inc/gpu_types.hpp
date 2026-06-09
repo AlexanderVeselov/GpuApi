@@ -107,6 +107,13 @@ enum class DepthFunc
     kAlways
 };
 
+enum class CullMode
+{
+    kNone,
+    kFront,
+    kBack
+};
+
 enum class BlendFactor
 {
     kZero,
@@ -168,6 +175,7 @@ struct GraphicsPipelineDesc
     std::string vs_filename;
     std::string ps_filename;
     std::string root_constants_name = "g_RootConstants";
+    CullMode cull_mode = CullMode::kNone;
     bool depth_enabled = false;
     bool depth_write_enabled = true;
     DepthFunc depth_func = DepthFunc::kLess;
