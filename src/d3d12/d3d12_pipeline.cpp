@@ -13,6 +13,42 @@ namespace gpu
 {
 namespace
 {
+D3D12_BLEND BlendFactorToD3D12(BlendFactor factor)
+{
+    switch (factor)
+    {
+    case BlendFactor::kZero:
+        return D3D12_BLEND_ZERO;
+    case BlendFactor::kOne:
+        return D3D12_BLEND_ONE;
+    case BlendFactor::kSrcAlpha:
+        return D3D12_BLEND_SRC_ALPHA;
+    case BlendFactor::kOneMinusSrcAlpha:
+        return D3D12_BLEND_INV_SRC_ALPHA;
+    default:
+        assert(!"BlendFactorToD3D12: unknown blend factor");
+        return D3D12_BLEND_ONE;
+    }
+}
+
+D3D12_BLEND_OP BlendOpToD3D12(BlendOp op)
+{
+    switch (op)
+    {
+    case BlendOp::kAdd:
+        return D3D12_BLEND_OP_ADD;
+    default:
+        assert(!"BlendOpToD3D12: unknown blend op");
+        return D3D12_BLEND_OP_ADD;
+    }
+}
+
+D3D12_COLOR_WRITE_ENABLE ColorWriteMaskToD3D12(uint8_t mask)
+{
+    uint8_t valid_mask = mask & static_cast<uint8_t>(kColorWriteRGBA);
+    return static_cast<D3D12_COLOR_WRITE_ENABLE>(valid_mask);
+}
+
 D3D12_COMPARISON_FUNC DepthFuncToD3D12(DepthFunc depth_func)
 {
     switch (depth_func)
@@ -38,6 +74,22 @@ D3D12_COMPARISON_FUNC DepthFuncToD3D12(DepthFunc depth_func)
     default:
         assert(!"DepthFuncToD3D12: unknown depth func");
         return D3D12_COMPARISON_FUNC_NONE;
+    }
+}
+
+D3D12_CULL_MODE CullModeToD3D12(CullMode cull_mode)
+{
+    switch (cull_mode)
+    {
+    case CullMode::kNone:
+        return D3D12_CULL_MODE_NONE;
+    case CullMode::kFront:
+        return D3D12_CULL_MODE_FRONT;
+    case CullMode::kBack:
+        return D3D12_CULL_MODE_BACK;
+    default:
+        assert(!"CullModeToD3D12: unknown cull mode");
+        return D3D12_CULL_MODE_NONE;
     }
 }
 
@@ -190,24 +242,33 @@ void D3D12GraphicsPipeline::Reload()
         }
     }
 
-    ///@TODO: add blend support
     D3D12_BLEND_DESC blend_state = {};
     blend_state.AlphaToCoverageEnable = FALSE;
-    blend_state.IndependentBlendEnable = FALSE;
-    blend_state.RenderTarget[0].BlendEnable = FALSE;
-    blend_state.RenderTarget[0].LogicOpEnable = FALSE;
-    blend_state.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
-    blend_state.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
-    blend_state.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-    blend_state.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-    blend_state.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
-    blend_state.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-    blend_state.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
-    blend_state.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+    blend_state.IndependentBlendEnable = TRUE;
+    for (uint32_t rt_index = 0; rt_index < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++rt_index)
+    {
+        ColorBlendAttachmentDesc blend_desc = {};
+        if (rt_index < pipeline_desc_.color_blend_attachments.size())
+        {
+            blend_desc = pipeline_desc_.color_blend_attachments[rt_index];
+        }
+
+        D3D12_RENDER_TARGET_BLEND_DESC& rt_blend = blend_state.RenderTarget[rt_index];
+        rt_blend.BlendEnable = blend_desc.blend_enabled ? TRUE : FALSE;
+        rt_blend.LogicOpEnable = FALSE;
+        rt_blend.SrcBlend = BlendFactorToD3D12(blend_desc.src_color_blend_factor);
+        rt_blend.DestBlend = BlendFactorToD3D12(blend_desc.dst_color_blend_factor);
+        rt_blend.BlendOp = BlendOpToD3D12(blend_desc.color_blend_op);
+        rt_blend.SrcBlendAlpha = BlendFactorToD3D12(blend_desc.src_alpha_blend_factor);
+        rt_blend.DestBlendAlpha = BlendFactorToD3D12(blend_desc.dst_alpha_blend_factor);
+        rt_blend.BlendOpAlpha = BlendOpToD3D12(blend_desc.alpha_blend_op);
+        rt_blend.LogicOp = D3D12_LOGIC_OP_NOOP;
+        rt_blend.RenderTargetWriteMask = ColorWriteMaskToD3D12(blend_desc.color_write_mask);
+    }
 
     D3D12_RASTERIZER_DESC rasterizer_state = {};
     rasterizer_state.FillMode = D3D12_FILL_MODE_SOLID;
-    rasterizer_state.CullMode = D3D12_CULL_MODE_NONE;
+    rasterizer_state.CullMode = CullModeToD3D12(pipeline_desc_.cull_mode);
     rasterizer_state.FrontCounterClockwise = FALSE;
     rasterizer_state.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
     rasterizer_state.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
@@ -219,7 +280,9 @@ void D3D12GraphicsPipeline::Reload()
 
     D3D12_DEPTH_STENCIL_DESC depth_stencil_state = {};
     depth_stencil_state.DepthEnable = pipeline_desc_.depth_enabled;
-    depth_stencil_state.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+    depth_stencil_state.DepthWriteMask = pipeline_desc_.depth_enabled && pipeline_desc_.depth_write_enabled
+        ? D3D12_DEPTH_WRITE_MASK_ALL
+        : D3D12_DEPTH_WRITE_MASK_ZERO;
     depth_stencil_state.DepthFunc = DepthFuncToD3D12(pipeline_desc_.depth_func);
     depth_stencil_state.StencilEnable = FALSE;
     depth_stencil_state.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;

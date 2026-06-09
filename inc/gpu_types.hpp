@@ -107,6 +107,63 @@ enum class DepthFunc
     kAlways
 };
 
+/// Triangle face culling mode used by rasterization.
+enum class CullMode
+{
+    kNone,
+    kFront,
+    kBack
+};
+
+/// Blend factor used by graphics pipeline color and alpha blending.
+enum class BlendFactor
+{
+    kZero,
+    kOne,
+    kSrcAlpha,
+    kOneMinusSrcAlpha
+};
+
+/// Blend operation used by graphics pipeline color and alpha blending.
+enum class BlendOp
+{
+    kAdd
+};
+
+/// Per-channel color write mask for a render target attachment.
+enum ColorWriteMask : uint8_t
+{
+    kColorWriteNone = 0,
+    kColorWriteR = 1 << 0,
+    kColorWriteG = 1 << 1,
+    kColorWriteB = 1 << 2,
+    kColorWriteA = 1 << 3,
+    kColorWriteRGBA = kColorWriteR | kColorWriteG | kColorWriteB | kColorWriteA
+};
+
+/// Per-render-target blending description for a graphics pipeline.
+/// If fewer entries are provided than there are color attachments, the remaining
+/// attachments default to disabled blending with full color writes enabled.
+struct ColorBlendAttachmentDesc
+{
+    /// Enables fixed-function blending for this attachment.
+    bool blend_enabled = false;
+    /// Multiplier applied to the fragment color before blending.
+    BlendFactor src_color_blend_factor = BlendFactor::kOne;
+    /// Multiplier applied to the existing render target color before blending.
+    BlendFactor dst_color_blend_factor = BlendFactor::kZero;
+    /// Operation applied to the scaled source and destination color values.
+    BlendOp color_blend_op = BlendOp::kAdd;
+    /// Multiplier applied to the fragment alpha before blending.
+    BlendFactor src_alpha_blend_factor = BlendFactor::kOne;
+    /// Multiplier applied to the existing render target alpha before blending.
+    BlendFactor dst_alpha_blend_factor = BlendFactor::kZero;
+    /// Operation applied to the scaled source and destination alpha values.
+    BlendOp alpha_blend_op = BlendOp::kAdd;
+    /// Bitmask describing which color channels are written by this attachment.
+    uint8_t color_write_mask = kColorWriteRGBA;
+};
+
 /// Raster viewport in floating-point pixels.
 struct Viewport
 {
@@ -130,12 +187,25 @@ struct Rect
 /// Immutable graphics pipeline creation parameters.
 struct GraphicsPipelineDesc
 {
+    /// Vertex shader source filename resolved relative to the active shader search path.
     std::string vs_filename;
+    /// Pixel/fragment shader source filename resolved relative to the active shader search path.
     std::string ps_filename;
+    /// Name of the global constant buffer/root constants struct expected by the shaders.
     std::string root_constants_name = "g_RootConstants";
+    /// Rasterization culling mode.
+    CullMode cull_mode = CullMode::kNone;
+    /// Enables depth testing.
     bool depth_enabled = false;
+    /// Enables writing passing fragments to the depth attachment when depth testing is enabled.
+    bool depth_write_enabled = true;
+    /// Comparison function used by the depth test.
     DepthFunc depth_func = DepthFunc::kLess;
+    /// Formats of the color attachments bound during rendering.
     std::vector<ImageFormat> color_attachment_formats;
+    /// Optional per-attachment blend state. Missing entries fall back to disabled blending.
+    std::vector<ColorBlendAttachmentDesc> color_blend_attachments;
+    /// Format of the depth attachment when depth testing is enabled.
     ImageFormat depth_attachment_format = ImageFormat::kUnknown;
 };
 
